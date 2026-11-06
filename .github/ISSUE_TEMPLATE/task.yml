@@ -1,0 +1,29 @@
+name: タスク
+description: バックログ（docs/backlog.md）の1項目
+labels: []
+body:
+  - type: input
+    id: backlog-id
+    attributes:
+      label: バックログ ID
+      placeholder: M1-08
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: 内容
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: 完了条件
+      description: docs/backlog.md の「完了条件」をそのまま書く
+    validations:
+      required: true
+  - type: textarea
+    id: refs
+    attributes:
+      label: 関連する要件・設計
+      placeholder: FR-REPO-02 / 設計 §6.3

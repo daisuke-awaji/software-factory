@@ -1,0 +1,30 @@
+name: samples
+
+# 計画書に載せたコード片（docs/samples）が、固定したバージョンで型チェック・テスト・synth を通ることを確かめる
+on:
+  push:
+    branches: [main]
+    paths: ['docs/samples/**', '.github/workflows/samples.yml']
+  pull_request:
+    paths: ['docs/samples/**', '.github/workflows/samples.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs/samples
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: docs/samples/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run synth

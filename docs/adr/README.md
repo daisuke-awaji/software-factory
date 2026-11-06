@@ -1,0 +1,14 @@
+# ADR（Architecture Decision Records）
+
+設計上の大事な決定を1件1ファイルで残す。設計を変えるときは、新しい ADR を書いて古いものを `Superseded` にする（消さない）。
+
+| # | タイトル | 状態 |
+|---|---|---|
+| [0001](./0001-stage-per-microvm.md) | 1ステージに1台の Lambda MicroVM を使う | Accepted |
+| [0002](./0002-contract-first-zod-msw.md) | 契約は Zod に一本化し、フロントエンドは MSW で先に作る | Accepted |
+| [0003](./0003-line-engine-durable-functions.md) | ライン実行エンジンに Lambda durable functions を使う | Accepted |
+| [0004](./0004-egress-boundary.md) | egress はルートのない subnet + 明示的なプロキシで統制し、クレデンシャルはゲートウェイで付ける | Accepted |
+| [0005](./0005-three-origins.md) | App / Preview / Publish を3つの CloudFront ディストリビューションに分ける | Accepted |
+| [0006](./0006-toolchain-versions.md) | TypeScript 6.0 と Node.js 24 に固定する | Accepted |
+
+テンプレート: [template.md](./template.md)
