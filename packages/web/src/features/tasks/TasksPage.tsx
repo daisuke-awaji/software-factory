@@ -4,7 +4,8 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Page } from '../../app/AppShell';
 import { SegmentedControl } from '../../components/ui/segmented-control';
-import { Empty, ErrorBanner, Loading, Tag, TextInput } from '../../components/kit';
+import { Empty, ErrorBanner, Tag, TextInput } from '../../components/kit';
+import { Busy, Skeleton, SkeletonText } from '../../components/skeletons';
 import { IconInbox, IconSearch } from '../../components/icons';
 import { StepProgress } from '../../components/StepProgress';
 import { duration, reasonLabel, relative, stateLabel, stateTone, usd } from '../../lib/format';
@@ -70,8 +71,8 @@ export function TasksPage() {
       </div>
 
       <ErrorBanner error={list.error} onRetry={() => void list.reload()} />
-      {list.loading && !list.data ? (
-        <Loading />
+      {(filter === 'archived' ? !archived.data && !archived.error : !list.data && !list.error) ? (
+        <TasksSkeleton phone={phone} />
       ) : shown.length === 0 ? (
         <Empty title={query ? '見つかりませんでした' : 'この条件のタスクはありません'} icon={<IconInbox />}>
           {filter === 'all' && !query && <><Link to="/">新しいタスク</Link>から、最初のタスクを作ってみましょう。</>}
@@ -82,6 +83,71 @@ export function TasksPage() {
         <TaskTable items={shown} workflows={workflows.data} pending={pending} />
       )}
     </Page>
+  );
+}
+
+const HEAD = ['タスク', '状態', 'ワークフロー', '所要', '費用', '更新'] as const;
+const TITLE_W = ['72%', '54%', '64%', '46%', '58%', '68%'];
+
+/** 読み込み中の一覧。表（スマホではカード）の見出しと行の高さは本物と同じ */
+function TasksSkeleton({ phone }: { phone: boolean }) {
+  const rows = Array.from({ length: 6 }, (_, i) => TITLE_W[i] ?? '60%');
+  if (phone)
+    return (
+      <Busy>
+        <ul className={s.cards} aria-hidden="true">
+          {rows.map((w, i) => (
+            <li key={i}>
+              <span className={s.cardLink}>
+                <span className={s.cardTop}>
+                  <span className={s.rowTitle}><SkeletonText size={13.5} width={w} /></span>
+                  <span className={s.cardTime}><SkeletonText size={12} width={36} /></span>
+                </span>
+                <span className={s.rowSub}><SkeletonText size={12} width="45%" /></span>
+                <span className={s.cardBottom}>
+                  <Skeleton width={64} height={22} radius={999} />
+                  <Skeleton width={72} height={10} />
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </Busy>
+    );
+  return (
+    <Busy>
+      <div className={s.tableWrap}>
+        <table className={s.table} aria-hidden="true">
+          <thead>
+            <tr>
+              {HEAD.map((h, i) => (
+                <th key={h} scope="col" className={i >= 3 ? s.num : undefined}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((w, i) => (
+              <tr key={i}>
+                <td>
+                  <span className={s.rowTitle}><SkeletonText size={13.5} width={w} /></span>
+                  <span className={s.rowSub}><SkeletonText size={12} width="34%" /></span>
+                </td>
+                <td><Skeleton width={64} height={22} radius={999} /></td>
+                <td>
+                  <span className={s.workflowCell}>
+                    <Skeleton width={84} height={10} />
+                    <span className={s.workflowName}><SkeletonText size={11.5} width={64} /></span>
+                  </span>
+                </td>
+                <td className={s.num}><SkeletonText size={13.5} width={40} end /></td>
+                <td className={s.num}><SkeletonText size={13.5} width={40} end /></td>
+                <td className={s.num}><SkeletonText size={13.5} width={44} end /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Busy>
   );
 }
 

@@ -35,6 +35,8 @@
 .nav a :global(.icon) { flex: none; width: 17px; height: 17px; color: var(--muted); }
 .nav a.active :global(.icon), .nav a:hover :global(.icon) { color: var(--ink); }
 .panel:not([data-expanded]) .nav a { justify-content: center; padding: 0; position: relative; }
+.navSkeleton { display: flex; align-items: center; gap: 10px; min-height: max(34px, var(--tap-min)); padding: 0 10px; }
+.panel:not([data-expanded]) .navSkeleton { justify-content: center; padding: 0; }
 .newTask { margin-bottom: 6px; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow-sm); font-weight: 500; color: var(--ink) !important; }
 .label { flex: 1; min-width: 0; }
 .badge {

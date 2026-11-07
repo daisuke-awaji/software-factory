@@ -4,6 +4,7 @@ import { useId, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Button } from '../../components/ui/button';
 import { Banner } from '../../components/kit';
+import { Skeleton } from '../../components/skeletons';
 import { IconClip, IconClose, IconRepo, IconSend } from '../../components/icons';
 import { errorMessage } from '../../lib/api';
 import { useApi } from '../../lib/services';
@@ -101,6 +102,12 @@ export function NewTask({ workflows }: { workflows: Workflow[] | undefined }) {
             <IconClip /> 添付
           </button>
           <input ref={fileInput} type="file" multiple hidden aria-label="添付するファイル" onChange={(e) => void attach(e.target.files).then(() => (e.target.value = ''))} />
+          {!repos.data && !repos.error && (
+            <span className={s.chipSelect} aria-hidden="true">
+              <IconRepo />
+              <Skeleton width={140} height={10} />
+            </span>
+          )}
           {repos.data && (
             <span className={s.chipSelect}>
               <IconRepo />

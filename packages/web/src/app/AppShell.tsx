@@ -1,8 +1,10 @@
 // アプリの枠: 左のサイドパネルと、ページの中身（ADR-0010）。1280px 未満では、左上のロゴで左からサイドパネルを出す
 import { useCallback, useEffect, useRef, useState, type ReactNode, type TouchEvent } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
-import { Banner, ErrorBanner, Loading, Toasts } from '../components/kit';
+import { Banner, ErrorBanner, Toasts } from '../components/kit';
+import { PageSkeleton } from '../components/skeletons';
 import { useLiveReload } from '../features/home/useLive';
+import { WorkspaceSkeleton } from '../features/task/WorkspacePage';
 import { errorMessage } from '../lib/api';
 import type { ConnectionState } from '../lib/events';
 import { useServices } from '../lib/services';
@@ -86,7 +88,7 @@ export function AppShell() {
           {error ? (
             <div className={s.page}><ErrorBanner error={error} onRetry={loadMe} /></div>
           ) : !me ? (
-            <Loading />
+            full ? <WorkspaceSkeleton /> : <Page><PageSkeleton /></Page>
           ) : (
             <Outlet />
           )}

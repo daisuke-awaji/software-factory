@@ -2,7 +2,8 @@
 import { Fragment } from 'react';
 import { Link } from 'react-router';
 import { Page } from '../../app/AppShell';
-import { Card, ErrorBanner, Loading, PageHeader } from '../../components/kit';
+import { Card, ErrorBanner, PageHeader } from '../../components/kit';
+import { CardStackSkeleton, Skeleton } from '../../components/skeletons';
 import { IconChevron, IconShield } from '../../components/icons';
 import { stepLabel } from '../../lib/format';
 import { useApi } from '../../lib/services';
@@ -23,7 +24,19 @@ export function WorkflowsPage() {
       />
       <ErrorBanner error={workflows.error} onRetry={() => void workflows.reload()} />
       {!workflows.data ? (
-        <Loading />
+        workflows.error ? null : (
+          <CardStackSkeleton
+            count={2}
+            lines={1}
+            body={
+              <div className={p.flow}>
+                {Array.from({ length: 4 }, (_, i) => (
+                  <Skeleton key={i} width={120} height={58} radius={12} />
+                ))}
+              </div>
+            }
+          />
+        )
       ) : (
         <div className={p.stack}>
           {workflows.data.map((l) => (

@@ -1,0 +1,11 @@
+/* 読み込み中の枠（skeletons.tsx）。並べ方は pages.module.css・kit.module.css と同じにする */
+.line { display: flex; align-items: center; height: 1lh; min-width: 0; }
+.lines { display: grid; }
+.pageHeadText { display: grid; min-width: 0; flex: 1; }
+.desc { margin-top: 4px; }
+.cardBody { padding: 14px 16px; display: grid; gap: 10px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 14px; }
+.stack { display: grid; gap: 20px; }
+.listRow { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.listRowText { flex: 1; min-width: 0; }
+.code { display: grid; line-height: 1.65; }
