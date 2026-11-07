@@ -129,7 +129,7 @@ export function SettingsPage() {
                 variant="destructive"
                 onClick={() => {
                   control.reset();
-                  location.assign('/');
+                  location.assign(import.meta.env.BASE_URL);
                 }}
               >
                 作り直す

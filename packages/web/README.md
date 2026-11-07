@@ -18,6 +18,18 @@ pnpm --filter @factory/web dev     # http://localhost:5173（VITE_API_MOCK=true�
 
 設定の画面（右上のアカウント → 設定）では、モックのときだけ、進む速さ・管理者の切り替え・GitHub の連携・データの作り直しを操作できます。
 
+## GitHub Pages のデモ
+
+`main` に push すると、`.github/workflows/pages.yml` がモックつきでビルドし、https://daisuke-awaji.github.io/software-factory/ に公開します。
+
+```bash
+PAGES_BASE=/software-factory/ pnpm --filter @factory/web build:pages   # dist-pages/ に出力（404.html は深いリンク用）
+```
+
+- `vite build --base` でベースのパスを付け、React Router の `basename` と MSW の Service Worker の場所・範囲（scope）も同じパスに合わせる
+- GitHub Pages は SPA のルーティングを知らないので、`index.html` を `404.html` にも置き、`/w/:id` などを直接開けるようにする
+- API と WebSocket は Service Worker と MSW が受けるため、外へは通信しない。データはブラウザの localStorage だけに残る
+
 ## テスト
 
 ```bash

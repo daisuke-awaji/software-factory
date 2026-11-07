@@ -6,6 +6,7 @@
     "dev": "VITE_API_MOCK=true vite",
     "build": "tsc -p tsconfig.json && vite build",
     "build:mock": "tsc -p tsconfig.json && VITE_API_MOCK=true vite build --outDir dist-mock",
+    "build:pages": "tsc -p tsconfig.json && VITE_API_MOCK=true vite build --base \"${PAGES_BASE:-/software-factory/}\" --outDir dist-pages && cp dist-pages/index.html dist-pages/404.html",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",

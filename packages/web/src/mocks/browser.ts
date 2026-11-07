@@ -9,7 +9,9 @@ export async function startMockWorker() {
   initMockBackend({ fresh: params.has('mock-reset'), ...(speed ? { speed: Number(speed) } : {}) });
   const worker = setupWorker(...handlers);
   // 画面のファイル（/src/*.tsx など）は MSW を通さずにそのまま取りに行く
-  await worker.start({ quiet: true, onUnhandledFrame: 'bypass' });
+  // GitHub Pages では /<リポジトリ名>/ の下に置くため、ワーカーの場所と範囲をベースのパスに合わせる
+  const base = import.meta.env.BASE_URL;
+  await worker.start({ quiet: true, onUnhandledFrame: 'bypass', serviceWorker: { url: `${base}mockServiceWorker.js`, options: { scope: base } } });
   if (params.has('mock-reset') || speed) {
     params.delete('mock-reset');
     params.delete('mock-speed');

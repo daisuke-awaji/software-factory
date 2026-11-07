@@ -10,6 +10,10 @@ AI コーディングエージェントに、**隔離された作業環境で、
 
 ## 画面を動かす（バックエンドなし）
 
+**デモ: https://daisuke-awaji.github.io/software-factory/** （GitHub Pages。データはブラウザの localStorage にだけ保存されます。`?mock-reset` で最初の状態に戻せます）
+
+手元で動かすときは:
+
 ```bash
 corepack enable && pnpm install
 pnpm --filter @factory/web dev    # http://localhost:5173 を開く（?mock-reset でデータを作り直す）

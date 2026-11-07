@@ -32,7 +32,7 @@ export const routes: RouteObject[] = [
 ];
 
 export function App({ services }: { services: Services }) {
-  const [router] = useState(() => createBrowserRouter(routes));
+  const [router] = useState(() => createBrowserRouter(routes, { basename: import.meta.env.BASE_URL.replace(/\/$/, '') || '/' }));
   return (
     <ServicesProvider value={services}>
       <RouterProvider router={router} />
