@@ -1,4 +1,4 @@
-// 画面の状態（テーマ、右のタブ、通知）。サーバーの状態はここに置かない
+// 画面の状態（テーマ、サイドパネル、右のタブ、通知）。サーバーの状態はここに置かない
 import { create } from 'zustand';
 
 export type Theme = 'light' | 'dark' | 'system';
@@ -8,6 +8,12 @@ export type Toast = { id: number; text: string; tone?: 'ok' | 'err' };
 type UiState = {
   theme: Theme;
   setTheme: (t: Theme) => void;
+  /** 1280px 以上でサイドパネルを広げておくか（保存する）。狭い画面では使わない（06_ui_spec.md §6） */
+  sidebarPinned: boolean;
+  setSidebarPinned: (v: boolean) => void;
+  /** 1280px 未満で、サイドパネルを重ねて開いているか（保存しない。画面を移ると閉じる） */
+  sidebarOverlay: boolean;
+  setSidebarOverlay: (v: boolean) => void;
   /** ワークアイテムごとの右のタブ。manual = ユーザーが自分で選んだ（06_ui_spec.md §3） */
   tabs: Record<string, { tab: Tab; manual: boolean; hint: Tab | null }>;
   autoTab: (workItemId: string, tab: Tab) => void;
@@ -33,6 +39,14 @@ const storedTheme = (): Theme => {
   }
 };
 
+const storedPinned = (): boolean => {
+  try {
+    return localStorage.getItem('sf.sidebar') !== 'collapsed';
+  } catch {
+    return true;
+  }
+};
+
 let toastSeq = 0;
 
 export const useUi = create<UiState>()((set, get) => ({
@@ -47,6 +61,18 @@ export const useUi = create<UiState>()((set, get) => ({
     applyTheme(theme);
     set({ theme });
   },
+  sidebarPinned: storedPinned(),
+  setSidebarPinned: (sidebarPinned) => {
+    try {
+      if (sidebarPinned) localStorage.removeItem('sf.sidebar');
+      else localStorage.setItem('sf.sidebar', 'collapsed');
+    } catch {
+      // 保存できなくても開け閉めはする
+    }
+    set({ sidebarPinned });
+  },
+  sidebarOverlay: false,
+  setSidebarOverlay: (sidebarOverlay) => set({ sidebarOverlay }),
   tabs: {},
   autoTab: (id, tab) => {
     const cur = get().tabs[id];
