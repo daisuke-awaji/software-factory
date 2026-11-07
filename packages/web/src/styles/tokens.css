@@ -36,7 +36,24 @@
   --font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", "Noto Sans CJK JP", sans-serif;
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 
+  /* 狭い画面・タッチの画面（06_ui_spec.md §6） */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  /* タッチの画面で、押せる部品の高さと入力欄の文字の大きさの下限にする（0 = 下限なし） */
+  --tap-min: 0px;
+  --fs-input-min: 0px;
+
   color-scheme: light;
+}
+
+@media (pointer: coarse) {
+  :root {
+    --tap-min: 40px;
+    /* iOS は 16px 未満の入力欄にフォーカスすると拡大する */
+    --fs-input-min: 16px;
+  }
 }
 
 :root[data-theme="dark"] {

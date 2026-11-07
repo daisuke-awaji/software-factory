@@ -14,6 +14,8 @@ body {
 }
 button, input, textarea, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
+button, a, input, select, textarea, summary, [role="tab"] { touch-action: manipulation; }
+body { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--run); outline-offset: 2px; }
 code { font-family: var(--mono); font-size: 0.92em; padding: 1px 5px; border-radius: 6px; background: var(--active); }
@@ -32,6 +34,16 @@ code { font-family: var(--mono); font-size: 0.92em; padding: 1px 5px; border-rad
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes blink { 50% { opacity: 0; } }
+
+/* タッチの画面では、AffectUI の小さいボタンも指で押せる高さにする（部品のファイルは変えない: ADR-0008） */
+@media (pointer: coarse) {
+  :root .ui-button[data-size="sm"] { --h: max(32px, var(--tap-min)); }
+  :root .ui-seg[data-size="sm"] { --ui-seg-h: 34px; --ui-seg-fs: 13.5px; }
+  :is(input, textarea).mono { font-size: max(12.5px, var(--fs-input-min)); }
+  :root .ui-ma__input { height: 36px; font-size: max(12.5px, var(--fs-input-min)); }
+  :root .ui-ma__chip, :root .ui-ma__send { height: 32px; }
+  input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
