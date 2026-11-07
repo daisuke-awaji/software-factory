@@ -1,5 +1,5 @@
 // 会話の入力欄（FR-UI-07: 追加の指示と中断。FR-UI-03: 添付）
-import type { WorkItemState } from '@factory/contracts';
+import type { TaskState } from '@factory/contracts';
 import { useId, useRef, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { IconButton } from '../../components/kit';
@@ -15,7 +15,7 @@ type Attached = { key: string; name: string; path?: string; error?: string };
 export function Composer({
   state, pending, onSend, onInterrupt, upload,
 }: {
-  state: WorkItemState | null;
+  state: TaskState | null;
   pending: Pending | null;
   onSend: (text: string, attachments: string[]) => Promise<void>;
   onInterrupt: () => Promise<void>;
@@ -36,7 +36,7 @@ export function Composer({
     : pending?.kind === 'approval' ? '質問や補足を書く…（承認への回答は上のカードで）'
     : running ? '指示を追加する…（次の手順から反映します）'
     : state === 'suspended' ? '指示を送ると、続きから再開します…'
-    : state === 'completed' ? '続けて依頼する…'
+    : state === 'completed' ? '続けて指示する…'
     : 'メッセージを書く…';
 
   const send = async () => {

@@ -27,7 +27,7 @@ PAGES_BASE=/software-factory/ pnpm --filter @factory/web build:pages   # dist-pa
 ```
 
 - `vite build --base` でベースのパスを付け、React Router の `basename` と MSW の Service Worker の場所・範囲（scope）も同じパスに合わせる
-- GitHub Pages は SPA のルーティングを知らないので、`index.html` を `404.html` にも置き、`/w/:id` などを直接開けるようにする
+- GitHub Pages は SPA のルーティングを知らないので、`index.html` を `404.html` にも置き、`/t/:id` などを直接開けるようにする
 - API と WebSocket は Service Worker と MSW が受けるため、外へは通信しない。データはブラウザの localStorage だけに残る
 
 ## テスト
@@ -51,13 +51,13 @@ src/
 ├─ lib/
 │  ├─ api.ts             # 型付きの API クライアント（応答は必ず contracts で検証する）
 │  ├─ events.ts          # WebSocket の受信。再接続したら GET /events?after= で取りこぼしを埋める
-│  └─ session.ts         # イベントを畳み込む純粋な関数（会話・計画・承認・ステージ・ツール）
-├─ stores/               # Zustand: 画面の状態（テーマ・タブ・通知）と、開いている依頼のセッションだけ
+│  └─ session.ts         # イベントを畳み込む純粋な関数（会話・計画・承認・ステップ・ツール）
+├─ stores/               # Zustand: 画面の状態（テーマ・タブ・通知）と、開いているタスクのセッションだけ
 ├─ components/
 │  ├─ ui/                # AffectUI の無料の部品（取り込んで持つ: ADR-0008）
 │  ├─ kit.tsx            # アプリの小さな部品（タグ・ダイアログ・メニュー・フォーム）
-│  └─ StageLine.tsx      # ラインの進み具合
-├─ features/             # 画面ごと（home / workitem / publications / images / lines / admin / settings）
+│  └─ StepProgress.tsx   # ワークフローの進み具合
+├─ features/             # 画面ごと（home / tasks / task / publications / images / workflows / admin / settings）
 ├─ mocks/                # MSW のハンドラー・インメモリの DB・シミュレーター・シード
 └─ styles/               # デザイントークン（tokens.css）とリセット（global.css）
 ```

@@ -13,10 +13,10 @@
 |---|---|---|
 | P1 | **統制はエージェントが回避できない境界で行う** | ネットワークは subnet、SG、プロキシで、権限は IAM で、Git はゲートウェイとブランチ保護で、公開はユーザーの操作で縛る。プロンプトへの指示には頼らない |
 | P2 | **VM は使い捨てにし、状態は外に置く** | 会話、計画、成果物、コードは VM の外（DynamoDB / S3 / Git）に置く。VM が消えたり8時間の上限に達したりしても、別の VM で再開できる |
-| P3 | **1ステージに1台の VM** | ステージごとにイメージ、ネットワーク、権限を変えられる。ステージをまたいで状態は共有しない（受け渡しは明示的に行う） |
+| P3 | **1ステップに1台の VM** | ステップごとにイメージ、ネットワーク、権限を変えられる。ステップをまたいで状態は共有しない（受け渡しは明示的に行う） |
 | P4 | **VM には価値の高い秘密情報を置かない** | VM の中にあるのは、Bedrock を呼ぶための短期クレデンシャル（execution role）と、外では使えない VM 識別トークンだけにする |
 | P5 | **常時稼働のサーバーを最小限にする** | 常時稼働するのは、egress プロキシとプレビュープロキシ（Fargate）だけにする。ほかは Lambda、DynamoDB、S3 などのサーバーレスで組む |
-| P6 | **イメージとラインはコードで定義する** | どちらも宣言的な定義からビルド・登録する。バージョンは変更不可にし、ステージからは固定して参照する |
+| P6 | **イメージとワークフローはコードで定義する** | どちらも宣言的な定義からビルド・登録する。バージョンは変更不可にし、ステップからは固定して参照する |
 
 ---
 
@@ -46,13 +46,13 @@
 
 | # | コンポーネント | 主な AWS サービス | 責務 |
 |---|---|---|---|
-| C1 | Web アプリ（SPA） | S3 + CloudFront(App)。**React + Vite + Zustand + Zod**（開発とテストでは MSW でモック） | チャット、計画の承認、ステージの進捗、ファイル、差分、プレビューの埋め込み、公開、イメージやラインの管理画面 |
+| C1 | Web アプリ（SPA） | S3 + CloudFront(App)。**React + Vite + Zustand + Zod**（開発とテストでは MSW でモック） | チャット、計画の承認、ステップの進捗、ファイル、差分、プレビューの埋め込み、公開、イメージやワークフローの管理画面 |
 | C2 | 認証 | Cognito User Pool（企業 IdP と SAML / OIDC で連携）。IdP のグループを `cognito:groups` に取り込む | SSO、User / Admin のロール、公開範囲で使うグループ |
 | C3 | API | API Gateway HTTP API（REST。**Hono on Lambda**）+ WebSocket API（UI にイベントを push する） | 認可、入力の検証、ドメインサービスの呼び出し |
-| C4 | ドメインサービス | Lambda（TypeScript / **Hono**）。1つの Hono アプリを機能ごとのルートに分ける（モジュラーモノリス） | Session / WorkItem、Plan / Approval、Repo（GitHub App）、Publish、Image カタログ、Admin |
-| C5 | **ライン実行エンジン** | **Lambda durable functions**（ワークアイテムごとに1つの durable execution。D18） | ライン定義を解釈し、ステージを順に実行する。VM を起動し、完了や承認を `waitForCallback` で待つ。遷移とリトライを扱う |
+| C4 | ドメインサービス | Lambda（TypeScript / **Hono**）。1つの Hono アプリを機能ごとのルートに分ける（モジュラーモノリス） | Session / Task、Plan / Approval、Repo（GitHub App）、Publish、Image カタログ、Admin |
+| C5 | **ワークフロー実行エンジン** | **Lambda durable functions**（タスクごとに1つの durable execution。D18） | ワークフロー定義を解釈し、ステップを順に実行する。VM を起動し、完了や承認を `waitForCallback` で待つ。遷移とリトライを扱う |
 | C6 | **VM マネージャー** | Lambda + DynamoDB（セマフォ、トークンバケット） | 受付制御（メモリの予算、エージェントの同時実行数）、API のレート制御、Run / Suspend / Resume / Terminate、認証トークンの発行とキャッシュ、keepalive |
-| C7 | Agent Callback API | API Gateway（プライベート REST API。execute-api VPC エンドポイント経由でのみ到達できる）+ Lambda（Hono） | VM からのイベント（進捗、計画、メッセージ、使用量、ステージの完了、チェックポイント）を受け取る。VM トークンで認証する |
+| C7 | Agent Callback API | API Gateway（プライベート REST API。execute-api VPC エンドポイント経由でのみ到達できる）+ Lambda（Hono） | VM からのイベント（進捗、計画、メッセージ、使用量、ステップの完了、チェックポイント）を受け取る。VM トークンで認証する |
 | C8 | **イメージビルダー** | durable function + S3 + `CreateMicrovmImage` | イメージ定義の検証 → Dockerfile の合成 → ビルド → 検証 → カタログへの登録 |
 | C9 | **egress プロキシ** | ECS Fargate（2台以上、マルチ AZ）、NLB | CONNECT と HTTP のプロキシ。VM トークンからネットワークプロファイルを引いて allowlist を判定する。拒否した通信をログに残す |
 | C10 | **Git ゲートウェイ** | ECS Fargate | Git の smart HTTP をリバースプロキシする。ユーザーの GitHub トークンを付け加え、保護ブランチや既定ブランチの ref 更新を拒否する |
@@ -63,41 +63,41 @@
 
 ---
 
-## 3. ファクトリーラインとステージ VM（D15）
+## 3. ワークフローとステップ VM（D15）
 
 ### 3.1 概念モデル
 ```mermaid
 erDiagram
-  LINE ||--|{ STAGE_DEF : "stages"
-  STAGE_DEF }o--|| IMAGE_VERSION : "image@version"
-  STAGE_DEF }o--|| NETWORK_PROFILE : "network"
-  STAGE_DEF }o--|| ROLE_PROFILE : "iam"
-  WORK_ITEM }o--|| LINE : "line@version"
-  WORK_ITEM ||--|{ STAGE_RUN : "runs"
-  STAGE_RUN ||--o{ VM_INSTANCE : "vm（8時間を超えると複数）"
-  STAGE_RUN ||--o{ ARTIFACT : "outputs"
-  WORK_ITEM ||--o{ APPROVAL : "gates"
+  WORKFLOW ||--|{ STEP_DEF : "steps"
+  STEP_DEF }o--|| IMAGE_VERSION : "image@version"
+  STEP_DEF }o--|| NETWORK_PROFILE : "network"
+  STEP_DEF }o--|| ROLE_PROFILE : "iam"
+  TASK }o--|| WORKFLOW : "workflow@version"
+  TASK ||--|{ STEP_RUN : "runs"
+  STEP_RUN ||--o{ VM_INSTANCE : "vm（8時間を超えると複数）"
+  STEP_RUN ||--o{ ARTIFACT : "outputs"
+  TASK ||--o{ APPROVAL : "gates"
 ```
-- **Line**: ステージを順につないだ定義。バージョンは変更不可。管理者が登録する（MVP）
-- **WorkItem**: ラインを流れる1件の作業。チャットのセッションも WorkItem の一つ
-- **StageRun**: ステージの1回の実行。担当する VM が1台以上ある（8時間を超えたら新しい VM に引き継ぐ）
+- **Workflow**: ステップを順につないだ定義。バージョンは変更不可。管理者が登録する（MVP）
+- **Task**: ワークフローを流れる1件の作業。チャットのセッションも Task の一つ
+- **StepRun**: ステップの1回の実行。担当する VM が1台以上ある（8時間を超えたら新しい VM に引き継ぐ）
 
-### 3.2 ライン定義（例: `build-verify`）
+### 3.2 ワークフロー定義（例: `build-verify`）
 ```yaml
 apiVersion: factory/v1
-kind: Line
+kind: Workflow
 metadata: { name: build-verify, version: 3 }
 spec:
   defaults:
     harness: { type: claude-code, model: jp.anthropic.claude-sonnet }   # 実際のモデルIDは設定ファイルで解決する
     network: org-baseline
     role: bedrock-only
-  stages:
+  steps:
     - id: implement
       type: agent
       image: web@5                # Node + Chromium。VM のサイズ（2GB）はイメージで決まる
       instructions: skills/implement.md
-      gates: [plan-approval]      # ステージ内で計画の承認を求める
+      gates: [plan-approval]      # ステップ内で計画の承認を求める
       inputs:  [request, repo]
       outputs: [branch, summary]
       timeout: 6h
@@ -124,100 +124,100 @@ spec:
       action: create-pull-request
 ```
 - `type`: `agent`（VM 上のエージェント）/ `command`（VM 上で決まったコマンドを実行する。LLM は使わない）/ `approval`（人の承認を待つ）/ `system`（コントロールプレーン側の処理）
-- 標準のラインは2つ（FR-LINE-04 / 05）
-  - `chat`: `workbench`（1ステージ。対話しながら作業する VM。計画の承認はステージの中で行う）→ `deliver`（任意）
+- 標準のワークフローは2つ（FR-LINE-04 / 05）
+  - `chat`: `workbench`（1ステップ。対話しながら作業する VM。計画の承認はステップの中で行う）→ `deliver`（任意）
   - `build-verify`: 上の例
 
 ### 3.3 実行エンジン（Lambda durable functions。D18）
-1件の WorkItem につき1つの durable execution を動かす。待機中は料金がかからず、最大1年まで待てる。上限は `durableConfig.executionTimeout` で決め、初期値は30日とする。
+1件の Task につき1つの durable execution を動かす。待機中は料金がかからず、最大1年まで待てる。上限は `durableConfig.executionTimeout` で決め、初期値は30日とする。
 
 ```ts
 // packages/engine/src/handler.ts（骨子。SDK: @aws/durable-execution-sdk-js v3。strict の tsc で型を確認済み）
 import { withDurableExecution, type DurableContext } from '@aws/durable-execution-sdk-js';
-import type { Line, StageDef, StageResult, WorkItem } from '@factory/contracts';
-import { findStage, nextStage } from './transition.js';
+import type { Workflow, StepDef, StepResult, Task } from '@factory/contracts';
+import { findStep, nextStep } from './transition.js';
 import { approvals, repo, systemActions, vmManager } from './ports.js';
 
-export const handler = withDurableExecution(async (event: { workItemId: string }, ctx: DurableContext) => {
-  const wi: WorkItem = await ctx.step('load-work-item', async () => repo.loadWorkItem(event.workItemId));
-  const line: Line = await ctx.step('load-line', async () => repo.loadLine(wi.lineRef));
+export const handler = withDurableExecution(async (event: { taskId: string }, ctx: DurableContext) => {
+  const task: Task = await ctx.step('load-task', async () => repo.loadTask(event.taskId));
+  const workflow: Workflow = await ctx.step('load-workflow', async () => repo.loadWorkflow(task.workflowRef));
   const loops: Record<string, number> = {};
-  let stageId: string | undefined = line.stages[0]?.id;
+  let stepId: string | undefined = workflow.steps[0]?.id;
   let seq = 0;
 
-  while (stageId) {
-    const stage: StageDef = findStage(line, stageId);
-    const runId = `${stageId}#${++seq}`; // replay で先頭から再実行されても同じ値になる
-    let result: StageResult;
+  while (stepId) {
+    const step: StepDef = findStep(workflow, stepId);
+    const runId = `${stepId}#${++seq}`; // replay で先頭から再実行されても同じ値になる
+    let result: StepResult;
 
-    if (stage.type === 'approval') {
-      result = await ctx.waitForCallback<StageResult>(
+    if (step.type === 'approval') {
+      result = await ctx.waitForCallback<StepResult>(
         `approve:${runId}`,
-        async (callbackId) => { await approvals.request(wi, stage, callbackId); },
+        async (callbackId) => { await approvals.request(task, step, callbackId); },
         { timeout: { days: 7 } },
       );
-    } else if (stage.type === 'system') {
-      const action = stage.action;
-      if (!action) throw new Error(`stage ${stage.id}: type=system には action が必要`); // 本来はライン登録時の検証で弾く
-      result = await ctx.step(`system:${runId}`, async () => systemActions[action](wi));
+    } else if (step.type === 'system') {
+      const action = step.action;
+      if (!action) throw new Error(`step ${step.id}: type=system には action が必要`); // 本来はワークフロー登録時の検証で弾く
+      result = await ctx.step(`system:${runId}`, async () => systemActions[action](task));
     } else {
       // agent / command: 受付制御 → RunMicrovm → 完了の callback を待つ
-      const lease = await ctx.step(`lease:${runId}`, async () => vmManager.acquire(wi, stage, runId));
-      result = await ctx.waitForCallback<StageResult>(
+      const lease = await ctx.step(`lease:${runId}`, async () => vmManager.acquire(task, step, runId));
+      result = await ctx.waitForCallback<StepResult>(
         `done:${runId}`,
-        async (callbackId) => { await vmManager.run(lease, { stage, runId, callbackId }); },
-        { timeout: { hours: stage.timeoutHours }, heartbeatTimeout: { minutes: 15 } },
+        async (callbackId) => { await vmManager.run(lease, { step, runId, callbackId }); },
+        { timeout: { hours: step.timeoutHours }, heartbeatTimeout: { minutes: 15 } },
       );
-      await ctx.step(`release:${runId}`, async () => vmManager.release(lease, stage.keepVm));
+      await ctx.step(`release:${runId}`, async () => vmManager.release(lease, step.keepVm));
     }
 
-    await ctx.step(`record:${runId}`, async () => repo.saveStageResult(wi.id, runId, result));
-    stageId = nextStage(stage, result, loops); // pass / fail / goto（maxLoops を超えたら undefined を返し、ワークアイテムを失敗にする）
+    await ctx.step(`record:${runId}`, async () => repo.saveStepResult(task.id, runId, result));
+    stepId = nextStep(step, result, loops); // pass / fail / goto（maxLoops を超えたら undefined を返し、タスクを失敗にする）
   }
 });
 ```
 - **処理を決定的に書く**: replay では関数が先頭から再実行される。そのため、乱数・現在時刻・外部とのやり取り（I/O）は必ず `ctx.step` の中で扱う
-- **冪等にする**: `RunMicrovm` には `clientToken = ${workItemId}:${runId}` を渡す。step が再試行されても、VM が二重に起動しないようにするため
-- **heartbeat**: agentd は Callback API 経由で5分ごとに heartbeat を送る（Callback API が `SendDurableExecutionCallbackHeartbeat` を呼ぶ）。15分途切れると callback が失敗するので、エンジンはそのステージをチェックポイントから再試行する
-- **完了の通知**: Callback API が `SendDurableExecutionCallbackSuccess` または `SendDurableExecutionCallbackFailure` を呼ぶ。そのために callbackId を `StageRuns` に保存しておく
+- **冪等にする**: `RunMicrovm` には `clientToken = ${taskId}:${runId}` を渡す。step が再試行されても、VM が二重に起動しないようにするため
+- **heartbeat**: agentd は Callback API 経由で5分ごとに heartbeat を送る（Callback API が `SendDurableExecutionCallbackHeartbeat` を呼ぶ）。15分途切れると callback が失敗するので、エンジンはそのステップをチェックポイントから再試行する
+- **完了の通知**: Callback API が `SendDurableExecutionCallbackSuccess` または `SendDurableExecutionCallbackFailure` を呼ぶ。そのために callbackId を `StepRuns` に保存しておく
 - **中断・やり直し**（FR-LINE-08）: 管理 API が `SendDurableExecutionCallbackFailure` を送る（理由として cancel または retry を付ける）
 - Durable Functions を選んだ理由は [ADR-0003](./adr/0003-line-engine-durable-functions.md) を参照
 
-### 3.4 ステージ VM のライフサイクル
+### 3.4 ステップ VM のライフサイクル
 ```mermaid
 sequenceDiagram
   autonumber
   participant ENG as 実行エンジン
   participant MGR as VM マネージャー
   participant MV as Lambda MicroVMs
-  participant VM as Stage VM (agentd)
+  participant VM as Step VM (agentd)
   participant CBK as Callback API
-  ENG->>MGR: acquire(stage)
+  ENG->>MGR: acquire(step)
   MGR->>MGR: 受付制御（メモリの予算 / エージェント数 / RunMicrovm のトークンバケット）
   ENG->>MGR: run(lease, inputs, callbackId)
-  MGR->>MGR: VM トークンを発行（ワークアイテムとステージに紐づけ、ネットワークプロファイルと対応づける）
+  MGR->>MGR: VM トークンを発行（タスクとステップに紐づけ、ネットワークプロファイルと対応づける）
   MGR->>MV: RunMicrovm(image@ver, egress=[LNC:runtime], ingress=HTTP, executionRole, idlePolicy, maxDuration=8h, runHookPayload)
-  MV->>VM: /run（payload: VM トークン、callback URL、入力のマニフェスト（presigned URL）、ステージの定義）
+  MV->>VM: /run（payload: VM トークン、callback URL、入力のマニフェスト（presigned URL）、ステップの定義）
   VM->>VM: プロキシ / パッケージソースの設定を生成 → 入力を取得（git bundle / 成果物）→ ハーネスを起動
   VM-->>CBK: events（進捗、計画、メッセージ、使用量）
-  Note over VM: 計画の承認が要るステージでは、ここで計画を提示し、承認を待つ（ステージの中で）
-  VM-->>CBK: stage.completed（出力のマニフェスト）
+  Note over VM: 計画の承認が要るステップでは、ここで計画を提示し、承認を待つ（ステップの中で）
+  VM-->>CBK: step.completed（出力のマニフェスト）
   CBK->>ENG: SendDurableExecutionCallbackSuccess(callbackId, result)
   ENG->>MGR: release → TerminateMicrovm（keepVm の指定がなければ）
 ```
 
-### 3.5 ステージ間の受け渡し（FR-LINE-03）
+### 3.5 ステップ間の受け渡し（FR-LINE-03）
 | 種類 | 方式 | 理由 |
 |---|---|---|
-| コード | ステージを終えるときに、作業ブランチを Git ゲートウェイ経由で push する。新規のワークスペースのように GitHub がない場合は、`git bundle` を成果物ストアに置く | 履歴と差分を損なわずに渡せる。検証ステージは、クリーンな状態から checkout できる |
-| 成果物 | 成果物ストア `s3://…/workitems/{wi}/stages/{stage}/outputs/…` | テスト結果、スクリーンショット、レポートなど |
-| 引き継ぎ記録 | DynamoDB `StageRun.result`（JSON: verdict、summary、outputs のマニフェスト、次のステージへのメモ） | 次のステージに渡す指示の材料にする。UI にも表示する |
+| コード | ステップを終えるときに、作業ブランチを Git ゲートウェイ経由で push する。新規のワークスペースのように GitHub がない場合は、`git bundle` を成果物ストアに置く | 履歴と差分を損なわずに渡せる。検証ステップは、クリーンな状態から checkout できる |
+| 成果物 | 成果物ストア `s3://…/tasks/{task}/steps/{step}/outputs/…` | テスト結果、スクリーンショット、レポートなど |
+| 引き継ぎ記録 | DynamoDB `StepRun.result`（JSON: verdict、summary、outputs のマニフェスト、次のステップへのメモ） | 次のステップに渡す指示の材料にする。UI にも表示する |
 
-VM は S3 への IAM 権限を**持たない**。入力と出力は、コントロールプレーンが発行する、そのワークアイテムとステージに限定した presigned URL でだけやり取りする（P4、ワークアイテム間の分離）。
+VM は S3 への IAM 権限を**持たない**。入力と出力は、コントロールプレーンが発行する、そのタスクとステップに限定した presigned URL でだけやり取りする（P4、タスク間の分離）。
 
-### 3.6 chat ライン（workbench）の特徴
+### 3.6 chat ワークフロー（workbench）の特徴
 - ユーザーとの対話が続くあいだ、VM は同じものを使い続ける。UI → API → VM マネージャー → VM のエンドポイント（`POST /v1/messages`）の順に届く
-- 計画の承認はステージの中で行う。agentd が `plan.proposed` を送り、UI で承認されると `POST /v1/plan/approve` を受けて実行を始める
+- 計画の承認はステップの中で行う。agentd が `plan.proposed` を送り、UI で承認されると `POST /v1/plan/approve` を受けて実行を始める
 - 作業を終えたら、`deliver`（PR の作成、または公開の提案）に進むか、そのままセッションを続ける
 
 ### 3.7 suspend / resume と keepalive
@@ -284,7 +284,7 @@ interface Harness {
 - `HTTPS_PROXY` / `HTTP_PROXY` = `http://vm:{vmToken}@egress-proxy.internal:3128`、`NO_PROXY` = VPC エンドポイント（Bedrock、Callback API、S3）
 - git: `url."https://git-gw.internal/{owner}/".insteadOf "https://github.com/{owner}/"`。ゲートウェイへの認証にも vmToken を使う
 - パッケージソース: プロファイル（§6.4）から `.npmrc`、`pip.conf`、`settings.xml` などを生成する
-- **vmToken は snapshot に含めない**（`/run` のときに受け取ってメモリと tmpfs にだけ置く）。トークンは VPC の中でしか使えず、そのワークアイテムのステージが終わると失効する
+- **vmToken は snapshot に含めない**（`/run` のときに受け取ってメモリと tmpfs にだけ置く）。トークンは VPC の中でしか使えず、そのタスクのステップが終わると失効する
 
 ---
 
@@ -357,11 +357,11 @@ sequenceDiagram
 - **VM のサイズはイメージで決まる**（`resources.minimumMemoryInMiB`。`RunMicrovm` では指定できない）。同じ中身でサイズだけが違う場合は、別のイメージとして登録する（例: `web` と `web-4g`）
 - クォータへの対応（イメージ100個 / 1イメージあたり50バージョン / 同時ビルド10）
   - 1ユーザーが持てるのは5イメージまで（MVP。10人なら50個で収まる）。100人に増やす前にイメージ数のクォータの引き上げを申請する
-  - バージョンは「最新の5つ + ステージから参照されているもの」を残し、それ以外は90日で自動的に削除する（イメージの保存には最低1週間分の料金がかかる点も考慮する）
-- `factory-base` を更新したとき（セキュリティパッチなど）: そのベースを使うカスタムイメージを自動で再ビルドし、新しいバージョンとして登録する。ラインのステージはバージョンを固定しているので勝手には変わらず、オーナーに更新を勧める通知を送る（S）
+  - バージョンは「最新の5つ + ステップから参照されているもの」を残し、それ以外は90日で自動的に削除する（イメージの保存には最低1週間分の料金がかかる点も考慮する）
+- `factory-base` を更新したとき（セキュリティパッチなど）: そのベースを使うカスタムイメージを自動で再ビルドし、新しいバージョンとして登録する。ワークフローのステップはバージョンを固定しているので勝手には変わらず、オーナーに更新を勧める通知を送る（S）
 
 ### 5.5 既定のイメージ（FR-IMG-01）
-| 名前 | 中身 | 想定するステージ |
+| 名前 | 中身 | 想定するステップ |
 |---|---|---|
 | `base` | factory-base（git、Claude Code、Node LTS、Python 3.12、jq、ripgrep） | review、軽い作業 |
 | `web` | base + pnpm / yarn、Chromium（ヘッドレス）、Playwright | workbench（Web アプリやプレビュー）、verify |
@@ -374,7 +374,7 @@ sequenceDiagram
 ### 6.1 VPC の構成（東京、2AZ）
 | subnet | 用途 | ルート | SG（egress） |
 |---|---|---|---|
-| `mvm-runtime-a/c` | LNC:runtime（ステージ VM） | **0.0.0.0/0 へのルートなし** | `sg-mvm-runtime`: egress プロキシの NLB:3128、Git ゲートウェイの NLB:443、VPC エンドポイント:443 **だけ** |
+| `mvm-runtime-a/c` | LNC:runtime（ステップ VM） | **0.0.0.0/0 へのルートなし** | `sg-mvm-runtime`: egress プロキシの NLB:3128、Git ゲートウェイの NLB:443、VPC エンドポイント:443 **だけ** |
 | `mvm-build-a/c` | LNC:build（イメージのビルド） | ルートなし | `sg-mvm-build`: egress プロキシの NLB:3129（ビルド用ポート）だけ |
 | `proxy-a/c` | egress プロキシ、Git ゲートウェイ、プレビュープロキシ（Fargate）、NLB、内部 ALB | NAT へ | 必要最小限 |
 | `public-a/c` | NAT Gateway | IGW へ | — |
@@ -386,8 +386,8 @@ sequenceDiagram
 
 ### 6.2 egress プロキシ（C9）
 - 方式: 明示的な forward プロキシ（`CONNECT`、`HTTP`）。**TLS は終端しない**。宛先は CONNECT の宛先と SNI が一致することを確かめてから、FQDN で判定する
-- 認証: `Proxy-Authorization`（vmToken）→ DynamoDB（DAX かメモリ上の TTL キャッシュ）で `VmToken → {workItemId, stageId, networkProfileId, expiresAt}` を引く
-- 判定: L0（システム必須）∪ プロファイル（L1 組織全体 + L2 プロジェクト + ステージのプロファイル + L3 の一時許可）で決める。拒否したときは 403 を返し、本文に `X-Factory-Blocked: <fqdn>` の印を付ける。agentd はこれを見つけて、エージェントに「この宛先はブロックされた。許可が必要なら申請を提案して」と伝える（FR-PLAN-04 の②）
+- 認証: `Proxy-Authorization`（vmToken）→ DynamoDB（DAX かメモリ上の TTL キャッシュ）で `VmToken → {taskId, stepId, networkProfileId, expiresAt}` を引く
+- 判定: L0（システム必須）∪ プロファイル（L1 組織全体 + L2 プロジェクト + ステップのプロファイル + L3 の一時許可）で決める。拒否したときは 403 を返し、本文に `X-Factory-Blocked: <fqdn>` の印を付ける。agentd はこれを見つけて、エージェントに「この宛先はブロックされた。許可が必要なら申請を提案して」と伝える（FR-PLAN-04 の②）
 - ビルド用のポート（3129）: ビルド用の subnet から来た通信だけを受け付け、`build` プロファイルで判定する（ビルド VM には vmToken がないため、subnet で見分ける）
 - 実装: **TypeScript（Node.js 24）で書いた軽量のプロキシ**（`node:http` の `connect` イベントと `node:net` で実装する）を ECS Fargate で動かす（ARM、0.5vCPU × 2台から始める）。言語をモノレポ全体で揃えるため（D19）。性能が足りない場合の代わりの案は Squid と external_acl_type
 - ログ: 許可と拒否を JSON で CloudWatch Logs に出し、Firehose で S3 の監査ログに送る
@@ -395,11 +395,11 @@ sequenceDiagram
 ### 6.3 Git ゲートウェイ（C10）
 - VM の git は `https://git-gw.internal/{owner}/{repo}.git` を remote として使う（insteadOf）
 - ゲートウェイの処理
-  1. vmToken を確かめ、ワークアイテム → 依頼者 → **その人の GitHub user-to-server トークン**（Secrets Manager に暗号化して保存し、有効期限が切れる前に更新する）を引く
-  2. 対象のリポジトリが、そのワークアイテムの計画で許可したリポジトリかどうかを確かめる
+  1. vmToken を確かめ、タスク → 作成者 → **その人の GitHub user-to-server トークン**（Secrets Manager に暗号化して保存し、有効期限が切れる前に更新する）を引く
+  2. 対象のリポジトリが、そのタスクの計画で許可したリポジトリかどうかを確かめる
   3. `git-receive-pack`（push）の場合は、ref の更新内容を読み、`refs/heads/factory/*` 以外への更新を**拒否する**（既定ブランチと保護ブランチへの push を防ぐ）。GitHub 側のブランチ保護と合わせて二重に守る
   4. GitHub に転送する（Authorization ヘッダーはゲートウェイが付ける）
-- **PR の作成、Issue へのコメント、ラベル付けはコントロールプレーンが GitHub API で行う**。VM の中のエージェントには GitHub API を使わせない（`deliver` ステージの役割）
+- **PR の作成、Issue へのコメント、ラベル付けはコントロールプレーンが GitHub API で行う**。VM の中のエージェントには GitHub API を使わせない（`deliver` ステップの役割）
 - 読み取り専用で GitHub API を使いたい場合（Issue の本文、PR のコメント）は、コントロールプレーンが入力のマニフェストに入れて渡す
 
 ### 6.4 ネットワークプロファイルとパッケージソース
@@ -451,9 +451,9 @@ sequenceDiagram
   participant CFP as CloudFront(Preview)
   participant PVP as プレビュープロキシ
   participant MGR as VM マネージャー
-  participant VM as Stage VM
-  U->>API: POST /previews {workItemId, port:3000}
-  API->>API: 本人のワークアイテムであることを確認 → 一回限りのチケット（60秒、署名付き）を発行
+  participant VM as Step VM
+  U->>API: POST /previews {taskId, port:3000}
+  API->>API: 本人のタスクであることを確認 → 一回限りのチケット（60秒、署名付き）を発行
   API-->>U: https://yyyy.cloudfront.net/__open?t=<ticket>
   U->>CFP: iframe か新しいタブで開く
   CFP->>PVP: /__open?t=...
@@ -487,8 +487,8 @@ sequenceDiagram
 
 | ロール | 使う主体 | 主な権限 |
 |---|---|---|
-| `MicrovmExecRole-bedrock-only`（既定） | ステージ VM | `bedrock:InvokeModel*` / `Converse*`（JP の推論プロファイルと、それが参照する基盤モデルだけ）。**S3、Secrets、その他は許可しない** |
-| `MicrovmExecRole-<profile>` | ステージ VM（role プロファイル） | 既定のロールに、ステージに必要な最小限の読み取り権限を加える（例: 特定のテーブルの読み取り）。管理者が定義する |
+| `MicrovmExecRole-bedrock-only`（既定） | ステップ VM | `bedrock:InvokeModel*` / `Converse*`（JP の推論プロファイルと、それが参照する基盤モデルだけ）。**S3、Secrets、その他は許可しない** |
+| `MicrovmExecRole-<profile>` | ステップ VM（role プロファイル） | 既定のロールに、ステップに必要な最小限の読み取り権限を加える（例: 特定のテーブルの読み取り）。管理者が定義する |
 | `MicrovmBuildRole` | イメージのビルド | ビルド用の S3 プレフィックスの読み取り、ログの書き込み |
 | `NetworkConnectorOperatorRole` | LNC | `ec2:CreateNetworkInterface` など（ドキュメントのとおり） |
 | `VmManagerRole` | VM マネージャー | `lambda-microvms:RunMicrovm / Suspend / Resume / Terminate / Get / CreateMicrovmAuthToken`、`iam:PassRole`（上の execution role に限る） |
@@ -497,7 +497,7 @@ sequenceDiagram
 | `EgressProxyTaskRole` | egress プロキシ | VmToken テーブルと NetworkProfile テーブルの読み取り |
 | `PublishEdgeRole` | Lambda@Edge | ACL のレプリカの読み取り |
 
-- execution role は、MVP ではプロファイル単位で共有する（ワークアイテムごとには作らない）。ワークアイテム間の分離は、S3 に IAM 権限を渡さず presigned URL を使うことと、vmToken のスコープで実現する
+- execution role は、MVP ではプロファイル単位で共有する（タスクごとには作らない）。タスク間の分離は、S3 に IAM 権限を渡さず presigned URL を使うことと、vmToken のスコープで実現する
 - GitHub App の private key と、ユーザーごとのトークンは Secrets Manager（KMS の CMK）で管理する
 
 ### 8.1 脅威と対策
@@ -508,7 +508,7 @@ sequenceDiagram
 | 保護ブランチの改ざん | エージェントや LoB ユーザーが main に直接 push する | Git ゲートウェイが ref を検査し、GitHub のブランチ保護とあわせて二重に防ぐ。マージは人が行う |
 | 悪意のあるカスタムイメージ | ビルドの中で外部に送信する、agentd を書き換える | ビルドの allowlist、secret を渡さない、L3 での再設定、`/validate`、VM の隔離（影響はその VM だけに留まる） |
 | プレビューや公開物による XSS / CSRF | 生成した HTML が App の API を呼ぶ | 3つのオリジンに分離、CSP の sandbox、App は cookie で認証しない（JWT をメモリに保持） |
-| ワークアイテム間の情報漏えい | 他人のワークアイテムの成果物を読む | 1ステージ1VM、presigned URL のスコープ、vmToken のスコープ、プレビューのチケットを本人に限る |
+| タスク間の情報漏えい | 他人のタスクの成果物を読む | 1ステップ1VM、presigned URL のスコープ、vmToken のスコープ、プレビューのチケットを本人に限る |
 | コストの暴走 | 無限ループ、大量の VM 起動 | セッションの予算、ループの上限（maxLoops）、受付制御、VM の最大時間 |
 
 ---
@@ -519,14 +519,14 @@ sequenceDiagram
 |---|---|---|---|
 | `Users` | `USER#id` | email、groups、githubLinked、limits | |
 | `Projects` | `PROJ#id` / `MEMBER#user` | repos[]、networkProfile、roleProfiles | |
-| `WorkItems` | `WI#id` | owner、project、lineRef、state、currentStage、budget、usage、durableExecutionArn | GSI: owner と更新日時 |
-| `StageRuns` | `WI#id` / `STAGE#seq#stageId` | state、vmIds[]、callbackId、result、loops | |
-| `Events` | `WI#id` / `TS#ulid` | type（message / tool / plan / usage / log）、payload | TTL。Streams → WebSocket で配信 |
-| `Plans` / `Approvals` | `WI#id` / `PLAN#n` | content、status、approver、approvedAt | 監査ログにも書く |
-| `Vms` | `VM#id` | wi、stage、image@ver、state、memMiB、startedAt、endpoint、tokenCache | GSI: state（クォータの集計用） |
-| `VmTokens` | `TOK#hash` | vmId、wi、stage、networkProfile、expiresAt | TTL。プロキシとゲートウェイが参照する |
+| `Tasks` | `TASK#id` | owner、project、workflowRef、state、currentStep、budget、usage、durableExecutionArn | GSI: owner と更新日時 |
+| `StepRuns` | `TASK#id` / `STEP#seq#stepId` | state、vmIds[]、callbackId、result、loops | |
+| `Events` | `TASK#id` / `TS#ulid` | type（message / tool / plan / usage / log）、payload | TTL。Streams → WebSocket で配信 |
+| `Plans` / `Approvals` | `TASK#id` / `PLAN#n` | content、status、approver、approvedAt | 監査ログにも書く |
+| `Vms` | `VM#id` | task、step、image@ver、state、memMiB、startedAt、endpoint、tokenCache | GSI: state（クォータの集計用） |
+| `VmTokens` | `TOK#hash` | vmId、task、step、networkProfile、expiresAt | TTL。プロキシとゲートウェイが参照する |
 | `Images` | `IMG#name` / `VER#n` | owner、visibility、specHash、microvmImageArn、state | |
-| `Lines` | `LINE#name` / `VER#n` | definition（YAML）、status | |
+| `Workflows` | `WORKFLOW#name` / `VER#n` | definition（YAML）、status | |
 | `NetworkProfiles` / `PackageSources` | `NP#name` / `PS#name` | 定義 | 変更したら履歴を残す |
 | `Publications` | `PUB#id` | owner、acl、currentVersion、expiresAt、revoked | **Global Table**（us-east-1 にレプリカを置き、Lambda@Edge が読む） |
 | `Capacity` | `CAP#mem` / `CAP#agents` / `RATE#RunMicrovm` | used、limit、トークンバケット | 条件付き書き込みでセマフォにする |
@@ -563,10 +563,10 @@ Bedrock のトークン（最も大きい）、MicroVM の compute（ベース�
 
 ## 11. 可観測性と監査
 
-- **トレース**: `workItemId` と `stageRunId` を相関 ID として、API → エンジン → VM マネージャー → agentd → Callback API の経路に伝える（X-Ray / OTel）
+- **トレース**: `taskId` と `stepRunId` を相関 ID として、API → エンジン → VM マネージャー → agentd → Callback API の経路に伝える（X-Ray / OTel）
 - **イベント**: agentd がハーネスのイベント（text、tool_use、usage）を Callback API に送る → `Events` テーブル → Streams → WebSocket で UI へ。同時に CloudWatch Logs にも送る
 - **監査ログ**（FR-SEC-06）: 承認、公開、PR の作成、ネットワークの拒否、管理操作 → EventBridge → Firehose → S3（**Object Lock を compliance モードで**）。CloudTrail（MicroVMs、Bedrock、IAM）も同じ監査用のバケットに集める
-- **メトリクスとアラーム**: クォータの使用率（メモリ、TPM）が 80% を超えたとき、キューの待ち時間、RunMicrovm のスロットリング、ステージの失敗率、プロキシで拒否した件数の急増
+- **メトリクスとアラーム**: クォータの使用率（メモリ、TPM）が 80% を超えたとき、キューの待ち時間、RunMicrovm のスロットリング、ステップの失敗率、プロキシで拒否した件数の急増
 - **Bedrock の model invocation logging**: プロンプトの中身まで残すかどうかは、監査の要件とプライバシーの兼ね合いで決める（未決事項 O7）
 
 ---
@@ -599,10 +599,10 @@ Bedrock のトークン（最も大きい）、MicroVM の compute（ベース�
 | ~~O3~~ | 実行エンジンは durable functions か Step Functions か | **決定（D18）: durable functions** | — |
 | O4 | egress プロキシの実装 | TypeScript で自作する（案）/ Squid | PoC の V1 で判断する |
 | O5 | 既定のモデルと、セッションごとの予算の初期値 | | PoC の V4 の後 |
-| O6 | execution role をプロファイル単位で共有することでよいか | 共有する（案）。厳しく分ける必要があればワークアイテムごとの role を検討する | 設計レビューで |
+| O6 | execution role をプロファイル単位で共有することでよいか | 共有する（案）。厳しく分ける必要があればタスクごとの role を検討する | 設計レビューで |
 | O7 | Bedrock の invocation logging でプロンプトの中身まで残すか | | セキュリティ部門と相談して |
 | O8 | データの保持期間（イベント、成果物、監査ログ、公開物） | イベント90日、成果物180日、監査ログ1年以上（案） | 設計レビューで |
-| O9 | ユーザーがラインを作る機能（S）の権限の範囲 | | Phase 2 の前 |
+| O9 | ユーザーがワークフローを作る機能（S）の権限の範囲 | | Phase 2 の前 |
 
 ---
 
@@ -631,7 +631,7 @@ Bedrock のトークン（最も大きい）、MicroVM の compute（ベース�
 ## 15. 実装の順序（MVP）
 1. **PoC**（V1、V2、V4、V9、V11、V12 を優先する）と、クォータの申請（§10.2）
 2. **基盤**: Network / Data / Auth / Gateways（egress プロキシ）/ factory-base / agentd の最小版
-3. **chat ライン**: Web チャット → workbench の VM → 計画の承認 → ストリーミング → ファイルとダウンロード → suspend / resume
+3. **chat ワークフロー**: Web チャット → workbench の VM → 計画の承認 → ストリーミング → ファイルとダウンロード → suspend / resume
 4. **リポジトリ連携とプレビュー**: GitHub App、Git ゲートウェイ、PR の作成、ライブプレビュー
-5. **カスタムイメージと build-verify ライン**: イメージビルダー、カタログ、多段の実行エンジン、ステージ間の受け渡し、8時間の引き継ぎ
+5. **カスタムイメージと build-verify ワークフロー**: イメージビルダー、カタログ、多段の実行エンジン、ステップ間の受け渡し、8時間の引き継ぎ
 6. **公開と管理**: 社内公開、管理画面（allowlist、プロファイル、クォータ）、監査ログ、コスト → **10人でのパイロット**

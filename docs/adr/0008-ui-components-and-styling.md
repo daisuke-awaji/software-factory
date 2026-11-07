@@ -12,7 +12,7 @@ UI モックは、AffectUI の無料の部品（Button、Segmented Control、Too
 3. **スタイルの方式**: CSS Modules に寄せるか、モックの書き方（グローバルの CSS）を正式にするか
 
 ## 決定
-- **Pro は今は買わない。** 承認カードと入力欄は、AffectUI のトレーとカードの構造に合わせて自作する（`features/workitem/Cards.tsx`・`Composer.tsx`）。パイロットの後に、作り直す手間とライセンスの条件（社内での利用、再配布の範囲）を比べて見直す
+- **Pro は今は買わない。** 承認カードと入力欄は、AffectUI のトレーとカードの構造に合わせて自作する（`features/task/Cards.tsx`・`Composer.tsx`）。パイロットの後に、作り直す手間とライセンスの条件（社内での利用、再配布の範囲）を比べて見直す
 - **AffectUI の部品は `packages/web/src/components/ui/` にコピーして持ち、型エラーは最小限の修正で直す**（型チェックの対象から外さない）。直した箇所はファイルの先頭に書き、上流の更新を取り込むときは差分で確かめる。英語の文言は日本語にした（FR-UI-09）
 - **アプリの部品は CSS Modules で書き、色・角丸・影はデザイントークン（`styles/tokens.css` の CSS 変数）だけを使う。** グローバルの CSS は、リセットと数個のユーティリティ（`.sr-only`、`.mono` など）だけにする。ダークモードは `<html data-theme="dark" class="dark">` で切り替え、AffectUI の部品も同じ条件で切り替わる
 - 追加の UI ライブラリ（Tailwind、Radix など）は入れない。ダイアログは `<dialog>`、メニューは小さな自作の部品にする

@@ -89,7 +89,7 @@
 .resolved[data-tone="err"] { color: var(--err); }
 .changeBox { display: grid; gap: 8px; }
 
-/* 作業のまとめ（会話の中では、ステージごとに1行にする） */
+/* 作業のまとめ（会話の中では、ステップごとに1行にする） */
 .workRows { display: grid; gap: 2px; margin-left: 38px; padding: 6px; border-radius: 14px; background: var(--tray); animation: rise 260ms var(--ease) both; }
 .workRow { display: grid; grid-template-columns: 10px auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); font-size: 13px; }
 .workLabel { font-weight: 500; color: var(--ink); white-space: nowrap; }

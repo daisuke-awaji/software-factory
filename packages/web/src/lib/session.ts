@@ -1,5 +1,5 @@
 // イベントを畳み込んで、ワークスペースに出す状態を作る（純粋な関数。ストアとホームの受け箱で共有する）
-import { type ApprovalReason, type FactoryEventEnvelope, type Plan, ulidTime, type WorkItemState } from '@factory/contracts';
+import { type ApprovalReason, type FactoryEventEnvelope, type Plan, ulidTime, type TaskState } from '@factory/contracts';
 
 export type ChatMessage = { id: string; role: 'user' | 'assistant'; text: string; done: boolean; at: number; author?: string; attachments?: string[] };
 export type PlanState = {
@@ -10,7 +10,7 @@ export type PlanState = {
 };
 export type ApprovalState = { id: string; reason: ApprovalReason; detail: string; at: number; resolved?: { decision: 'approve' | 'deny'; by: string; at: number } };
 export type ToolState = { id: string; tool: string; summary: string; result?: string; ok?: boolean; startedAt: number; endedAt?: number; runId?: string };
-export type RunState = { runId: string; stageId: string; state: 'running' | 'completed' | 'failed'; startedAt: number; endedAt?: number; tools: string[] };
+export type RunState = { runId: string; stepId: string; state: 'running' | 'completed' | 'failed'; startedAt: number; endedAt?: number; tools: string[] };
 
 export type Entry =
   | { k: 'user'; id: string }
@@ -22,8 +22,8 @@ export type Entry =
   | { k: 'end'; state: 'completed' | 'failed' | 'cancelled'; at: number };
 
 export type Session = {
-  workItemId: string;
-  state: WorkItemState | null;
+  taskId: string;
+  state: TaskState | null;
   lastEventId: string | null;
   seen: Record<string, true>;
   timeline: Entry[];
@@ -40,9 +40,9 @@ export type Session = {
   fileVersion: number;
 };
 
-export function emptySession(workItemId: string): Session {
+export function emptySession(taskId: string): Session {
   return {
-    workItemId, state: null, lastEventId: null, seen: {}, timeline: [], messages: {}, plans: {}, latestPlan: null, approvals: {},
+    taskId, state: null, lastEventId: null, seen: {}, timeline: [], messages: {}, plans: {}, latestPlan: null, approvals: {},
     tools: {}, runs: [], blocked: [], usage: { inputTokens: 0, outputTokens: 0, vmSeconds: 0 }, preview: null, fileVersion: 0,
   };
 }
@@ -51,7 +51,7 @@ const FILE_TOOLS = new Set(['edit_file', 'write_file', 'run', 'git_push']);
 
 /** 1件のイベントを反映する。同じ eventId は2回反映しない（WebSocket と履歴の両方から届くため） */
 export function reduce(s: Session, e: FactoryEventEnvelope): Session {
-  if (e.workItemId !== s.workItemId || s.seen[e.eventId]) return s;
+  if (e.taskId !== s.taskId || s.seen[e.eventId]) return s;
   const at = ulidTime(e.eventId);
   const next: Session = {
     ...s,
@@ -123,16 +123,16 @@ export function reduce(s: Session, e: FactoryEventEnvelope): Session {
     case 'usage':
       next.usage = { inputTokens: s.usage.inputTokens + e.inputTokens, outputTokens: s.usage.outputTokens + e.outputTokens, vmSeconds: s.usage.vmSeconds + e.vmSeconds };
       break;
-    case 'stage.changed':
+    case 'step.changed':
       if (e.state === 'started') {
-        const n = s.runs.filter((r) => r.stageId === e.stageId).length + 1;
-        next.runs = [...s.runs, { runId: `${e.stageId}#${n}`, stageId: e.stageId, state: 'running', startedAt: at, tools: [] }];
+        const n = s.runs.filter((r) => r.stepId === e.stepId).length + 1;
+        next.runs = [...s.runs, { runId: `${e.stepId}#${n}`, stepId: e.stepId, state: 'running', startedAt: at, tools: [] }];
       } else {
-        const run = s.runs.findLast((r) => r.stageId === e.stageId && r.state === 'running');
+        const run = s.runs.findLast((r) => r.stepId === e.stepId && r.state === 'running');
         if (run) next.runs = s.runs.map((r) => (r === run ? { ...r, state: e.state === 'completed' ? 'completed' : 'failed', endedAt: at } : r));
       }
       break;
-    case 'workitem.state':
+    case 'task.state':
       next.state = e.state;
       if (e.state === 'completed' || e.state === 'failed' || e.state === 'cancelled') push({ k: 'end', state: e.state, at });
       break;
@@ -166,7 +166,7 @@ export function pendingOf(s: Session): Pending | null {
   return null;
 }
 
-/** いま動いている（または最後に動いた）ステージの実行 */
+/** いま動いている（または最後に動いた）ステップの実行 */
 export function currentRun(s: Session): RunState | undefined {
   return s.runs.findLast((r) => r.state === 'running') ?? s.runs.at(-1);
 }

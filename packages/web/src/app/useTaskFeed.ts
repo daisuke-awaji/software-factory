@@ -1,13 +1,13 @@
-// サイドパネルの依頼の一覧（06_ui_spec.md §1.1）: 新しい順に PAGE 件ずつ読み、下までスクロールしたら続きを足す
-import type { WorkItem } from '@factory/contracts';
+// サイドパネルのタスクの一覧（06_ui_spec.md §1.1）: 新しい順に PAGE 件ずつ読み、下までスクロールしたら続きを足す
+import type { Task } from '@factory/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { errorMessage } from '../lib/api';
 import { useServices } from '../lib/services';
 
 export const PAGE = 30;
 
-export type WorkItemFeed = {
-  items: WorkItem[] | undefined;
+export type TaskFeed = {
+  items: Task[] | undefined;
   error: string | null;
   hasMore: boolean;
   loadingMore: boolean;
@@ -16,11 +16,11 @@ export type WorkItemFeed = {
   loadMore: () => Promise<void>;
 };
 
-type State = { items: WorkItem[] | undefined; cursor: string | undefined; pages: number };
+type State = { items: Task[] | undefined; cursor: string | undefined; pages: number };
 
-const byUpdated = (a: WorkItem, b: WorkItem) => b.updatedAt.localeCompare(a.updatedAt);
+const byUpdated = (a: Task, b: Task) => b.updatedAt.localeCompare(a.updatedAt);
 
-export function useWorkItemFeed(deps: unknown[], opts: { enabled: boolean; pollMs: number }): WorkItemFeed {
+export function useTaskFeed(deps: unknown[], opts: { enabled: boolean; pollMs: number }): TaskFeed {
   const { api } = useServices();
   const [state, setState] = useState<State>({ items: undefined, cursor: undefined, pages: 0 });
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +33,7 @@ export function useWorkItemFeed(deps: unknown[], opts: { enabled: boolean; pollM
   const reload = useCallback(async () => {
     const my = ++seq.current;
     try {
-      const page = await api.listWorkItems({ limit: PAGE });
+      const page = await api.listTasks({ limit: PAGE });
       if (my !== seq.current) return;
       setError(null);
       setState((prev) => {
@@ -52,7 +52,7 @@ export function useWorkItemFeed(deps: unknown[], opts: { enabled: boolean; pollM
     busy.current = true;
     setLoadingMore(true);
     try {
-      const page = await api.listWorkItems({ limit: PAGE, cursor: at });
+      const page = await api.listTasks({ limit: PAGE, cursor: at });
       setState((prev) => {
         const have = new Set((prev.items ?? []).map((i) => i.id));
         return { items: [...(prev.items ?? []), ...page.items.filter((i) => !have.has(i.id))], cursor: page.nextCursor, pages: prev.pages + 1 };
@@ -70,7 +70,7 @@ export function useWorkItemFeed(deps: unknown[], opts: { enabled: boolean; pollM
     void reload();
     const t = setInterval(() => void reload(), opts.pollMs);
     return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-workflow react-hooks/exhaustive-deps
   }, [...deps, opts.enabled, opts.pollMs, reload]);
 
   return { items: state.items, error, hasMore: !!state.cursor, loadingMore, reload, loadMore };

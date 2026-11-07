@@ -1,4 +1,4 @@
-// WebSocket のイベントの受信（API 仕様 §4）。購読はワークアイテムごと。
+// WebSocket のイベントの受信（API 仕様 §4）。購読はタスクごと。
 // 切れたら自動でつなぎ直し、`GET /events?after=` で取りこぼしを埋めてから購読し直す
 import { FactoryEventEnvelope } from '@factory/contracts';
 import type { ApiClient } from './api';
@@ -9,7 +9,7 @@ type Handler = (e: FactoryEventEnvelope) => void;
 export class EventStream {
   private ws: WebSocket | null = null;
   private subs = new Map<string, Set<Handler>>();
-  private last = new Map<string, string>(); // workItemId → 最後に受け取った eventId
+  private last = new Map<string, string>(); // taskId → 最後に受け取った eventId
   private listeners = new Set<(s: ConnectionState) => void>();
   private retry = 0;
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -43,30 +43,30 @@ export class EventStream {
     };
   }
 
-  /** 購読する。同じワークアイテムを複数の画面が購読しても、サーバーへの subscribe は1回 */
-  subscribe(workItemId: string, handler: Handler) {
-    let set = this.subs.get(workItemId);
+  /** 購読する。同じタスクを複数の画面が購読しても、サーバーへの subscribe は1回 */
+  subscribe(taskId: string, handler: Handler) {
+    let set = this.subs.get(taskId);
     if (!set) {
       set = new Set();
-      this.subs.set(workItemId, set);
-      this.send({ action: 'subscribe', workItemId });
+      this.subs.set(taskId, set);
+      this.send({ action: 'subscribe', taskId });
     }
     set.add(handler);
     return () => {
-      const s = this.subs.get(workItemId);
+      const s = this.subs.get(taskId);
       s?.delete(handler);
       if (s && s.size === 0) {
-        this.subs.delete(workItemId);
-        this.last.delete(workItemId);
-        this.send({ action: 'unsubscribe', workItemId });
+        this.subs.delete(taskId);
+        this.last.delete(taskId);
+        this.send({ action: 'unsubscribe', taskId });
       }
     };
   }
 
   /** 履歴から取り直したイベントの位置を伝える（画面が履歴を読み込んだあとに呼ぶ） */
-  markSeen(workItemId: string, eventId: string) {
-    const cur = this.last.get(workItemId);
-    if (!cur || eventId > cur) this.last.set(workItemId, eventId);
+  markSeen(taskId: string, eventId: string) {
+    const cur = this.last.get(taskId);
+    if (!cur || eventId > cur) this.last.set(taskId, eventId);
   }
 
   /** テスト用: 接続を切る（再接続と取りこぼしの補完を確かめる） */
@@ -93,7 +93,7 @@ export class EventStream {
       const reconnected = this.retry > 0;
       this.retry = 0;
       this.setState('open');
-      for (const id of this.subs.keys()) this.send({ action: 'subscribe', workItemId: id });
+      for (const id of this.subs.keys()) this.send({ action: 'subscribe', taskId: id });
       if (reconnected) void this.backfill();
     });
     ws.addEventListener('message', (m) => {
@@ -128,7 +128,7 @@ export class EventStream {
   }
 
   private dispatch(e: FactoryEventEnvelope) {
-    this.markSeen(e.workItemId, e.eventId);
-    for (const h of this.subs.get(e.workItemId) ?? []) h(e);
+    this.markSeen(e.taskId, e.eventId);
+    for (const h of this.subs.get(e.taskId) ?? []) h(e);
   }
 }

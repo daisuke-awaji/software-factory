@@ -1,17 +1,17 @@
-// ワークアイテムの画面（パターン B: ADR-0007）。左に会話、右に成果物のタブ、下にステータスバー
-import type { Line, WorkItem } from '@factory/contracts';
+// タスクの画面（パターン B: ADR-0007）。左に会話、右に成果物のタブ、下にステータスバー
+import type { Workflow, Task } from '@factory/contracts';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { Button } from '../../components/ui/button';
 import { SegmentedControl } from '../../components/ui/segmented-control';
 import { Banner, Dot, ErrorBanner, Loading, Menu, Tag } from '../../components/kit';
 import { IconBranch, IconChevron, IconExternal, IconMore, IconPR, IconRepo } from '../../components/icons';
-import { StageLine } from '../../components/StageLine';
+import { StepProgress } from '../../components/StepProgress';
 import { errorMessage } from '../../lib/api';
 import { saveFromUrl } from '../../lib/download';
 import type { ConnectionState } from '../../lib/events';
-import { duration, isTerminal, reasonLabel, stageLabel, stateLabel, stateTone, tokens, usd } from '../../lib/format';
-import { stepsFromSession } from '../../lib/line';
+import { duration, isTerminal, reasonLabel, stepLabel, stateLabel, stateTone, tokens, usd } from '../../lib/format';
+import { progressFromSession } from '../../lib/workflow';
 import { useServices } from '../../lib/services';
 import { currentRun, type Pending, type Session } from '../../lib/session';
 import { narrow, useMediaQuery } from '../../lib/useMediaQuery';
@@ -32,7 +32,7 @@ export function WorkspacePage() {
   const { api } = useServices();
   const me = useMe((m) => m.me)!;
   const toast = useUi((u) => u.toast);
-  const { item, line, session, state, pending, historyError } = useWorkspace(id);
+  const { item, workflow, session, state, pending, historyError } = useWorkspace(id);
   const tabState = useUi((u) => u.tabs[id]);
   const pickTab = useUi((u) => u.pickTab);
   /** 1024px 未満では、会話と成果物のどちらか一方を出す（06_ui_spec.md §6） */
@@ -49,12 +49,12 @@ export function WorkspacePage() {
     return (
       <div style={{ padding: 28, maxWidth: 720, margin: '0 auto', display: 'grid', gap: 12 }}>
         <ErrorBanner error={item.error} onRetry={() => void item.reload()} />
-        <Link to="/requests">依頼の一覧に戻る</Link>
+        <Link to="/tasks">タスクの一覧に戻る</Link>
       </div>
     );
   }
   if (!item.data || !session) return <Loading />;
-  const wi = item.data;
+  const current = item.data;
   const tab: Tab = tabState?.tab ?? 'plan';
   const openTab = (t: Tab) => {
     pickTab(id, t);
@@ -76,7 +76,7 @@ export function WorkspacePage() {
     reject: () => guard(() => api.rejectPlan(id, session.latestPlan!)),
   };
   const answerApproval = (aid: string, d: 'approve' | 'deny') => guard(() => api.answerApproval(id, aid, { decision: d }));
-  const retry = (runId: string) => guard(() => api.retryStage(id, runId), 'やり直します');
+  const retry = (runId: string) => guard(() => api.retryStep(id, runId), 'やり直します');
   const download = async () => {
     try {
       const d = await api.download(id, { format: 'zip' });
@@ -102,17 +102,17 @@ export function WorkspacePage() {
   return (
     <div className={s.page}>
       <Header
-        item={wi}
+        item={current}
         session={session}
-        line={line}
+        workflow={workflow}
         pending={pending}
         onRename={() => setDialog('rename')}
         onCancel={() => setDialog('cancel')}
         onArchive={() =>
           void guard(async () => {
-            await api.updateWorkItem(id, { archived: !wi.archived });
+            await api.updateTask(id, { archived: !current.archived });
             await item.reload();
-          }, wi.archived ? 'アーカイブから戻しました' : 'アーカイブしました')
+          }, current.archived ? 'アーカイブから戻しました' : 'アーカイブしました')
         }
         onInterrupt={() => void guard(() => api.interrupt(id)).catch(() => undefined)}
       />
@@ -142,9 +142,9 @@ export function WorkspacePage() {
         <section className={s.chat} id="view-chat" aria-label="会話">
           <div className={s.chatScroll} ref={scroller}>
             <Conversation
-              item={wi}
+              item={current}
               session={session}
-              line={line}
+              workflow={workflow}
               me={me.name}
               planActions={planActions}
               answerApproval={answerApproval}
@@ -164,22 +164,22 @@ export function WorkspacePage() {
             <SegmentedControl<Tab> variant="underline" kind="tabs" size="sm" aria-label="成果物の表示" value={tab} onChange={(v) => pickTab(id, v)} options={tabOptions.map((o) => ({ ...o, controls: `panel-${o.value}` }))} />
           </div>
           <div className={s.panel} id={`panel-${tab}`} role="tabpanel">
-            {tab === 'preview' && <PreviewTab item={wi} session={session} />}
+            {tab === 'preview' && <PreviewTab item={current} session={session} />}
             {tab === 'changes' && <ChangesTab diff={diff} />}
-            {tab === 'files' && <FilesTab item={wi} version={session.fileVersion} onPublish={() => setDialog('publish')} />}
-            {tab === 'plan' && <PlanTab session={session} line={line} actions={planActions} />}
-            {tab === 'log' && <LogTab item={wi} session={session} line={line} onRetry={retry} />}
+            {tab === 'files' && <FilesTab item={current} version={session.fileVersion} onPublish={() => setDialog('publish')} />}
+            {tab === 'plan' && <PlanTab session={session} workflow={workflow} actions={planActions} />}
+            {tab === 'log' && <LogTab item={current} session={session} workflow={workflow} onRetry={retry} />}
           </div>
         </section>
       </div>
-      <StatusBar item={wi} session={session} line={line} />
+      <StatusBar item={current} session={session} workflow={workflow} />
 
-      <PublishDialog open={dialog === 'publish'} item={wi} onClose={() => setDialog(null)} />
-      <RenameDialog open={dialog === 'rename'} item={wi} onClose={() => setDialog(null)} onSaved={() => void item.reload()} />
+      <PublishDialog open={dialog === 'publish'} item={current} onClose={() => setDialog(null)} />
+      <RenameDialog open={dialog === 'rename'} item={current} onClose={() => setDialog(null)} onSaved={() => void item.reload()} />
       <ConfirmDialog
         open={dialog === 'cancel'}
-        title="ライン全体を中止しますか？"
-        body="動いている VM を止めて、この依頼を中止します。ここまでのファイルは残りますが、続きから再開することはできません。"
+        title="ワークフロー全体を中止しますか？"
+        body="動いている VM を止めて、このタスクを中止します。ここまでのファイルは残りますが、続きから再開することはできません。"
         confirm="中止する"
         danger
         onConfirm={() => guard(() => api.cancel(id), '中止しました').catch(() => undefined)}
@@ -189,8 +189,8 @@ export function WorkspacePage() {
   );
 }
 
-function Header({ item, session, line, pending, onRename, onCancel, onArchive, onInterrupt }: {
-  item: WorkItem; session: Session; line: Line | undefined; pending: Pending | null;
+function Header({ item, session, workflow, pending, onRename, onCancel, onArchive, onInterrupt }: {
+  item: Task; session: Session; workflow: Workflow | undefined; pending: Pending | null;
   onRename: () => void; onCancel: () => void; onArchive: () => void; onInterrupt: () => void;
 }) {
   const phone = useMediaQuery(narrow.phone);
@@ -204,7 +204,7 @@ function Header({ item, session, line, pending, onRename, onCancel, onArchive, o
         <span className={s.back}><LogoToggle label="サイドパネルを開く" expanded={false} onClick={() => openSidebar(true)} /></span>
       )}
       <nav className={s.crumbs} aria-label="場所">
-        <Link to="/requests" className={s.crumb}>依頼</Link>
+        <Link to="/tasks" className={s.crumb}>タスク</Link>
         <IconChevron />
         {item.repo && (
           <>
@@ -222,7 +222,7 @@ function Header({ item, session, line, pending, onRename, onCancel, onArchive, o
       </nav>
       <span className={s.headTag}><Tag tone={stateTone[state]}>{label}</Tag></span>
       <div className={s.headRight}>
-        <div className={s.headLine}><StageLine size="sm" steps={stepsFromSession(line, session)} /></div>
+        <div className={s.headLine}><StepProgress size="sm" steps={progressFromSession(workflow, session)} /></div>
         {phone ? null : item.pullRequest ? (
           <Button size="sm" variant="secondary" icon={<IconPR />} iconRight={<IconExternal />} onClick={() => window.open(item.pullRequest!.url, '_blank', 'noopener')}>
             PR #{item.pullRequest.number}
@@ -238,7 +238,7 @@ function Header({ item, session, line, pending, onRename, onCancel, onArchive, o
             { label: '名前を変更', onSelect: onRename },
             { label: item.archived ? 'アーカイブから戻す' : 'アーカイブ', onSelect: onArchive },
             { label: '作業を中断', onSelect: onInterrupt, disabled: !(state === 'running' || state === 'planning') },
-            { label: 'ライン全体を中止', onSelect: onCancel, danger: true, disabled: isTerminal(state) },
+            { label: 'ワークフロー全体を中止', onSelect: onCancel, danger: true, disabled: isTerminal(state) },
           ]}
         />
       </div>
@@ -246,7 +246,7 @@ function Header({ item, session, line, pending, onRename, onCancel, onArchive, o
   );
 }
 
-function StatusBar({ item, session, line }: { item: WorkItem; session: Session; line: Line | undefined }) {
+function StatusBar({ item, session, workflow }: { item: Task; session: Session; workflow: Workflow | undefined }) {
   const { events } = useServices();
   const [conn, setConn] = useState<ConnectionState>(events.state);
   const [now, setNow] = useState(Date.now());
@@ -259,13 +259,13 @@ function StatusBar({ item, session, line }: { item: WorkItem; session: Session; 
     return () => clearInterval(t);
   }, [terminal]);
   const run = currentRun(session);
-  const stage = line?.stages.find((st) => st.id === run?.stageId);
-  const vmCount = session.runs.filter((r) => line?.stages.find((st) => st.id === r.stageId)?.image).length;
+  const step = workflow?.steps.find((st) => st.id === run?.stepId);
+  const vmCount = session.runs.filter((r) => workflow?.steps.find((st) => st.id === r.stepId)?.image).length;
   const vm =
     run?.state === 'running' && !terminal
       ? state === 'awaiting_approval' || state === 'suspended'
-        ? <><Dot tone="alert" /> VM 待機中: {stageLabel(run.stageId)} · <span className="mono">{stage?.image}</span></>
-        : <><Dot tone="run" /> VM 実行中: {stageLabel(run.stageId)} · <span className="mono">{stage?.image}</span></>
+        ? <><Dot tone="alert" /> VM 待機中: {stepLabel(run.stepId)} · <span className="mono">{step?.image}</span></>
+        : <><Dot tone="run" /> VM 実行中: {stepLabel(run.stepId)} · <span className="mono">{step?.image}</span></>
       : vmCount
         ? <><Dot tone="ok" /> VM はすべて停止しました（{vmCount} 台 · 合計 {duration(session.usage.vmSeconds * 1000)}）</>
         : <><Dot /> VM は起動していません</>;
@@ -273,7 +273,7 @@ function StatusBar({ item, session, line }: { item: WorkItem; session: Session; 
   return (
     <footer className={s.status}>
       <span>{vm}</span>
-      <span>通信: {stage?.network && !terminal ? <><span className="mono">{stage.network}</span>（許可リストのみ）</> : '許可リストのみ'}</span>
+      <span>通信: {step?.network && !terminal ? <><span className="mono">{step.network}</span>（許可リストのみ）</> : '許可リストのみ'}</span>
       {session.blocked.length > 0 && <span data-tone="alert">止めた通信 {session.blocked.length} 件</span>}
       <span>トークン {tokens(session.usage.inputTokens + session.usage.outputTokens)} · {usd(item.costUsd)}</span>
       <span className={s.statusRight}>

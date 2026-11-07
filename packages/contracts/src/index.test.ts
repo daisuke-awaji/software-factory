@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CreateWorkItemRequest, FactoryEventEnvelope, titleFromMessage, ImageSpec, NetworkProfile, ulid, ulidTime } from './index.js';
+import { CreateTaskRequest, FactoryEventEnvelope, titleFromMessage, ImageSpec, NetworkProfile, ulid, ulidTime } from './index.js';
 
 describe('ULID', () => {
   it('時刻を取り出せて、同じミリ秒でも増えていく', () => {
@@ -14,23 +14,23 @@ describe('ULID', () => {
 
 describe('イベント', () => {
   it('eventId の付いたイベントを受け取り、知らない type は拒否する', () => {
-    const workItemId = ulid();
-    const ok = FactoryEventEnvelope.safeParse({ eventId: ulid(), type: 'egress.blocked', workItemId, host: 'example.com' });
+    const taskId = ulid();
+    const ok = FactoryEventEnvelope.safeParse({ eventId: ulid(), type: 'egress.blocked', taskId, host: 'example.com' });
     expect(ok.success).toBe(true);
-    expect(FactoryEventEnvelope.safeParse({ eventId: ulid(), type: 'nope', workItemId }).success).toBe(false);
-    expect(FactoryEventEnvelope.safeParse({ type: 'egress.blocked', workItemId, host: 'x' }).success).toBe(false);
+    expect(FactoryEventEnvelope.safeParse({ eventId: ulid(), type: 'nope', taskId }).success).toBe(false);
+    expect(FactoryEventEnvelope.safeParse({ type: 'egress.blocked', taskId, host: 'x' }).success).toBe(false);
   });
 });
 
 describe('入力の検証', () => {
   it('既定値を埋める', () => {
-    const r = CreateWorkItemRequest.parse({ title: 't', message: 'm', repo: { owner: 'a', name: 'b' } });
-    expect(r.lineRef).toBe('chat@1');
+    const r = CreateTaskRequest.parse({ title: 't', message: 'm', repo: { owner: 'a', name: 'b' } });
+    expect(r.workflowRef).toBe('chat@1');
     expect(r.repo?.baseBranch).toBe('main');
   });
 
   it('タイトルは省略でき、本文の最初の文から作れる', () => {
-    expect(CreateWorkItemRequest.parse({ message: 'm' }).title).toBeUndefined();
+    expect(CreateTaskRequest.parse({ message: 'm' }).title).toBeUndefined();
     expect(titleFromMessage('\n  問い合わせフォームを直してください。誤りはその場で知らせたいです。')).toBe('問い合わせフォームを直してください');
     expect(titleFromMessage('あ'.repeat(80))).toBe(`${'あ'.repeat(59)}…`);
   });

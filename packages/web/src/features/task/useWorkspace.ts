@@ -1,7 +1,7 @@
-// ワークスペースのデータ: ワークアイテム（REST）と、イベントを畳み込んだセッション（WebSocket + 履歴）
+// ワークスペースのデータ: タスク（REST）と、イベントを畳み込んだセッション（WebSocket + 履歴）
 import { useEffect, useMemo, useState } from 'react';
 import { errorMessage } from '../../lib/api';
-import { findLine } from '../../lib/line';
+import { findWorkflow } from '../../lib/workflow';
 import { useServices } from '../../lib/services';
 import { pendingOf } from '../../lib/session';
 import { useResource } from '../../lib/useResource';
@@ -10,9 +10,9 @@ import { useUi, type Tab } from '../../stores/ui';
 
 export function useWorkspace(id: string) {
   const { api, events } = useServices();
-  const item = useResource(() => api.getWorkItem(id), [id]);
-  const lines = useResource(() => api.lines(), []);
-  const session = useSessionStore((st) => (st.session?.workItemId === id ? st.session : null));
+  const item = useResource(() => api.getTask(id), [id]);
+  const workflows = useResource(() => api.workflows(), []);
+  const session = useSessionStore((st) => (st.session?.taskId === id ? st.session : null));
   const [historyError, setHistoryError] = useState<string | null>(null);
 
   // 先に購読してから履歴を読む（間に起きたイベントは eventId で重複を除く）
@@ -38,7 +38,7 @@ export function useWorkspace(id: string) {
     };
   }, [id, api, events]);
 
-  // 状態が変わったら、ワークアイテム（PR・費用など）を読み直す
+  // 状態が変わったら、タスク（PR・費用など）を読み直す
   const state = session?.state ?? item.data?.state ?? null;
   const reloadItem = item.reload;
   useEffect(() => {
@@ -51,7 +51,7 @@ export function useWorkspace(id: string) {
     return () => clearInterval(t);
   }, [state, reloadItem]);
 
-  const line = findLine(lines.data, item.data?.lineRef ?? '');
+  const workflow = findWorkflow(workflows.data, item.data?.workflowRef ?? '');
   const pending = session ? pendingOf(session) : null;
 
   // 06_ui_spec.md §3: 状態に合わせたタブ
@@ -67,5 +67,5 @@ export function useWorkspace(id: string) {
     if (ready) autoTab(id, desired);
   }, [id, desired, autoTab, ready]);
 
-  return { item, lines, line, session, state, pending, historyError };
+  return { item, workflows, workflow, session, state, pending, historyError };
 }

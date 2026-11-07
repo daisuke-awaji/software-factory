@@ -1,16 +1,16 @@
 // モックのバックエンドのデータ（インメモリ。ブラウザでは localStorage に保存して、再読み込みしても続きから動く）
 import {
-  type AdminUser, type FactoryEvent, type FactoryEventEnvelope, type ImageSummary, type ImageVersion, type LineDefinition, type Me,
-  type NetworkProfile, type PackageSource, type PlanRecord, type Publication, type Repo, type StageRun, type WorkItem, ulid,
+  type AdminUser, type FactoryEvent, type FactoryEventEnvelope, type ImageSummary, type ImageVersion, type WorkflowDefinition, type Me,
+  type NetworkProfile, type PackageSource, type PlanRecord, type Publication, type Repo, type StepRun, type Task, ulid,
 } from '@factory/contracts';
 
 /** シミュレーターが次に行うこと（JSON にできる形で持つ。再読み込みしても続きから動かすため） */
 export type SimStep =
-  | { t: 'emit'; delay: number; event: DistributiveOmit<FactoryEvent, 'workItemId'> }
+  | { t: 'emit'; delay: number; event: DistributiveOmit<FactoryEvent, 'taskId'> }
   | { t: 'say'; delay: number; text: string } // エージェントの発言（delta に分けて流す）
   | { t: 'write'; delay: number; path: string; content: string | null } // null は削除
   | { t: 'gate'; delay: number; gate: 'plan' | 'approval' | 'message'; approvalId?: string }
-  | { t: 'next'; delay: number; outcome: 'pass' | 'fail' } // ステージが終わった。ラインの次へ進む
+  | { t: 'next'; delay: number; outcome: 'pass' | 'fail' } // ステップが終わった。ワークフローの次へ進む
   | { t: 'pr'; delay: number }
   | { t: 'finish'; delay: number; state: 'completed' | 'failed' };
 
@@ -23,9 +23,9 @@ export type Sim = {
   queue: SimStep[];
   waiting: null | 'plan' | 'approval' | 'message';
   approvalId?: string;
-  /** いまのステージ */
-  stage: string;
-  /** ステージごとの実行回数（verify#2 など） */
+  /** いまのステップ */
+  step: string;
+  /** ステップごとの実行回数（verify#2 など） */
   attempts: Record<string, number>;
   /** 計画を出した回数と、修正の依頼の内容 */
   planVersion: number;
@@ -42,12 +42,12 @@ export type MockDb = {
   me: Me;
   users: AdminUser[];
   repos: Repo[];
-  lines: LineDefinition[];
-  workItems: WorkItem[];
+  workflows: WorkflowDefinition[];
+  tasks: Task[];
   events: Record<string, FactoryEventEnvelope[]>;
   plans: Record<string, PlanRecord[]>;
-  stageRuns: Record<string, StageRun[]>;
-  files: Record<string, Record<string, string>>; // ワークアイテム → パス → 中身
+  stepRuns: Record<string, StepRun[]>;
+  files: Record<string, Record<string, string>>; // タスク → パス → 中身
   baseFiles: Record<string, Record<string, string>>; // 差分の基準（作業を始めたときのリポジトリ）
   attachments: Record<string, { fileName: string; content: string; contentType: string }>; // 添付（path → 中身）
   sim: Record<string, Sim>;
@@ -123,22 +123,22 @@ export function onEvent(fn: Listener) {
 }
 
 /** イベントを履歴に残し、購読している WebSocket に配る。at を渡すと、その時刻のイベントにする（シードで使う） */
-export function emit(workItemId: string, event: DistributiveOmit<FactoryEvent, 'workItemId'>, at: number = Date.now()): FactoryEventEnvelope {
+export function emit(taskId: string, event: DistributiveOmit<FactoryEvent, 'taskId'>, at: number = Date.now()): FactoryEventEnvelope {
   const d = getDb();
-  const env = { ...event, workItemId, eventId: ulid(at) } as FactoryEventEnvelope;
-  (d.events[workItemId] ??= []).push(env);
-  const wi = d.workItems.find((w) => w.id === workItemId);
-  if (wi) {
-    wi.updatedAt = new Date(at).toISOString();
-    if (env.type === 'workitem.state') wi.state = env.state;
-    if (env.type === 'stage.changed' && env.state === 'started') wi.currentStageId = env.stageId;
+  const env = { ...event, taskId, eventId: ulid(at) } as FactoryEventEnvelope;
+  (d.events[taskId] ??= []).push(env);
+  const current = d.tasks.find((w) => w.id === taskId);
+  if (current) {
+    current.updatedAt = new Date(at).toISOString();
+    if (env.type === 'task.state') current.state = env.state;
+    if (env.type === 'step.changed' && env.state === 'started') current.currentStepId = env.stepId;
     if (env.type === 'usage') {
-      const u = (wi.usage ??= { inputTokens: 0, outputTokens: 0, vmSeconds: 0 });
+      const u = (current.usage ??= { inputTokens: 0, outputTokens: 0, vmSeconds: 0 });
       u.inputTokens += env.inputTokens;
       u.outputTokens += env.outputTokens;
       u.vmSeconds += env.vmSeconds;
       // Bedrock（入力 $3 / 出力 $15 / 100万トークン）と VM（1秒 $0.00012）でおおよその費用を出す
-      wi.costUsd = Math.round((u.inputTokens * 3e-6 + u.outputTokens * 15e-6 + u.vmSeconds * 0.00012) * 100) / 100;
+      current.costUsd = Math.round((u.inputTokens * 3e-6 + u.outputTokens * 15e-6 + u.vmSeconds * 0.00012) * 100) / 100;
     }
   }
   save();
@@ -146,6 +146,6 @@ export function emit(workItemId: string, event: DistributiveOmit<FactoryEvent, '
   return env;
 }
 
-export function workItem(id: string) {
-  return getDb().workItems.find((w) => w.id === id);
+export function task(id: string) {
+  return getDb().tasks.find((w) => w.id === id);
 }

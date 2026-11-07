@@ -46,7 +46,7 @@ node('l_edge', 1, 3, 'Lambda@Edge<br>（公開物の認可）', 'lambda', COL['c
 # ---------------- コントロールプレーン ----------------
 node('apigw', 2, 0, 'API Gateway<br>HTTP + WebSocket', 'api_gateway', COL['net'])
 node('l_api', 3, 0, 'API（Hono）', 'lambda', COL['compute'], lpos='top')
-node('df_eng', 4, 0, 'ライン実行エンジン<br>（durable functions）', 'lambda', COL['compute'], lpos='top', lw=140)
+node('df_eng', 4, 0, 'ワークフロー実行エンジン<br>（durable functions）', 'lambda', COL['compute'], lpos='top', lw=140)
 node('l_vmm', 5, 0, 'VM マネージャー', 'lambda', COL['compute'])
 node('sm', 2, 1, 'Secrets Manager<br>（GitHub トークン）', 'secrets_manager', COL['sec'])
 node('ddb', 3, 1, 'DynamoDB', 'dynamodb', COL['db'])
@@ -91,7 +91,7 @@ group('g_aws', 200, 55, 2390, 995, 'AWS Cloud', gstyle_aws('group_aws_cloud_alt'
 group('g_cf', 240, 100, 400, 830, 'CloudFront', gstyle_plain('#8C4FFF'))
 group('g_region', 440, 75, 2370, 980, '東京リージョン（ap-northeast-1）', gstyle_aws('group_region', '#00A4A6', '#147EBA', dashed=1))
 group('g_cp', 460, 220, 1105, 968, 'コントロールプレーン（サーバーレス）', gstyle_plain('#545B64'))
-group('g_mvm', 1150, 228, 1470, 680, 'Lambda MicroVMs<br>（ステージごとに 1 台）', gstyle_plain('#ED7100', dashed=0))
+group('g_mvm', 1150, 228, 1470, 680, 'Lambda MicroVMs<br>（ステップごとに 1 台）', gstyle_plain('#ED7100', dashed=0))
 group('g_vpc', 1500, 95, 2170, 960, 'VPC', gstyle_aws('group_vpc2', '#8C4FFF', '#8C4FFF'))
 group('g_sub_mvm', 1515, 372, 1667, 680, 'mvm subnet', gstyle_aws('group_security_group', '#00A4A6', '#147EBA', fill='#E6F6F7').replace('group_security_group', 'group_private_subnet'))
 group('g_sub_proxy', 1690, 120, 2000, 680, 'private subnet: proxy', gstyle_aws('group_private_subnet', '#00A4A6', '#147EBA', fill='#E6F6F7'))
@@ -309,7 +309,7 @@ def to_xml():
     # 凡例
     legend = [('①', 'UI / API: ユーザー → CloudFront(App) → API Gateway（Cognito の JWT）→ Hono'),
               ('②', 'コントロールプレーン → VM: VM マネージャーが RunMicrovm / HTTPS + JWE トークンで指示'),
-              ('③', 'VM → Callback API（execute-api の VPC エンドポイント）→ ライン実行エンジンに callback'),
+              ('③', 'VM → Callback API（execute-api の VPC エンドポイント）→ ワークフロー実行エンジンに callback'),
               ('④', 'VM → Bedrock（bedrock-runtime の VPC エンドポイント、JP 推論プロファイル）'),
               ('⑤', 'VM → egress プロキシ（allowlist）→ NAT → npm / PyPI'),
               ('⑥', 'VM → Git ゲートウェイ（GitHub トークンを付与・保護ブランチへの push を拒否）→ GitHub.com'),

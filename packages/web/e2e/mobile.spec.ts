@@ -3,14 +3,14 @@ import { expect, test, type Page } from '@playwright/test';
 
 const fresh = async (page: Page) => {
   await page.goto('/?mock-reset&mock-speed=8');
-  await expect(page.getByRole('heading', { name: '新しい依頼' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '新しいタスク' })).toBeVisible();
 };
 
-/** サイドパネルを開いて、依頼を選ぶ */
+/** サイドパネルを開いて、タスクを選ぶ */
 const openItem = async (page: Page, title: RegExp) => {
   await page.getByRole('button', { name: 'サイドパネルを開く' }).click();
   await page.getByRole('dialog', { name: 'サイドパネル' }).getByRole('link', { name: title }).click();
-  await expect(page).toHaveURL(/\/w\//);
+  await expect(page).toHaveURL(/\/t\//);
   await expect(page.getByRole('dialog', { name: 'サイドパネル' })).toHaveCount(0);
 };
 
@@ -22,13 +22,13 @@ const expectNoHorizontalScroll = async (page: Page) => {
 
 test('ホーム: 入力欄だけを出し、横にはみ出さない', async ({ page }) => {
   await fresh(page);
-  await expect(page.getByLabel('依頼の内容')).toBeVisible();
+  await expect(page.getByLabel('タスクの内容')).toBeVisible();
   await expect(page.getByRole('region', { name: '対応が必要な項目' })).toHaveCount(0);
   await expect(page.getByRole('complementary', { name: 'サイドパネル' })).toHaveCount(0);
   await expectNoHorizontalScroll(page);
 
   // iOS が拡大しないように、入力欄の文字は 16px 以上
-  const size = await page.getByLabel('依頼の内容').evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
+  const size = await page.getByLabel('タスクの内容').evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
   expect(size).toBeGreaterThanOrEqual(16);
 });
 
@@ -54,13 +54,13 @@ test('左上のロゴでサイドパネルを左から出し、ほかの画面�
   expect(logoBox.y).toBeLessThan(80);
   await logo.click();
   const drawer = page.getByRole('dialog', { name: 'サイドパネル' });
-  await expect(drawer.getByRole('navigation', { name: '依頼' })).toBeVisible();
+  await expect(drawer.getByRole('navigation', { name: 'タスク' })).toBeVisible();
   // 左の端に付いて出る（滑り込み終わると x = 0）
   await expect.poll(async () => Math.round((await drawer.boundingBox())!.x)).toBe(0);
   await expect(logo).toHaveAttribute('aria-expanded', 'true');
   await expectNoHorizontalScroll(page);
 
-  // 過去の依頼も出る
+  // 過去のタスクも出る
   await expect(drawer.getByRole('region', { name: 'それより前' })).toBeAttached();
 
   // 左へなぞると閉じる
@@ -68,7 +68,7 @@ test('左上のロゴでサイドパネルを左から出し、ほかの画面�
   await expect(drawer).toHaveCount(0);
 
   await logo.click();
-  await expect(drawer.getByRole('navigation', { name: '依頼' })).toBeVisible();
+  await expect(drawer.getByRole('navigation', { name: 'タスク' })).toBeVisible();
   await drawer.getByRole('link', { name: '公開物' }).click();
   await expect(page).toHaveURL(/\/publications/);
   await expect(drawer).toHaveCount(0);
@@ -78,11 +78,11 @@ test('左上のロゴでサイドパネルを左から出し、ほかの画面�
   await page.mouse.click(page.viewportSize()!.width - 10, 300);
   await expect(drawer).toHaveCount(0);
 
-  await page.goto('/requests');
-  await expect(page.getByRole('list', { name: '依頼の一覧' })).toBeVisible();
-  await expect(page.getByRole('table', { name: '依頼の一覧' })).toHaveCount(0);
+  await page.goto('/tasks');
+  await expect(page.getByRole('list', { name: 'タスクの一覧' })).toBeVisible();
+  await expect(page.getByRole('table', { name: 'タスクの一覧' })).toHaveCount(0);
   await expectNoHorizontalScroll(page);
-  for (const path of ['/publications', '/images', '/lines', '/settings', '/admin']) {
+  for (const path of ['/publications', '/images', '/workflows', '/settings', '/admin']) {
     await page.goto(path);
     await expect(page.getByRole('main')).toBeVisible();
     await expectNoHorizontalScroll(page);

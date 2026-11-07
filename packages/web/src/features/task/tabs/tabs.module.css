@@ -50,11 +50,11 @@
 .viewerActions { margin-left: auto; display: flex; gap: 6px; }
 
 /* ---------- 計画タブ ---------- */
-.stageTable { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); overflow: hidden; }
-.stageTable th { text-align: left; font-weight: 500; font-size: 12px; color: var(--muted); padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--bg-subtle); }
-.stageTable td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
-.stageTable tr:last-child td { border-bottom: 0; }
-.stageTable .mono { font-size: 12px; }
+.stepTable { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); overflow: hidden; }
+.stepTable th { text-align: left; font-weight: 500; font-size: 12px; color: var(--muted); padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--bg-subtle); }
+.stepTable td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.stepTable tr:last-child td { border-bottom: 0; }
+.stepTable .mono { font-size: 12px; }
 .old { display: grid; gap: 10px; }
 
 /* ---------- 実行ログ ---------- */
@@ -101,7 +101,7 @@
   .preview { padding: 8px; }
   .previewNote { margin: 6px 4px 0; }
   .ln { grid-template-columns: 34px 34px 16px 1fr; }
-  .stageTable { display: block; overflow-x: auto; }
+  .stepTable { display: block; overflow-x: auto; }
   .copyRow { flex-wrap: wrap; }
   .copyRow .url { flex-basis: 100%; }
 }

@@ -1,21 +1,21 @@
-// 左のサイドパネル（ADR-0010）: 新しい依頼、画面の移動、依頼の一覧、アカウント。畳むとアイコンの列になる
+// 左のサイドパネル（ADR-0010）: 新しいタスク、画面の移動、タスクの一覧、アカウント。畳むとアイコンの列になる
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate, useParams } from 'react-router';
 import { ProfileMenu } from '../components/ui/profile-menu';
 import { Avatar, Dot, FactoryMark } from '../components/kit';
-import { IconClose, IconCompose, IconGlobe, IconImage, IconLine, IconList, IconMoon, IconSearch, IconSettings, IconShield, IconSidebar, IconSun } from '../components/icons';
+import { IconClose, IconCompose, IconGlobe, IconImage, IconWorkflow, IconList, IconMoon, IconSearch, IconSettings, IconShield, IconSidebar, IconSun } from '../components/icons';
 import type { ConnectionState } from '../lib/events';
 import { relative, stateLabel, stateTone } from '../lib/format';
 import { isAdmin, useMe } from '../stores/me';
 import { useUi } from '../stores/ui';
 import { LogoToggle, sidebarShortcut } from './LogoToggle';
-import type { WorkItemFeed } from './useWorkItemFeed';
+import type { TaskFeed } from './useTaskFeed';
 import s from './Sidebar.module.css';
 
 const RUNNING = new Set(['queued', 'planning', 'running', 'suspended']);
 const DAY = 86_400_000;
 
-/** 終わった依頼を、更新した日で分ける（今日・昨日・過去7日間・それより前） */
+/** 終わったタスクを、更新した日で分ける（今日・昨日・過去7日間・それより前） */
 export function dayBucket(updatedAt: string, now = new Date()): 'today' | 'yesterday' | 'week' | 'older' {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const t = new Date(updatedAt).getTime();
@@ -36,7 +36,7 @@ export type SidebarProps = {
   expanded: boolean;
   /** 重ねて出しているとき（1280px 未満）。閉じるボタンを出す */
   floating?: boolean;
-  feed: WorkItemFeed;
+  feed: TaskFeed;
   conn: ConnectionState;
   mock: boolean;
   onToggle: () => void;
@@ -48,10 +48,10 @@ export function Sidebar({ expanded, floating = false, feed, conn, mock, onToggle
   const toggleLabel = floating ? 'サイドパネルを閉じる' : expanded ? 'サイドパネルを畳む' : 'サイドパネルを広げる';
   const attention = (items ?? []).filter((i) => i.state === 'awaiting_approval').length;
   const links: { to: string; label: string; icon: ReactNode; end?: boolean; badge?: number }[] = [
-    { to: '/requests', label: 'すべての依頼', icon: <IconList />, ...(attention ? { badge: attention } : {}) },
+    { to: '/tasks', label: 'すべてのタスク', icon: <IconList />, ...(attention ? { badge: attention } : {}) },
     { to: '/publications', label: '公開物', icon: <IconGlobe /> },
     { to: '/images', label: 'イメージ', icon: <IconImage /> },
-    { to: '/lines', label: 'ライン', icon: <IconLine /> },
+    { to: '/workflows', label: 'ワークフロー', icon: <IconWorkflow /> },
     ...(isAdmin(me) ? [{ to: '/admin', label: '管理', icon: <IconShield /> }] : []),
   ];
   const navClass = ({ isActive }: { isActive: boolean }) => (isActive ? s.active : undefined);
@@ -75,9 +75,9 @@ export function Sidebar({ expanded, floating = false, feed, conn, mock, onToggle
       </div>
 
       <nav className={s.nav} aria-label="メイン">
-        <NavLink to="/" end className={({ isActive }) => `${s.newRequest} ${isActive ? s.active : ''}`} title={expanded ? undefined : '新しい依頼'}>
+        <NavLink to="/" end className={({ isActive }) => `${s.newTask} ${isActive ? s.active : ''}`} title={expanded ? undefined : '新しいタスク'}>
           <IconCompose />
-          {expanded ? <span>新しい依頼</span> : <span className="sr-only">新しい依頼</span>}
+          {expanded ? <span>新しいタスク</span> : <span className="sr-only">新しいタスク</span>}
         </NavLink>
         {links.map((l) => (
           <NavLink key={l.to} to={l.to} className={navClass} title={expanded ? undefined : l.label}>
@@ -103,8 +103,8 @@ export function Sidebar({ expanded, floating = false, feed, conn, mock, onToggle
   );
 }
 
-/** 依頼の一覧: 対応が必要 → 実行中 → 終わったもの（日付で分ける）。下までスクロールしたら続きを読む */
-function Sessions({ feed }: { feed: WorkItemFeed }) {
+/** タスクの一覧: 対応が必要 → 実行中 → 終わったもの（日付で分ける）。下までスクロールしたら続きを読む */
+function Sessions({ feed }: { feed: TaskFeed }) {
   const { items, hasMore, loadingMore, loadMore, error, reload } = feed;
   const { id: current } = useParams();
   const [query, setQuery] = useState('');
@@ -141,10 +141,10 @@ function Sessions({ feed }: { feed: WorkItemFeed }) {
     <div className={s.sessions}>
       <label className={s.search}>
         <IconSearch />
-        <span className="sr-only">依頼を探す</span>
-        <input type="search" placeholder="依頼を探す" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <span className="sr-only">タスクを探す</span>
+        <input type="search" placeholder="タスクを探す" value={query} onChange={(e) => setQuery(e.target.value)} />
       </label>
-      <nav ref={scroller} className={s.scroll} aria-label="依頼">
+      <nav ref={scroller} className={s.scroll} aria-label="タスク">
         {!items ? (
           error ? (
             <p className={s.empty}>読み込めませんでした。<button type="button" className={s.retry} onClick={() => void reload()}>もう一度</button></p>
@@ -152,7 +152,7 @@ function Sessions({ feed }: { feed: WorkItemFeed }) {
             <p className={s.empty}>読み込んでいます…</p>
           )
         ) : groups.length === 0 && !hasMore ? (
-          <p className={s.empty}>{query ? '見つかりませんでした' : 'まだ依頼はありません'}</p>
+          <p className={s.empty}>{query ? '見つかりませんでした' : 'まだタスクはありません'}</p>
         ) : (
           groups.map((g) => (
             <section key={g.key} className={s.group} aria-labelledby={`sb-${g.key}`}>
@@ -160,7 +160,7 @@ function Sessions({ feed }: { feed: WorkItemFeed }) {
               <ul className={s.list}>
                 {g.items.map((i) => (
                   <li key={i.id}>
-                    <Link to={`/w/${i.id}`} className={s.item} aria-current={i.id === current ? 'page' : undefined} title={i.title}>
+                    <Link to={`/t/${i.id}`} className={s.item} aria-current={i.id === current ? 'page' : undefined} title={i.title}>
                       <Dot tone={stateTone[i.state]} label={stateLabel[i.state]} />
                       <span className={s.itemTitle}>{i.title}</span>
                       <span className={s.itemTime}>{relative(i.updatedAt)}</span>

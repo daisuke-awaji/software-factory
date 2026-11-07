@@ -47,9 +47,9 @@
 | 分類 | 採用するもの | バージョン | メモ |
 |---|---|---|---|
 | Web フレームワーク | **Hono** + `@hono/zod-openapi` | 4.13 / 1.6 | `hono/aws-lambda` の `handle()` で Lambda で動かす。`/openapi.json` を自動で生成する |
-| ワークフロー | **Lambda durable functions**（`@aws/durable-execution-sdk-js`） | 3.x | ライン実行エンジン（D18） |
+| ワークフロー | **Lambda durable functions**（`@aws/durable-execution-sdk-js`） | 3.x | ワークフロー実行エンジン（D18） |
 | AWS SDK | AWS SDK for JavaScript v3 | 3.1163 | `@aws-sdk/client-lambda-microvms`、`client-lambda`（`SendDurableExecutionCallback*`）、`client-dynamodb` + `lib-dynamodb` など |
-| ログ・計測 | Powertools for AWS Lambda（Logger / Metrics / Tracer） | 2.x | 構造化ログに `workItemId` と `stageRunId` を必ず入れる |
+| ログ・計測 | Powertools for AWS Lambda（Logger / Metrics / Tracer） | 2.x | 構造化ログに `taskId` と `stepRunId` を必ず入れる |
 | プロキシ類 | Node.js 24（`node:http` / `node:net`） | | egress プロキシ、Git ゲートウェイ、プレビュープロキシ。ECS Fargate で動かす |
 | VM 内のデーモン | agentd（Node.js 24 + Hono + Claude Agent SDK） | | lifecycle hooks と制御用の API を Hono で書く |
 | IaC | AWS CDK v2（TypeScript） | 2.275 | MicroVMs は L1（`CfnMicrovmImage` / `CfnNetworkConnector`）、durable functions は `lambda.Function` の `durableConfig` |
@@ -76,11 +76,11 @@
 software-factory/
 ├─ package.json / pnpm-workspace.yaml / tsconfig.base.json / eslint.config.js / .prettierrc / .nvmrc(24)
 ├─ packages/
-│  ├─ contracts/        # Zod スキーマ（API・イベント・ライン・イメージの定義）。依存はほかのパッケージに持たない
+│  ├─ contracts/        # Zod スキーマ（API・イベント・ワークフロー・イメージの定義）。依存はほかのパッケージに持たない
 │  ├─ web/              # React SPA（Vite / Zustand / MSW）
 │  ├─ api/              # Hono アプリ（HTTP API）＋ WebSocket の接続ハンドラー
 │  ├─ callback-api/     # Hono アプリ（Agent Callback API。プライベート）
-│  ├─ engine/           # ライン実行エンジン（durable functions）
+│  ├─ engine/           # ワークフロー実行エンジン（durable functions）
 │  ├─ vm-manager/       # 受付制御・RunMicrovm・トークン発行・keepalive・チェックポイント
 │  ├─ image-builder/    # イメージ定義 → Dockerfile の合成 → CreateMicrovmImage / UpdateMicrovmImage（durable functions）
 │  ├─ agentd/           # VM 内のデーモン（lifecycle hooks、ハーネスの制御、チェックポイント）
@@ -93,8 +93,8 @@ software-factory/
 ├─ images/
 │  ├─ factory-base/     # L1: Dockerfile、agentd の配置、hooks の設定
 │  └─ defaults/         # base.yaml / web.yaml / data.yaml（イメージ定義）
-├─ lines/               # chat.yaml / build-verify.yaml（ライン定義）
-├─ skills/              # ステージごとのエージェントへの指示（implement.md / verify.md / review.md）
+├─ workflows/               # chat.yaml / build-verify.yaml（ワークフロー定義）
+├─ skills/              # ステップごとのエージェントへの指示（implement.md / verify.md / review.md）
 └─ docs/                # 計画書・ADR・図・サンプル
 ```
 
@@ -134,7 +134,7 @@ software-factory/
 ### 5.1 共通
 - 外から入ってくるデータ（HTTP の入力、イベント、DynamoDB から読んだ値、VM からの callback）は**必ず Zod で parse してから**使う
 - エラーは `ApiError`（`code` / `message` / `requestId`）に揃える。`code` は大文字のスネークケース（例: `VALIDATION_ERROR`）
-- ログは構造化 JSON で出し、`workItemId`、`stageRunId`、`vmId`、`requestId` を入れる。プロンプトの本文や秘密情報はログに出さない
+- ログは構造化 JSON で出し、`taskId`、`stepRunId`、`vmId`、`requestId` を入れる。プロンプトの本文や秘密情報はログに出さない
 - 時刻は UTC の ISO 8601、ID は ULID
 - Durable functions の中では、乱数・現在時刻・I/O を必ず `ctx.step` の中で扱う（replay で先頭から再実行されるため。設計 §3.3）
 - 外部への副作用には冪等キーを付ける（`RunMicrovm` の `clientToken` など）
@@ -147,7 +147,7 @@ software-factory/
 ### 5.3 バックエンド
 - Hono のルートは `@hono/zod-openapi` の `createRoute` で定義する。入力の検証とエラーの形式は `defaultHook` で揃える
 - ルートのハンドラーは薄くし、処理はサービス（インターフェース + 実装）に分ける。テストではメモリ実装に差し替える
-- DynamoDB のアクセスは `shared/ddb` のリポジトリにまとめ、キーの組み立て（`WI#…` など）をあちこちに書かない
+- DynamoDB のアクセスは `shared/ddb` のリポジトリにまとめ、キーの組み立て（`TASK#…` など）をあちこちに書かない
 
 ### 5.4 Git の運用
 - `main` は保護する（レビュー1人以上、CI の成功が必須）。作業は `feat/*`、`fix/*`、`docs/*` のブランチで行う
@@ -159,8 +159,8 @@ software-factory/
 ## 6. 主要な実装の指針
 
 ### 6.1 契約（contracts）
-- 置くもの: `WorkItem`、`CreateWorkItemRequest`、`Plan`、`StageDef`、`Line`、`StageResult`、`FactoryEvent`（判別共用体）、`ImageSpec`、`NetworkProfile`、`PackageSource`、`Publication`、`ApiError`
-- YAML で書くライン定義とイメージ定義も、読み込んだら同じ Zod スキーマで検証する（既定値もスキーマで埋める）
+- 置くもの: `Task`、`CreateTaskRequest`、`Plan`、`StepDef`、`Workflow`、`StepResult`、`FactoryEvent`（判別共用体）、`ImageSpec`、`NetworkProfile`、`PackageSource`、`Publication`、`ApiError`
+- YAML で書くワークフロー定義とイメージ定義も、読み込んだら同じ Zod スキーマで検証する（既定値もスキーマで埋める）
 - 実際のコードは [samples/src/contracts/index.ts](./samples/src/contracts/index.ts) から始める
 
 ### 6.2 API（Hono）
@@ -169,7 +169,7 @@ software-factory/
 - WebSocket API は Hono を使わず、`$connect` / `$disconnect` / `$default` の小さな Lambda で書く。配信は DynamoDB Streams → Lambda → `PostToConnection`
 
 ### 6.3 Web（React / Zustand / MSW）
-- 画面: ワークアイテムの一覧、チャット（ストリーミング、ツールの実行状況、計画の承認カード、ブロックされた通信の表示）、ファイルと差分、プレビュー（iframe と別タブ）、公開、イメージ、ライン（閲覧）、管理（allowlist、パッケージソース、クォータ）
+- 画面: タスクの一覧、チャット（ストリーミング、ツールの実行状況、計画の承認カード、ブロックされた通信の表示）、ファイルと差分、プレビュー（iframe と別タブ）、公開、イメージ、ワークフロー（閲覧）、管理（allowlist、パッケージソース、クォータ）
 - 雛形: [samples/src/web/](./samples/src/web/)（apiClient、sessionStore、MSW のハンドラー、結合テスト）
 - MSW の起動: `main.tsx` で `import.meta.env.VITE_API_MOCK === 'true'` のときだけ `setupWorker(...handlers).start()` を呼ぶ。`mockServiceWorker.js` は `npx msw init public/` で置く（`msw/vite` のプラグインを使う場合は `mode: 'worker-only'`）
 
@@ -231,31 +231,31 @@ software-factory/
 
 **DoD**: V1・V2・V4・V9・V11・V12 の結果が出て、設計を変える点を ADR に書いた。
 
-### M1: 基盤と chat ラインの最小版（縦に1本通す）
+### M1: 基盤と chat ワークフローの最小版（縦に1本通す）
 - モノレポの雛形（§3）、CI（§8 の `ci.yml`）、`contracts`
 - CDK: Network / Data / Auth / ControlPlane（最小）/ Frontend（App のみ）
 - `factory-base` と `base` イメージ、agentd の最小版（`/run`、`/v1/messages`、イベントの送信）
-- API: ワークアイテムの作成・取得、メッセージの送信。WebSocket の配信
-- エンジン: chat ライン（workbench の1ステージ）
+- API: タスクの作成・取得、メッセージの送信。WebSocket の配信
+- エンジン: chat ワークフロー（workbench の1ステップ）
 - Web: 一覧とチャット（ストリーミング）。MSW のモードでも全画面が動く
 
-**DoD**: dev 環境で「Web から依頼 → VM でエージェントが動く → 応答がストリーミングで表示される」が通る。CI が緑。
+**DoD**: dev 環境で「Web から指示 → VM でエージェントが動く → 応答がストリーミングで表示される」が通る。CI が緑。
 
 ### M2: 計画の承認・リポジトリ連携・プレビュー
 - 計画の承認と再承認（`plan.proposed` / `approval.required`）
 - egress プロキシと allowlist（L0〜L2）、パッケージソース（`public`）
-- GitHub App（ユーザーごとの連携）、Git ゲートウェイ（トークンの付与、ref の検査）、PR の作成（deliver ステージ）
+- GitHub App（ユーザーごとの連携）、Git ゲートウェイ（トークンの付与、ref の検査）、PR の作成（deliver ステップ）
 - ライブプレビュー（Preview のディストリビューション、プレビュープロキシ）
 - suspend / resume、keepalive、8時間の引き継ぎ（チェックポイント）
 
 **DoD**: UC3（LoB が既存リポジトリを変更して PR を作る）と UC2（ライブプレビュー）が dev 環境で通る。保護ブランチへの push が拒否されることをテストで確かめた。
 
-### M3: カスタムイメージと多段のライン
+### M3: カスタムイメージと多段のワークフロー
 - イメージビルダー（定義の検証、合成、ビルド、/validate、カタログ）、`web` / `data` イメージ
-- build-verify ライン（実装 → 別の VM で検証 → レビュー → PR）、ステージ間の受け渡し
-- ラインの管理（管理者による YAML の登録）
+- build-verify ワークフロー（実装 → 別の VM で検証 → レビュー → PR）、ステップ間の受け渡し
+- ワークフローの管理（管理者による YAML の登録）
 
-**DoD**: ユーザーが作ったカスタムイメージを verify ステージで使う build-verify ラインが、最後まで通る。
+**DoD**: ユーザーが作ったカスタムイメージを verify ステップで使う build-verify ワークフローが、最後まで通る。
 
 ### M4: 社内公開・管理・パイロット
 - 社内公開（公開前のチェック、S3 + Publish のディストリビューション + Lambda@Edge、ACL、公開停止、有効期限）

@@ -107,7 +107,7 @@ export function PlanCard({ plan, actionable, latest, actions, defaultDetails = f
             </div>
           ) : mode === 'reject' ? (
             <div className={s.actions}>
-              <span className={s.actionsHint}>却下すると、この依頼は中止になります。よろしいですか？</span>
+              <span className={s.actionsHint}>却下すると、このタスクは中止になります。よろしいですか？</span>
               <Button size="sm" variant="ghost" onClick={() => setMode('idle')}>戻る</Button>
               <Button size="sm" variant="destructive" loading={busy === 'reject'} onClick={() => void run('reject', actions.reject)}>却下する</Button>
             </div>

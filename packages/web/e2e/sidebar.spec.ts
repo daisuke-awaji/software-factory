@@ -1,15 +1,15 @@
-// サイドパネル（ADR-0010・06_ui_spec.md §6）: 依頼の切り替え、過去の依頼と続きの読み込み、畳む・広げる（左上のロゴ）、1280px 未満で左から重ねて出す
+// サイドパネル（ADR-0010・06_ui_spec.md §6）: タスクの切り替え、過去のタスクと続きの読み込み、畳む・広げる（左上のロゴ）、1280px 未満で左から重ねて出す
 import { expect, test, type Page } from '@playwright/test';
 
 const fresh = async (page: Page) => {
   await page.goto('/?mock-reset&mock-speed=8');
-  await expect(page.getByRole('heading', { name: '新しい依頼' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '新しいタスク' })).toBeVisible();
 };
 
-test('サイドパネルから、ホームに戻らずに依頼を切り替えられる', async ({ page }) => {
+test('サイドパネルから、ホームに戻らずにタスクを切り替えられる', async ({ page }) => {
   await fresh(page);
   const side = page.getByRole('complementary', { name: 'サイドパネル' });
-  const list = side.getByRole('navigation', { name: '依頼' });
+  const list = side.getByRole('navigation', { name: 'タスク' });
   await expect(list.getByRole('region', { name: '対応が必要' }).getByRole('link', { name: /週次売上ダッシュボードを追加/ })).toBeVisible();
 
   await list.getByRole('link', { name: /週次売上ダッシュボードを追加/ }).click();
@@ -21,14 +21,14 @@ test('サイドパネルから、ホームに戻らずに依頼を切り替え�
   await expect(page.getByRole('region', { name: '会話' })).toBeVisible();
 
   // 検索で絞り込む
-  await side.getByRole('searchbox', { name: '依頼を探す' }).fill('部署別');
+  await side.getByRole('searchbox', { name: 'タスクを探す' }).fill('部署別');
   await expect(list.getByRole('link', { name: /部署別の売上レポートを作って公開/ })).toBeVisible();
   await expect(list.getByRole('link', { name: /週次売上ダッシュボードを追加/ })).toHaveCount(0);
 });
 
-test('過去の依頼を日付で分けて出し、下までスクロールすると続きを読む', async ({ page }) => {
+test('過去のタスクを日付で分けて出し、下までスクロールすると続きを読む', async ({ page }) => {
   await fresh(page);
-  const list = page.getByRole('complementary', { name: 'サイドパネル' }).getByRole('navigation', { name: '依頼' });
+  const list = page.getByRole('complementary', { name: 'サイドパネル' }).getByRole('navigation', { name: 'タスク' });
   await expect(list.getByRole('region', { name: 'それより前' })).toBeVisible();
   const oldest = list.getByRole('link', { name: /セッションの有効期限を延ばす/ });
   await expect(oldest).toHaveCount(0);
@@ -49,7 +49,7 @@ test('畳むとアイコンの列になり、読み込み直しても畳んだ�
   const side = page.getByRole('complementary', { name: 'サイドパネル' });
   const wide = (await side.boundingBox())!.width;
   await side.getByRole('button', { name: 'サイドパネルを畳む' }).click();
-  await expect(side.getByRole('navigation', { name: '依頼' })).toHaveCount(0);
+  await expect(side.getByRole('navigation', { name: 'タスク' })).toHaveCount(0);
   const rail = (await side.boundingBox())!.width;
   expect(rail).toBeLessThan(wide);
   expect(rail).toBeLessThanOrEqual(64);
@@ -63,11 +63,11 @@ test('畳むとアイコンの列になり、読み込み直しても畳んだ�
   const box = (await logo.boundingBox())!;
   expect(box.y).toBeLessThan(40);
   await logo.click();
-  await expect(side.getByRole('navigation', { name: '依頼' })).toBeVisible();
+  await expect(side.getByRole('navigation', { name: 'タスク' })).toBeVisible();
   await side.getByRole('button', { name: 'サイドパネルを畳む' }).click();
 
   await page.keyboard.press('ControlOrMeta+b');
-  await expect(side.getByRole('navigation', { name: '依頼' })).toBeVisible();
+  await expect(side.getByRole('navigation', { name: 'タスク' })).toBeVisible();
 });
 
 test('1280px 未満では、アイコンの列から重ねて広げる', async ({ page }) => {

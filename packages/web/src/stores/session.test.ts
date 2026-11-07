@@ -5,14 +5,14 @@ import { useSessionStore } from './session';
 
 const wid = ulid();
 let t = Date.UTC(2026, 10, 7);
-const ev = (e: object) => ({ ...e, workItemId: wid, eventId: ulid((t += 1000)) }) as FactoryEventEnvelope;
+const ev = (e: object) => ({ ...e, taskId: wid, eventId: ulid((t += 1000)) }) as FactoryEventEnvelope;
 
 describe('useSessionStore', () => {
   it('古い履歴が後から届いても、発言と状態が正しい順になる', () => {
-    const user = ev({ type: 'message.user', messageId: 'u', text: '依頼', author: '佐藤' });
-    const planning = ev({ type: 'workitem.state', state: 'planning' });
+    const user = ev({ type: 'message.user', messageId: 'u', text: 'タスク', author: '佐藤' });
+    const planning = ev({ type: 'task.state', state: 'planning' });
     const reply = ev({ type: 'message.delta', messageId: 'a', text: '計画を作りました' });
-    const awaiting = ev({ type: 'workitem.state', state: 'awaiting_approval' });
+    const awaiting = ev({ type: 'task.state', state: 'awaiting_approval' });
     const st = useSessionStore.getState();
     st.open(wid);
     // WebSocket で新しいものが先に届き、
@@ -29,7 +29,7 @@ describe('useSessionStore', () => {
   it('契約に合わないイベントは捨てる', () => {
     const st = useSessionStore.getState();
     st.open(wid);
-    st.applyEvent({ type: 'workitem.state', workItemId: wid, eventId: ulid(), state: 'exploded' });
+    st.applyEvent({ type: 'task.state', taskId: wid, eventId: ulid(), state: 'exploded' });
     expect(useSessionStore.getState().session!.state).toBeNull();
   });
 });

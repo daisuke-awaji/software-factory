@@ -14,11 +14,11 @@ type UiState = {
   /** 1280px 未満で、サイドパネルを重ねて開いているか（保存しない。画面を移ると閉じる） */
   sidebarOverlay: boolean;
   setSidebarOverlay: (v: boolean) => void;
-  /** ワークアイテムごとの右のタブ。manual = ユーザーが自分で選んだ（06_ui_spec.md §3） */
+  /** タスクごとの右のタブ。manual = ユーザーが自分で選んだ（06_ui_spec.md §3） */
   tabs: Record<string, { tab: Tab; manual: boolean; hint: Tab | null }>;
-  autoTab: (workItemId: string, tab: Tab) => void;
-  pickTab: (workItemId: string, tab: Tab) => void;
-  resetTab: (workItemId: string) => void;
+  autoTab: (taskId: string, tab: Tab) => void;
+  pickTab: (taskId: string, tab: Tab) => void;
+  resetTab: (taskId: string) => void;
   toasts: Toast[];
   toast: (text: string, tone?: Toast['tone']) => void;
   dismiss: (id: number) => void;

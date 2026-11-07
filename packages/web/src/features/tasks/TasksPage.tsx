@@ -1,24 +1,24 @@
-// すべての依頼（ADR-0010）: 絞り込み・検索つきの表。スマホではカードにする。サイドパネルの一覧で足りないときに使う
-import type { Line, WorkItem } from '@factory/contracts';
+// すべてのタスク（ADR-0010）: 絞り込み・検索つきの表。スマホではカードにする。サイドパネルの一覧で足りないときに使う
+import type { Workflow, Task } from '@factory/contracts';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Page } from '../../app/AppShell';
 import { SegmentedControl } from '../../components/ui/segmented-control';
 import { Empty, ErrorBanner, Loading, Tag, TextInput } from '../../components/kit';
 import { IconInbox, IconSearch } from '../../components/icons';
-import { StageLine } from '../../components/StageLine';
+import { StepProgress } from '../../components/StepProgress';
 import { duration, reasonLabel, relative, stateLabel, stateTone, usd } from '../../lib/format';
-import { findLine, stepsFromItem } from '../../lib/line';
+import { findWorkflow, progressFromTask } from '../../lib/workflow';
 import { useApi } from '../../lib/services';
 import type { Pending } from '../../lib/session';
 import { narrow, useMediaQuery } from '../../lib/useMediaQuery';
 import { useResource } from '../../lib/useResource';
 import { useLiveReload, usePending } from '../home/useLive';
-import s from './requests.module.css';
+import s from './tasks.module.css';
 
 type Filter = 'all' | 'action' | 'running' | 'done' | 'ended' | 'archived';
 
-const filters: Record<Exclude<Filter, 'archived'>, (i: WorkItem) => boolean> = {
+const filters: Record<Exclude<Filter, 'archived'>, (i: Task) => boolean> = {
   all: () => true,
   action: (i) => i.state === 'awaiting_approval',
   running: (i) => ['queued', 'planning', 'running', 'suspended'].includes(i.state),
@@ -26,13 +26,13 @@ const filters: Record<Exclude<Filter, 'archived'>, (i: WorkItem) => boolean> = {
   ended: (i) => i.state === 'failed' || i.state === 'cancelled',
 };
 
-export function RequestsPage() {
+export function TasksPage() {
   const api = useApi();
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
-  const list = useResource(() => api.listWorkItems({ limit: 100 }), [], { pollMs: 20_000 });
-  const archived = useResource(() => api.listWorkItems({ archived: true, limit: 100 }), [filter], { enabled: filter === 'archived' });
-  const lines = useResource(() => api.lines(), []);
+  const list = useResource(() => api.listTasks({ limit: 100 }), [], { pollMs: 20_000 });
+  const archived = useResource(() => api.listTasks({ archived: true, limit: 100 }), [filter], { enabled: filter === 'archived' });
+  const workflows = useResource(() => api.workflows(), []);
   useLiveReload(list.data?.items, () => void list.reload());
   const pending = usePending(list.data?.items);
   const phone = useMediaQuery(narrow.phone);
@@ -46,7 +46,7 @@ export function RequestsPage() {
 
   return (
     <Page wide>
-      <h1 className={s.title}>すべての依頼</h1>
+      <h1 className={s.title}>すべてのタスク</h1>
       <div className={s.listHead}>
         <SegmentedControl<Filter>
           size="sm"
@@ -64,7 +64,7 @@ export function RequestsPage() {
         />
         <label className={s.search}>
           <IconSearch />
-          <span className="sr-only">依頼を検索</span>
+          <span className="sr-only">タスクを検索</span>
           <TextInput type="search" placeholder="タイトルやリポジトリで探す" value={query} onChange={(e) => setQuery(e.target.value)} />
         </label>
       </div>
@@ -73,28 +73,28 @@ export function RequestsPage() {
       {list.loading && !list.data ? (
         <Loading />
       ) : shown.length === 0 ? (
-        <Empty title={query ? '見つかりませんでした' : 'この条件の依頼はありません'} icon={<IconInbox />}>
-          {filter === 'all' && !query && <><Link to="/">新しい依頼</Link>から、最初の依頼を出してみましょう。</>}
+        <Empty title={query ? '見つかりませんでした' : 'この条件のタスクはありません'} icon={<IconInbox />}>
+          {filter === 'all' && !query && <><Link to="/">新しいタスク</Link>から、最初のタスクを作ってみましょう。</>}
         </Empty>
       ) : phone ? (
-        <WorkItemCards items={shown} lines={lines.data} pending={pending} />
+        <TaskCards items={shown} workflows={workflows.data} pending={pending} />
       ) : (
-        <WorkItemTable items={shown} lines={lines.data} pending={pending} />
+        <TaskTable items={shown} workflows={workflows.data} pending={pending} />
       )}
     </Page>
   );
 }
 
-function WorkItemTable({ items, lines, pending }: { items: WorkItem[]; lines: Line[] | undefined; pending: Record<string, Pending> }) {
+function TaskTable({ items, workflows, pending }: { items: Task[]; workflows: Workflow[] | undefined; pending: Record<string, Pending> }) {
   const navigate = useNavigate();
   return (
     <div className={s.tableWrap}>
-      <table className={s.table} aria-label="依頼の一覧">
+      <table className={s.table} aria-label="タスクの一覧">
         <thead>
           <tr>
-            <th scope="col">依頼</th>
+            <th scope="col">タスク</th>
             <th scope="col">状態</th>
-            <th scope="col">ライン</th>
+            <th scope="col">ワークフロー</th>
             <th scope="col" className={s.num}>所要</th>
             <th scope="col" className={s.num}>費用</th>
             <th scope="col" className={s.num}>更新</th>
@@ -102,13 +102,13 @@ function WorkItemTable({ items, lines, pending }: { items: WorkItem[]; lines: Li
         </thead>
         <tbody>
           {items.map((i) => {
-            const line = findLine(lines, i.lineRef);
+            const workflow = findWorkflow(workflows, i.workflowRef);
             const p = pending[i.id];
             const done = i.state === 'completed' || i.state === 'failed' || i.state === 'cancelled';
             return (
-              <tr key={i.id} onClick={() => void navigate(`/w/${i.id}`)} className={s.row}>
+              <tr key={i.id} onClick={() => void navigate(`/t/${i.id}`)} className={s.row}>
                 <td>
-                  <Link to={`/w/${i.id}`} className={s.rowTitle} onClick={(e) => e.stopPropagation()}>
+                  <Link to={`/t/${i.id}`} className={s.rowTitle} onClick={(e) => e.stopPropagation()}>
                     {i.title}
                   </Link>
                   <span className={s.rowSub}>
@@ -120,9 +120,9 @@ function WorkItemTable({ items, lines, pending }: { items: WorkItem[]; lines: Li
                   <Tag tone={stateTone[i.state]}>{p?.kind === 'approval' ? `${reasonLabel[p.approval.reason]}の承認待ち` : stateLabel[i.state]}</Tag>
                 </td>
                 <td>
-                  <span className={s.lineCell}>
-                    <StageLine size="xs" steps={stepsFromItem(line, i, p?.kind)} label={`${line?.title ?? i.lineRef} の進み具合`} />
-                    <span className={s.lineName}>{line?.title ?? i.lineRef}</span>
+                  <span className={s.workflowCell}>
+                    <StepProgress size="xs" steps={progressFromTask(workflow, i, p?.kind)} label={`${workflow?.title ?? i.workflowRef} の進み具合`} />
+                    <span className={s.workflowName}>{workflow?.title ?? i.workflowRef}</span>
                   </span>
                 </td>
                 <td className={s.num}>{done ? duration(Date.parse(i.updatedAt) - Date.parse(i.createdAt)) : '—'}</td>
@@ -138,15 +138,15 @@ function WorkItemTable({ items, lines, pending }: { items: WorkItem[]; lines: Li
 }
 
 /** スマホの一覧: 表の代わりに、1件を1枚のカードにする */
-function WorkItemCards({ items, lines, pending }: { items: WorkItem[]; lines: Line[] | undefined; pending: Record<string, Pending> }) {
+function TaskCards({ items, workflows, pending }: { items: Task[]; workflows: Workflow[] | undefined; pending: Record<string, Pending> }) {
   return (
-    <ul className={s.cards} aria-label="依頼の一覧">
+    <ul className={s.cards} aria-label="タスクの一覧">
       {items.map((i) => {
-        const line = findLine(lines, i.lineRef);
+        const workflow = findWorkflow(workflows, i.workflowRef);
         const p = pending[i.id];
         return (
           <li key={i.id}>
-            <Link to={`/w/${i.id}`} className={s.cardLink}>
+            <Link to={`/t/${i.id}`} className={s.cardLink}>
               <span className={s.cardTop}>
                 <span className={s.rowTitle}>{i.title}</span>
                 <span className={s.cardTime}>{relative(i.updatedAt)}</span>
@@ -158,7 +158,7 @@ function WorkItemCards({ items, lines, pending }: { items: WorkItem[]; lines: Li
               </span>
               <span className={s.cardBottom}>
                 <Tag tone={stateTone[i.state]}>{p?.kind === 'approval' ? `${reasonLabel[p.approval.reason]}の承認待ち` : stateLabel[i.state]}</Tag>
-                <StageLine size="xs" steps={stepsFromItem(line, i, p?.kind)} label={`${line?.title ?? i.lineRef} の進み具合`} />
+                <StepProgress size="xs" steps={progressFromTask(workflow, i, p?.kind)} label={`${workflow?.title ?? i.workflowRef} の進み具合`} />
               </span>
             </Link>
           </li>

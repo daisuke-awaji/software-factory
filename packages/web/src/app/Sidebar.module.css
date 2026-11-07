@@ -35,7 +35,7 @@
 .nav a :global(.icon) { flex: none; width: 17px; height: 17px; color: var(--muted); }
 .nav a.active :global(.icon), .nav a:hover :global(.icon) { color: var(--ink); }
 .panel:not([data-expanded]) .nav a { justify-content: center; padding: 0; position: relative; }
-.newRequest { margin-bottom: 6px; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow-sm); font-weight: 500; color: var(--ink) !important; }
+.newTask { margin-bottom: 6px; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow-sm); font-weight: 500; color: var(--ink) !important; }
 .label { flex: 1; min-width: 0; }
 .badge {
   display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px;
@@ -43,7 +43,7 @@
 }
 .panel:not([data-expanded]) .badge { position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 4px; font-size: 10px; }
 
-/* ---------- 依頼の一覧 ---------- */
+/* ---------- タスクの一覧 ---------- */
 .sessions { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-top: 14px; }
 .search { flex: none; position: relative; display: block; margin: 0 0 6px; }
 .search :global(.icon) { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--faint); pointer-events: none; }
@@ -92,7 +92,7 @@
 @media (max-height: 520px) {
   .head { height: 36px; margin-bottom: 2px; }
   .nav a { min-height: 34px; }
-  .newRequest { margin-bottom: 2px; }
+  .newTask { margin-bottom: 2px; }
   .panel[data-expanded] { overflow-y: auto; }
   .panel[data-expanded] .sessions { flex: none; }
   .panel[data-expanded] .scroll { overflow: visible; }

@@ -1,15 +1,15 @@
 // MSW 3 のハンドラー。開発時はブラウザ（setupWorker）、テストでは Node（setupServer）で同じものを使う（実装計画 §6.3）
 // 入力も出力も contracts で検証する。パスは `*/api/v1/...` と書き、どのオリジンでも一致させる（N2）
 import {
-  AdminUser, ApprovalDecisionBody, AttachmentRequest, CreatePublicationRequest, CreateWorkItemRequest, DownloadRequest, FileEntry, ImageScope,
-  ImageSpec, ImageSummary, ImageVersion, LineDefinition, NetworkProfile, PackageSource, PostMessageRequest, PrecheckResult, Publication,
-  RequestChangesBody, UpdateAdminUserRequest, UpdatePublicationRequest, UpdateWorkItemRequest, VmInfo, WorkItem, WsClientFrame, ulid,
+  AdminUser, ApprovalDecisionBody, AttachmentRequest, CreatePublicationRequest, CreateTaskRequest, DownloadRequest, FileEntry, ImageScope,
+  ImageSpec, ImageSummary, ImageVersion, WorkflowDefinition, NetworkProfile, PackageSource, PostMessageRequest, PrecheckResult, Publication,
+  RequestChangesBody, UpdateAdminUserRequest, UpdatePublicationRequest, UpdateTaskRequest, VmInfo, Task, WsClientFrame, ulid,
 } from '@factory/contracts';
 import { http, HttpResponse, delay, ws } from 'msw';
 import { parse as parseYaml, stringify } from 'yaml';
 import { z } from 'zod';
 import { diffFiles } from './diff';
-import { getDb, onEvent, save, workItem } from './db';
+import { getDb, onEvent, save, task } from './db';
 import { buildLog } from './fixtures';
 import { previewHtml } from './scenarios';
 import * as sim from './simulator';
@@ -49,13 +49,13 @@ function act(fn: () => void): R {
 }
 
 const mine = (id: string | readonly string[] | undefined) => {
-  const w = typeof id === 'string' ? workItem(id) : undefined;
+  const w = typeof id === 'string' ? task(id) : undefined;
   return w && w.ownerId === getDb().me.id ? w : undefined;
 };
 const isAdmin = () => getDb().me.roles.includes('admin');
 
 // ---------------------------------------------------------------- 一時的な URL（presigned URL の代わり）
-type Ticket = { kind: 'upload'; path: string; fileName: string; contentType: string } | { kind: 'download'; workItemId: string; paths: string[]; format: 'file' | 'zip'; fileName: string };
+type Ticket = { kind: 'upload'; path: string; fileName: string; contentType: string } | { kind: 'download'; taskId: string; paths: string[]; format: 'file' | 'zip'; fileName: string };
 const tickets = new Map<string, Ticket>();
 const ticket = (t: Ticket) => {
   const token = ulid().toLowerCase();
@@ -111,13 +111,13 @@ function precheck(id: string, path: string) {
 function vms(): VmInfo[] {
   const d = getDb();
   const out: VmInfo[] = [];
-  for (const w of d.workItems) {
+  for (const w of d.tasks) {
     if (['completed', 'failed', 'cancelled'].includes(w.state)) continue;
-    const run = d.stageRuns[w.id]?.findLast((r) => r.state === 'running');
+    const run = d.stepRuns[w.id]?.findLast((r) => r.state === 'running');
     if (!run) continue;
     const image = run.image ?? 'base@3';
     const mem = d.images.find((i) => i.name === image.split('@')[0])?.memoryMiB ?? 2048;
-    out.push(VmInfo.parse({ id: `vm-${w.id.slice(-8).toLowerCase()}-${run.runId.replace('#', '-')}`, workItemId: w.id, stageRunId: run.runId, owner: d.users.find((u) => u.id === w.ownerId)?.name ?? w.ownerId, image, memoryMiB: mem, state: w.state === 'running' || w.state === 'planning' ? 'running' : 'suspended', startedAt: run.startedAt }));
+    out.push(VmInfo.parse({ id: `vm-${w.id.slice(-8).toLowerCase()}-${run.runId.replace('#', '-')}`, taskId: w.id, stepRunId: run.runId, owner: d.users.find((u) => u.id === w.ownerId)?.name ?? w.ownerId, image, memoryMiB: mem, state: w.state === 'running' || w.state === 'planning' ? 'running' : 'suspended', startedAt: run.startedAt }));
   }
   return out;
 }
@@ -181,11 +181,11 @@ const wsHandler = socket.addEventListener('connection', ({ client }) => {
       return;
     }
     if (!frame.success) return;
-    if (frame.data.action === 'subscribe' && mine(frame.data.workItemId)) subs.add(frame.data.workItemId);
-    else subs.delete(frame.data.workItemId);
+    if (frame.data.action === 'subscribe' && mine(frame.data.taskId)) subs.add(frame.data.taskId);
+    else subs.delete(frame.data.taskId);
   });
   const off = onEvent((e) => {
-    if (subs.has(e.workItemId)) client.send(JSON.stringify(e));
+    if (subs.has(e.taskId)) client.send(JSON.stringify(e));
   });
   client.addEventListener('close', off);
 });
@@ -204,8 +204,8 @@ export const handlers = [
 
   http.get(`${API}/me`, () => HttpResponse.json(getDb().me)),
 
-  // ---- ワークアイテム ----
-  http.get(`${API}/work-items`, ({ request }) => {
+  // ---- タスク ----
+  http.get(`${API}/tasks`, ({ request }) => {
     const u = new URL(request.url);
     const state = u.searchParams.get('state');
     const archived = u.searchParams.get('archived') === 'true';
@@ -213,34 +213,34 @@ export const handlers = [
     // 更新の新しい順。カーソルは読み終えた件数（本物は不透明な文字列: 05_api_spec.md）
     const from = Math.max(0, Number(u.searchParams.get('cursor') ?? 0) || 0);
     const items = getDb()
-      .workItems.filter((w) => w.ownerId === getDb().me.id && (state ? w.state === state : true) && !!w.archived === archived)
+      .tasks.filter((w) => w.ownerId === getDb().me.id && (state ? w.state === state : true) && !!w.archived === archived)
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     const next = from + limit;
     return HttpResponse.json({ items: items.slice(from, next), ...(items.length > next ? { nextCursor: String(next) } : {}) });
   }),
-  http.post(`${API}/work-items`, async ({ request }) => {
-    const input = await body(CreateWorkItemRequest, request);
+  http.post(`${API}/tasks`, async ({ request }) => {
+    const input = await body(CreateTaskRequest, request);
     if (isResponse(input)) return input;
     const d = getDb();
-    const limit = d.users.find((u) => u.id === d.me.id)?.limits.concurrentWorkItems ?? 3;
-    const active = d.workItems.filter((w) => w.ownerId === d.me.id && !['completed', 'failed', 'cancelled'].includes(w.state)).length;
-    if (active >= limit) return err(429, 'QUOTA_EXCEEDED', `同時に進められる依頼は ${limit} 件までです。終わった依頼があれば、それを待ってから出してください。`);
-    if (!d.lines.some((l) => l.name === input.lineRef.split('@')[0])) return err(400, 'VALIDATION_ERROR', `ライン ${input.lineRef} はありません`);
+    const limit = d.users.find((u) => u.id === d.me.id)?.limits.concurrentTasks ?? 3;
+    const active = d.tasks.filter((w) => w.ownerId === d.me.id && !['completed', 'failed', 'cancelled'].includes(w.state)).length;
+    if (active >= limit) return err(429, 'QUOTA_EXCEEDED', `同時に進められるタスクは ${limit} 件までです。終わったタスクがあれば、それを待ってから出してください。`);
+    if (!d.workflows.some((l) => l.name === input.workflowRef.split('@')[0])) return err(400, 'VALIDATION_ERROR', `ワークフロー ${input.workflowRef} はありません`);
     if (input.repo) {
       if (!d.me.github.connected) return err(403, 'GITHUB_NOT_CONNECTED', 'GitHub と連携していません');
       if (!d.repos.some((r) => r.owner === input.repo!.owner && r.name === input.repo!.name)) return err(403, 'FORBIDDEN', 'このリポジトリを使う権限がありません');
     }
-    const item = sim.createWorkItem(input, d.me.id, d.me.name);
-    return HttpResponse.json(WorkItem.parse(item), { status: 201 });
+    const item = sim.createTask(input, d.me.id, d.me.name);
+    return HttpResponse.json(Task.parse(item), { status: 201 });
   }),
-  http.get(`${API}/work-items/:id`, ({ params }) => {
+  http.get(`${API}/tasks/:id`, ({ params }) => {
     const w = mine(params['id']);
     return w ? HttpResponse.json(w) : notFound();
   }),
-  http.patch(`${API}/work-items/:id`, async ({ params, request }) => {
+  http.patch(`${API}/tasks/:id`, async ({ params, request }) => {
     const w = mine(params['id']);
     if (!w) return notFound();
-    const patch = await body(UpdateWorkItemRequest, request);
+    const patch = await body(UpdateTaskRequest, request);
     if (isResponse(patch)) return patch;
     if (patch.title !== undefined) w.title = patch.title;
     if (patch.archived !== undefined) w.archived = patch.archived;
@@ -248,22 +248,22 @@ export const handlers = [
     save();
     return HttpResponse.json(w);
   }),
-  http.post(`${API}/work-items/:id/messages`, async ({ params, request }) => {
+  http.post(`${API}/tasks/:id/messages`, async ({ params, request }) => {
     const w = mine(params['id']);
     if (!w) return notFound();
     const m = await body(PostMessageRequest, request);
     if (isResponse(m)) return m;
     return act(() => sim.postMessage(w.id, m.text, m.attachments ?? [], getDb().me.name));
   }),
-  http.post(`${API}/work-items/:id/interrupt`, ({ params }) => {
+  http.post(`${API}/tasks/:id/interrupt`, ({ params }) => {
     const w = mine(params['id']);
     return w ? act(() => sim.interrupt(w.id)) : notFound();
   }),
-  http.post(`${API}/work-items/:id/cancel`, ({ params }) => {
+  http.post(`${API}/tasks/:id/cancel`, ({ params }) => {
     const w = mine(params['id']);
     return w ? act(() => sim.cancel(w.id)) : notFound();
   }),
-  http.get(`${API}/work-items/:id/events`, ({ params, request }) => {
+  http.get(`${API}/tasks/:id/events`, ({ params, request }) => {
     const w = mine(params['id']);
     if (!w) return notFound();
     const after = new URL(request.url).searchParams.get('after');
@@ -272,26 +272,26 @@ export const handlers = [
   }),
 
   // ---- 計画と承認 ----
-  http.get(`${API}/work-items/:id/plans`, ({ params }) => {
+  http.get(`${API}/tasks/:id/plans`, ({ params }) => {
     const w = mine(params['id']);
     return w ? HttpResponse.json(getDb().plans[w.id] ?? []) : notFound();
   }),
-  http.post(`${API}/work-items/:id/plans/:v/approve`, ({ params }) => {
+  http.post(`${API}/tasks/:id/plans/:v/approve`, ({ params }) => {
     const w = mine(params['id']);
     return w ? act(() => sim.approvePlan(w.id, Number(params['v']), getDb().me.name)) : notFound();
   }),
-  http.post(`${API}/work-items/:id/plans/:v/request-changes`, async ({ params, request }) => {
+  http.post(`${API}/tasks/:id/plans/:v/request-changes`, async ({ params, request }) => {
     const w = mine(params['id']);
     if (!w) return notFound();
     const b = await body(RequestChangesBody, request);
     if (isResponse(b)) return b;
     return act(() => sim.requestChanges(w.id, Number(params['v']), b.comment, getDb().me.name));
   }),
-  http.post(`${API}/work-items/:id/plans/:v/reject`, ({ params }) => {
+  http.post(`${API}/tasks/:id/plans/:v/reject`, ({ params }) => {
     const w = mine(params['id']);
     return w ? act(() => sim.rejectPlan(w.id, Number(params['v']), getDb().me.name)) : notFound();
   }),
-  http.post(`${API}/work-items/:id/approvals/:aid`, async ({ params, request }) => {
+  http.post(`${API}/tasks/:id/approvals/:aid`, async ({ params, request }) => {
     const w = mine(params['id']);
     if (!w) return notFound();
     const b = await body(ApprovalDecisionBody, request);
@@ -299,23 +299,23 @@ export const handlers = [
     return act(() => sim.answerApproval(w.id, String(params['aid']), b.decision, getDb().me.name));
   }),
 
-  // ---- ステージ・ファイル・成果物 ----
-  http.get(`${API}/work-items/:id/stages`, ({ params }) => {
+  // ---- ステップ・ファイル・成果物 ----
+  http.get(`${API}/tasks/:id/steps`, ({ params }) => {
     const w = mine(params['id']);
-    return w ? HttpResponse.json(getDb().stageRuns[w.id] ?? []) : notFound();
+    return w ? HttpResponse.json(getDb().stepRuns[w.id] ?? []) : notFound();
   }),
-  http.post(`${API}/work-items/:id/stages/:runId/retry`, ({ params }) => {
+  http.post(`${API}/tasks/:id/steps/:runId/retry`, ({ params }) => {
     const w = mine(params['id']);
     return w ? act(() => sim.retry(w.id, String(params['runId']))) : notFound();
   }),
-  http.get(`${API}/work-items/:id/files`, ({ params, request }) => {
+  http.get(`${API}/tasks/:id/files`, ({ params, request }) => {
     const w = mine(params['id']);
     if (!w) return notFound();
     const path = new URL(request.url).searchParams.get('path') ?? '';
     const running = !['completed', 'failed', 'cancelled'].includes(w.state);
     return HttpResponse.json({ path, source: running ? 'vm' : 'snapshot', entries: listDir(getDb().files[w.id] ?? {}, path) });
   }),
-  http.get(`${API}/work-items/:id/files/content`, ({ params, request }) => {
+  http.get(`${API}/tasks/:id/files/content`, ({ params, request }) => {
     const w = mine(params['id']);
     if (!w) return notFound();
     const path = new URL(request.url).searchParams.get('path') ?? '';
@@ -328,13 +328,13 @@ export const handlers = [
     const c = getDb().files[String(params['id'])]?.[path];
     return c === undefined ? new HttpResponse('not found', { status: 404 }) : new HttpResponse(c, { headers: { 'content-type': contentType(path) } });
   }),
-  http.get(`${API}/work-items/:id/diff`, ({ params }) => {
+  http.get(`${API}/tasks/:id/diff`, ({ params }) => {
     const w = mine(params['id']);
     if (!w) return notFound();
     const d = getDb();
     return HttpResponse.json({ base: w.repo?.baseBranch ?? 'main', head: w.branch ?? 'workspace', files: diffFiles(d.baseFiles[w.id] ?? {}, d.files[w.id] ?? {}) });
   }),
-  ...['/attachments', '/work-items/:id/attachments'].map((p) =>
+  ...['/attachments', '/tasks/:id/attachments'].map((p) =>
     http.post(`${API}${p}`, async ({ params, request }) => {
       if (params['id'] && !mine(params['id'])) return notFound();
       const b = await body(AttachmentRequest, request);
@@ -354,7 +354,7 @@ export const handlers = [
     save();
     return new HttpResponse(null, { status: 200 });
   }),
-  http.post(`${API}/work-items/:id/downloads`, async ({ params, request }) => {
+  http.post(`${API}/tasks/:id/downloads`, async ({ params, request }) => {
     const w = mine(params['id']);
     if (!w) return notFound();
     const b = await body(DownloadRequest, request);
@@ -363,18 +363,18 @@ export const handlers = [
     const paths = b.paths?.length ? b.paths : Object.keys(files);
     if (paths.some((p) => files[p] === undefined && !Object.keys(files).some((f) => f.startsWith(`${p}/`)))) return notFound();
     const fileName = b.format === 'zip' ? `${w.title.slice(0, 40)}.zip` : (paths[0]!.split('/').at(-1) ?? 'file');
-    const token = ticket({ kind: 'download', workItemId: w.id, paths, format: b.format, fileName });
+    const token = ticket({ kind: 'download', taskId: w.id, paths, format: b.format, fileName });
     return HttpResponse.json({ url: `${FILES}/dl/${token}`, fileName, expiresAt: expires(300) });
   }),
   http.get(`${FILES}/dl/:token`, ({ params }) => {
     const t = tickets.get(String(params['token']));
     if (!t || t.kind !== 'download') return new HttpResponse(null, { status: 403 });
-    const files = getDb().files[t.workItemId] ?? {};
+    const files = getDb().files[t.taskId] ?? {};
     if (t.format === 'file') return new HttpResponse(files[t.paths[0]!] ?? '', { headers: { 'content-type': contentType(t.paths[0]!) } });
     const selected = Object.fromEntries(Object.entries(files).filter(([p]) => t.paths.some((x) => p === x || p.startsWith(`${x}/`))));
     return new HttpResponse(zip(selected), { headers: { 'content-type': 'application/zip' } });
   }),
-  http.post(`${API}/work-items/:id/previews`, async ({ params, request }) => {
+  http.post(`${API}/tasks/:id/previews`, async ({ params, request }) => {
     const w = mine(params['id']);
     if (!w) return notFound();
     const b = await body(z.object({ port: z.number().int() }), request);
@@ -392,7 +392,7 @@ export const handlers = [
   }),
 
   // ---- 社内公開 ----
-  http.post(`${API}/work-items/:id/publications/precheck`, async ({ params, request }) => {
+  http.post(`${API}/tasks/:id/publications/precheck`, async ({ params, request }) => {
     const w = mine(params['id']);
     if (!w) return notFound();
     const b = await body(z.object({ path: z.string() }), request);
@@ -402,23 +402,23 @@ export const handlers = [
   http.post(`${API}/publications`, async ({ request }) => {
     const b = await body(CreatePublicationRequest, request);
     if (isResponse(b)) return b;
-    const w = mine(b.workItemId);
+    const w = mine(b.taskId);
     if (!w) return notFound();
     const check = precheck(w.id, b.path);
     if (!check.ok) return err(422, 'PRECHECK_FAILED', check.findings.filter((f) => f.severity === 'error').map((f) => `${f.path}: ${f.message}`).join(' / '));
     if (b.acl.scope === 'restricted' && !b.acl.users?.length && !b.acl.groups?.length) return err(400, 'VALIDATION_ERROR', '限られた人に公開するときは、ユーザーかグループを1つ以上指定してください');
     const id = ulid();
     const nowIso = new Date().toISOString();
-    const pub = Publication.parse({ id, workItemId: w.id, title: b.title ?? w.title, path: b.path, url: `https://d3k8x2pub0.cloudfront.net/p/${id.toLowerCase()}/`, acl: b.acl, version: 1, status: 'active', createdAt: nowIso, updatedAt: nowIso, ...(b.expiresAt ? { expiresAt: b.expiresAt } : {}) });
+    const pub = Publication.parse({ id, taskId: w.id, title: b.title ?? w.title, path: b.path, url: `https://d3k8x2pub0.cloudfront.net/p/${id.toLowerCase()}/`, acl: b.acl, version: 1, status: 'active', createdAt: nowIso, updatedAt: nowIso, ...(b.expiresAt ? { expiresAt: b.expiresAt } : {}) });
     getDb().publications.unshift(pub);
     save();
     return HttpResponse.json(pub, { status: 201 });
   }),
   http.get(`${API}/publications`, () => {
     const d = getDb();
-    const ids = new Set(d.workItems.filter((w) => w.ownerId === d.me.id).map((w) => w.id));
+    const ids = new Set(d.tasks.filter((w) => w.ownerId === d.me.id).map((w) => w.id));
     for (const p of d.publications) if (p.status === 'active' && p.expiresAt && Date.parse(p.expiresAt) < Date.now()) p.status = 'expired';
-    return HttpResponse.json(d.publications.filter((p) => ids.has(p.workItemId)));
+    return HttpResponse.json(d.publications.filter((p) => ids.has(p.taskId)));
   }),
   http.patch(`${API}/publications/:pid`, async ({ params, request }) => {
     const p = getDb().publications.find((x) => x.id === params['pid']);
@@ -452,7 +452,7 @@ export const handlers = [
     return HttpResponse.json(d.repos);
   }),
 
-  // ---- イメージとライン ----
+  // ---- イメージとワークフロー ----
   http.get(`${API}/images`, () => HttpResponse.json(getDb().images)),
   http.post(`${API}/images`, async ({ request }) => {
     const spec = await body(ImageSpec, request);
@@ -498,7 +498,7 @@ export const handlers = [
     save();
     return HttpResponse.json(img);
   }),
-  http.get(`${API}/lines`, () => HttpResponse.json(getDb().lines.map((l) => l.line))),
+  http.get(`${API}/workflows`, () => HttpResponse.json(getDb().workflows.map((l) => l.workflow))),
 
   // ---- 管理（Admin のロールが必須） ----
   http.all(`${API}/admin/*`, () => (isAdmin() ? undefined : err(403, 'FORBIDDEN', '管理者だけが使えます'))),
@@ -525,11 +525,11 @@ export const handlers = [
     save();
     return HttpResponse.json(p);
   }),
-  http.get(`${API}/admin/lines/:name`, ({ params }) => {
-    const l = getDb().lines.find((x) => x.name === params['name']);
+  http.get(`${API}/admin/workflows/:name`, ({ params }) => {
+    const l = getDb().workflows.find((x) => x.name === params['name']);
     return l ? HttpResponse.json(l) : notFound();
   }),
-  http.put(`${API}/admin/lines/:name`, async ({ params, request }) => {
+  http.put(`${API}/admin/workflows/:name`, async ({ params, request }) => {
     const b = await body(z.object({ yaml: z.string().min(1).max(100_000) }), request);
     if (isResponse(b)) return b;
     let raw: unknown;
@@ -539,16 +539,16 @@ export const handlers = [
       return err(400, 'VALIDATION_ERROR', `YAML として読めません: ${e instanceof Error ? e.message.split('\n')[0] : ''}`);
     }
     const d = getDb();
-    const cur = d.lines.find((x) => x.name === params['name']);
-    const parsed = LineDefinition.shape.line.safeParse({ ...(raw as object), version: (cur?.version ?? 0) + 1 });
+    const cur = d.workflows.find((x) => x.name === params['name']);
+    const parsed = WorkflowDefinition.shape.workflow.safeParse({ ...(raw as object), version: (cur?.version ?? 0) + 1 });
     if (!parsed.success) return err(400, 'VALIDATION_ERROR', parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join(' / '));
     if (parsed.data.name !== params['name']) return err(400, 'VALIDATION_ERROR', 'name がパスと違います');
-    const ids = new Set(parsed.data.stages.map((s) => s.id));
-    const bad = parsed.data.stages.flatMap((s) => [s.next, s.on?.pass, s.on?.fail?.goto].filter((x): x is string => !!x && !ids.has(x)));
-    if (bad.length) return err(400, 'VALIDATION_ERROR', `存在しないステージを参照しています: ${bad.join(', ')}`);
+    const ids = new Set(parsed.data.steps.map((s) => s.id));
+    const bad = parsed.data.steps.flatMap((s) => [s.next, s.on?.pass, s.on?.fail?.goto].filter((x): x is string => !!x && !ids.has(x)));
+    if (bad.length) return err(400, 'VALIDATION_ERROR', `存在しないステップを参照しています: ${bad.join(', ')}`);
     const raws = raw as Record<string, unknown>;
-    const def = LineDefinition.parse({ name: parsed.data.name, version: parsed.data.version, yaml: stringify({ ...raws, version: parsed.data.version }), line: parsed.data, updatedAt: new Date().toISOString() });
-    d.lines = [...d.lines.filter((x) => x.name !== def.name), def];
+    const def = WorkflowDefinition.parse({ name: parsed.data.name, version: parsed.data.version, yaml: stringify({ ...raws, version: parsed.data.version }), workflow: parsed.data, updatedAt: new Date().toISOString() });
+    d.workflows = [...d.workflows.filter((x) => x.name !== def.name), def];
     save();
     return HttpResponse.json(def);
   }),
@@ -567,7 +567,7 @@ export const handlers = [
     const vm = vms().find((v) => v.id === params['vmId']);
     if (!vm) return notFound();
     getDb().terminatedVms.push(vm.id);
-    return act(() => sim.terminateVm(vm.workItemId));
+    return act(() => sim.terminateVm(vm.taskId));
   }),
   http.get(`${API}/admin/capacity`, () => {
     const list = vms();

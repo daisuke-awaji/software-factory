@@ -7,14 +7,14 @@ export * from './ulid.js';
 export const Ulid = z.string().regex(/^[0-9A-HJKMNP-TV-Z]{26}$/, 'ULID 形式で指定してください');
 const IsoTime = z.iso.datetime();
 
-export const WorkItemState = z.enum(['queued', 'planning', 'awaiting_approval', 'running', 'suspended', 'completed', 'failed', 'cancelled']);
-export type WorkItemState = z.infer<typeof WorkItemState>;
+export const TaskState = z.enum(['queued', 'planning', 'awaiting_approval', 'running', 'suspended', 'completed', 'failed', 'cancelled']);
+export type TaskState = z.infer<typeof TaskState>;
 
 export const ImageRef = z.string().regex(/^[a-z0-9-]+@\d+$/, 'name@version の形式で指定してください'); // 例: web@5
-export const LineRef = z.string().regex(/^[a-z0-9-]+@\d+$/); // 例: chat@1
+export const WorkflowRef = z.string().regex(/^[a-z0-9-]+@\d+$/); // 例: chat@1
 
-// ---------------------------------------------------------------- ライン
-export const StageDef = z.object({
+// ---------------------------------------------------------------- ワークフロー
+export const StepDef = z.object({
   id: z.string().regex(/^[a-z][a-z0-9-]{1,31}$/),
   type: z.enum(['agent', 'command', 'approval', 'system']),
   image: ImageRef.optional(),
@@ -33,35 +33,35 @@ export const StageDef = z.object({
     })
     .optional(),
 });
-export type StageDef = z.infer<typeof StageDef>;
+export type StepDef = z.infer<typeof StepDef>;
 
-export const Line = z.object({
+export const Workflow = z.object({
   name: z.string().regex(/^[a-z0-9-]+$/),
   version: z.number().int().positive(),
   title: z.string().optional(), // 提案: 画面に出す名前
   description: z.string().optional(), // 提案: 画面に出す説明
-  stages: z.array(StageDef).min(1),
+  steps: z.array(StepDef).min(1),
 });
-export type Line = z.infer<typeof Line>;
+export type Workflow = z.infer<typeof Workflow>;
 
 /** 管理者が登録する YAML と、それを検証した結果 */
-export const LineDefinition = z.object({ name: z.string(), version: z.number().int().positive(), yaml: z.string(), line: Line, updatedAt: IsoTime });
-export type LineDefinition = z.infer<typeof LineDefinition>;
+export const WorkflowDefinition = z.object({ name: z.string(), version: z.number().int().positive(), yaml: z.string(), workflow: Workflow, updatedAt: IsoTime });
+export type WorkflowDefinition = z.infer<typeof WorkflowDefinition>;
 
-// ---------------------------------------------------------------- ワークアイテム
+// ---------------------------------------------------------------- タスク
 export const RepoRef = z.object({ owner: z.string().min(1), name: z.string().min(1), baseBranch: z.string().default('main') });
 
 export const Usage = z.object({ inputTokens: z.number().int().nonnegative(), outputTokens: z.number().int().nonnegative(), vmSeconds: z.number().nonnegative() });
 export type Usage = z.infer<typeof Usage>;
 
-export const WorkItem = z.object({
+export const Task = z.object({
   id: Ulid,
   ownerId: z.string(),
   projectId: z.string().optional(),
   title: z.string().min(1).max(200),
-  lineRef: LineRef,
-  state: WorkItemState,
-  currentStageId: z.string().optional(),
+  workflowRef: WorkflowRef,
+  state: TaskState,
+  currentStepId: z.string().optional(),
   createdAt: IsoTime,
   updatedAt: IsoTime,
   // ---- 以下は提案（一覧とヘッダーに出すため）
@@ -72,52 +72,52 @@ export const WorkItem = z.object({
   costUsd: z.number().nonnegative().optional(),
   archived: z.boolean().default(false),
 });
-export type WorkItem = z.infer<typeof WorkItem>;
+export type Task = z.infer<typeof Task>;
 
 export const Page = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item), nextCursor: z.string().optional() });
-export const WorkItemPage = Page(WorkItem);
-export type WorkItemPage = z.infer<typeof WorkItemPage>;
+export const TaskPage = Page(Task);
+export type TaskPage = z.infer<typeof TaskPage>;
 
-export const CreateWorkItemRequest = z.object({
+export const CreateTaskRequest = z.object({
   title: z.string().min(1).max(200).optional(), // 省略したらサーバーが本文から作る（titleFromMessage）。後から PATCH で変えられる
-  lineRef: LineRef.default('chat@1'),
+  workflowRef: WorkflowRef.default('chat@1'),
   projectId: z.string().optional(),
   repo: RepoRef.optional(),
   message: z.string().min(1).max(20_000),
   attachments: z.array(z.string()).max(20).optional(), // 提案: 作成前に上げた添付（POST /attachments の path）
 });
-export type CreateWorkItemRequest = z.infer<typeof CreateWorkItemRequest>;
+export type CreateTaskRequest = z.infer<typeof CreateTaskRequest>;
 
-/** 依頼の本文からタイトルを作る: 最初の行の最初の文を、60字までにする */
+/** タスクの本文からタイトルを作る: 最初の行の最初の文を、60字までにする */
 export function titleFromMessage(message: string): string {
   const first = message.trim().split(/\n|。/).find((x) => x.trim())?.trim() ?? '';
   const chars = Array.from(first || message.trim());
   return chars.length > 60 ? `${chars.slice(0, 59).join('')}…` : chars.join('');
 }
 
-export const UpdateWorkItemRequest = z.object({ title: z.string().min(1).max(200).optional(), archived: z.boolean().optional() });
-export type UpdateWorkItemRequest = z.infer<typeof UpdateWorkItemRequest>;
+export const UpdateTaskRequest = z.object({ title: z.string().min(1).max(200).optional(), archived: z.boolean().optional() });
+export type UpdateTaskRequest = z.infer<typeof UpdateTaskRequest>;
 
 export const PostMessageRequest = z.object({ text: z.string().min(1).max(20_000), attachments: z.array(z.string()).max(20).optional() });
 export type PostMessageRequest = z.infer<typeof PostMessageRequest>;
 
-export const StageResult = z.object({
+export const StepResult = z.object({
   verdict: z.enum(['pass', 'fail', 'cancelled']),
   summary: z.string().max(4_000),
   outputs: z.record(z.string(), z.string()).default({}),
 });
-export type StageResult = z.infer<typeof StageResult>;
+export type StepResult = z.infer<typeof StepResult>;
 
-export const StageRun = z.object({
+export const StepRun = z.object({
   runId: z.string(), // 例: verify#2
-  stageId: z.string(),
+  stepId: z.string(),
   state: z.enum(['running', 'completed', 'failed', 'cancelled']),
   image: ImageRef.optional(),
   startedAt: IsoTime,
   endedAt: IsoTime.optional(),
-  result: StageResult.optional(),
+  result: StepResult.optional(),
 });
-export type StageRun = z.infer<typeof StageRun>;
+export type StepRun = z.infer<typeof StepRun>;
 
 // ---------------------------------------------------------------- 計画と承認
 export const Plan = z.object({
@@ -153,24 +153,24 @@ export const RequestChangesBody = z.object({ comment: z.string().min(1).max(4_00
 // ---------------------------------------------------------------- イベント（WebSocket と Callback API）
 export const FactoryEvent = z.discriminatedUnion('type', [
   // 提案: ユーザーの発言も履歴に残す（再読み込みしたときに会話を組み立て直すため）
-  z.object({ type: z.literal('message.user'), workItemId: Ulid, messageId: z.string(), text: z.string(), author: z.string(), attachments: z.array(z.string()).optional() }),
-  z.object({ type: z.literal('message.delta'), workItemId: Ulid, messageId: z.string(), text: z.string() }),
-  z.object({ type: z.literal('message.completed'), workItemId: Ulid, messageId: z.string() }),
-  z.object({ type: z.literal('tool.started'), workItemId: Ulid, toolUseId: z.string(), tool: z.string(), summary: z.string().max(2_000) }),
+  z.object({ type: z.literal('message.user'), taskId: Ulid, messageId: z.string(), text: z.string(), author: z.string(), attachments: z.array(z.string()).optional() }),
+  z.object({ type: z.literal('message.delta'), taskId: Ulid, messageId: z.string(), text: z.string() }),
+  z.object({ type: z.literal('message.completed'), taskId: Ulid, messageId: z.string() }),
+  z.object({ type: z.literal('tool.started'), taskId: Ulid, toolUseId: z.string(), tool: z.string(), summary: z.string().max(2_000) }),
   // 提案: summary（結果の要約。例: 「12 件のテストが通過」）
-  z.object({ type: z.literal('tool.finished'), workItemId: Ulid, toolUseId: z.string(), ok: z.boolean(), summary: z.string().max(2_000).optional() }),
-  z.object({ type: z.literal('plan.proposed'), workItemId: Ulid, planVersion: z.number().int().positive(), plan: Plan }),
+  z.object({ type: z.literal('tool.finished'), taskId: Ulid, toolUseId: z.string(), ok: z.boolean(), summary: z.string().max(2_000).optional() }),
+  z.object({ type: z.literal('plan.proposed'), taskId: Ulid, planVersion: z.number().int().positive(), plan: Plan }),
   // 提案: 計画への回答（誰がいつ承認したかを会話に出す）
-  z.object({ type: z.literal('plan.decided'), workItemId: Ulid, planVersion: z.number().int().positive(), decision: z.enum(['approved', 'changes_requested', 'rejected']), by: z.string(), comment: z.string().optional() }),
+  z.object({ type: z.literal('plan.decided'), taskId: Ulid, planVersion: z.number().int().positive(), decision: z.enum(['approved', 'changes_requested', 'rejected']), by: z.string(), comment: z.string().optional() }),
   // 提案: approvalId（POST /approvals/{approvalId} に必要）
-  z.object({ type: z.literal('approval.required'), workItemId: Ulid, approvalId: z.string(), reason: ApprovalReason, detail: z.string() }),
-  z.object({ type: z.literal('approval.resolved'), workItemId: Ulid, approvalId: z.string(), decision: z.enum(['approve', 'deny']), by: z.string() }),
-  z.object({ type: z.literal('egress.blocked'), workItemId: Ulid, host: z.string() }),
-  z.object({ type: z.literal('usage'), workItemId: Ulid, inputTokens: z.number().int(), outputTokens: z.number().int(), vmSeconds: z.number() }),
-  z.object({ type: z.literal('stage.changed'), workItemId: Ulid, stageId: z.string(), state: z.enum(['started', 'completed', 'failed']) }),
-  z.object({ type: z.literal('workitem.state'), workItemId: Ulid, state: WorkItemState }),
+  z.object({ type: z.literal('approval.required'), taskId: Ulid, approvalId: z.string(), reason: ApprovalReason, detail: z.string() }),
+  z.object({ type: z.literal('approval.resolved'), taskId: Ulid, approvalId: z.string(), decision: z.enum(['approve', 'deny']), by: z.string() }),
+  z.object({ type: z.literal('egress.blocked'), taskId: Ulid, host: z.string() }),
+  z.object({ type: z.literal('usage'), taskId: Ulid, inputTokens: z.number().int(), outputTokens: z.number().int(), vmSeconds: z.number() }),
+  z.object({ type: z.literal('step.changed'), taskId: Ulid, stepId: z.string(), state: z.enum(['started', 'completed', 'failed']) }),
+  z.object({ type: z.literal('task.state'), taskId: Ulid, state: TaskState }),
   // 提案: VM の中でアプリが待ち受けを始めた（プレビューのタブを開けるようになる）
-  z.object({ type: z.literal('preview.ready'), workItemId: Ulid, port: z.number().int().min(1).max(65535), path: z.string().default('/') }),
+  z.object({ type: z.literal('preview.ready'), taskId: Ulid, port: z.number().int().min(1).max(65535), path: z.string().default('/') }),
 ]);
 export type FactoryEvent = z.infer<typeof FactoryEvent>;
 export type FactoryEventType = FactoryEvent['type'];
@@ -181,7 +181,7 @@ export type FactoryEventEnvelope = z.infer<typeof FactoryEventEnvelope>;
 export const EventPage = Page(FactoryEventEnvelope);
 export type EventPage = z.infer<typeof EventPage>;
 
-export const WsClientFrame = z.object({ action: z.enum(['subscribe', 'unsubscribe']), workItemId: Ulid });
+export const WsClientFrame = z.object({ action: z.enum(['subscribe', 'unsubscribe']), taskId: Ulid });
 export type WsClientFrame = z.infer<typeof WsClientFrame>;
 
 // ---------------------------------------------------------------- ファイル・差分・成果物
@@ -228,7 +228,7 @@ export type Acl = z.infer<typeof Acl>;
 
 export const Publication = z.object({
   id: Ulid,
-  workItemId: Ulid,
+  taskId: Ulid,
   title: z.string(),
   path: z.string(),
   url: z.url(),
@@ -241,7 +241,7 @@ export const Publication = z.object({
 });
 export type Publication = z.infer<typeof Publication>;
 
-export const CreatePublicationRequest = z.object({ workItemId: Ulid, path: z.string(), title: z.string().max(200).optional(), acl: Acl, expiresAt: IsoTime.optional() });
+export const CreatePublicationRequest = z.object({ taskId: Ulid, path: z.string(), title: z.string().max(200).optional(), acl: Acl, expiresAt: IsoTime.optional() });
 export type CreatePublicationRequest = z.infer<typeof CreatePublicationRequest>;
 export const UpdatePublicationRequest = z.object({ acl: Acl.optional(), expiresAt: IsoTime.nullable().optional(), republish: z.boolean().optional() });
 export type UpdatePublicationRequest = z.infer<typeof UpdatePublicationRequest>;
@@ -322,8 +322,8 @@ export type PackageSource = z.infer<typeof PackageSource>;
 
 export const VmInfo = z.object({
   id: z.string(),
-  workItemId: Ulid,
-  stageRunId: z.string(),
+  taskId: Ulid,
+  stepRunId: z.string(),
   owner: z.string(),
   image: ImageRef,
   memoryMiB: z.number().int().positive(),
@@ -336,7 +336,7 @@ const Meter = z.object({ used: z.number().nonnegative(), limit: z.number().posit
 export const Capacity = z.object({ memoryMiB: Meter, agents: Meter, tpm: Meter, queueLength: z.number().int().nonnegative() });
 export type Capacity = z.infer<typeof Capacity>;
 
-export const UserLimits = z.object({ concurrentWorkItems: z.number().int().min(1).max(20), monthlyUsd: z.number().min(0).max(10_000) });
+export const UserLimits = z.object({ concurrentTasks: z.number().int().min(1).max(20), monthlyUsd: z.number().min(0).max(10_000) });
 export const AdminUser = z.object({
   id: z.string(),
   name: z.string(),

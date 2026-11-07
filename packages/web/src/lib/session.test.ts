@@ -6,7 +6,7 @@ import { emptySession, pendingOf, reduce, reduceAll } from './session';
 
 const wid = ulid();
 let t = Date.UTC(2026, 10, 7, 1, 0, 0);
-const ev = (e: DistributiveOmit<FactoryEvent, 'workItemId'>): FactoryEventEnvelope => ({ ...e, workItemId: wid, eventId: ulid((t += 1000)) }) as FactoryEventEnvelope;
+const ev = (e: DistributiveOmit<FactoryEvent, 'taskId'>): FactoryEventEnvelope => ({ ...e, taskId: wid, eventId: ulid((t += 1000)) }) as FactoryEventEnvelope;
 const plan: Plan = { summaryForHumans: 's', goal: 'g', deliverables: [], repos: [], steps: ['a'], doneCriteria: [], externalAccess: [], estimate: { minutes: 1, usd: 0.1 } };
 
 describe('reduce', () => {
@@ -17,15 +17,15 @@ describe('reduce', () => {
     expect(s.timeline).toHaveLength(1);
   });
 
-  it('別のワークアイテムのイベントは無視する', () => {
+  it('別のタスクのイベントは無視する', () => {
     const s0 = emptySession(wid);
-    const other = { ...ev({ type: 'egress.blocked', host: 'x.example' }), workItemId: ulid() } as FactoryEventEnvelope;
+    const other = { ...ev({ type: 'egress.blocked', host: 'x.example' }), taskId: ulid() } as FactoryEventEnvelope;
     expect(reduce(s0, other)).toBe(s0);
   });
 
   it('続けて動いたツールは1つのまとまりになり、発言で区切られる', () => {
     const s = reduceAll(emptySession(wid), [
-      ev({ type: 'stage.changed', stageId: 'implement', state: 'started' }),
+      ev({ type: 'step.changed', stepId: 'implement', state: 'started' }),
       ev({ type: 'tool.started', toolUseId: 't1', tool: 'read_file', summary: 'a' }),
       ev({ type: 'tool.finished', toolUseId: 't1', ok: true }),
       ev({ type: 'tool.started', toolUseId: 't2', tool: 'edit_file', summary: 'b' }),
@@ -39,26 +39,26 @@ describe('reduce', () => {
     expect(s.fileVersion).toBe(1); // edit_file が成功した
   });
 
-  it('ステージの実行は回数ごとに分ける（verify#2）', () => {
+  it('ステップの実行は回数ごとに分ける（verify#2）', () => {
     const s = reduceAll(emptySession(wid), [
-      ev({ type: 'stage.changed', stageId: 'verify', state: 'started' }),
-      ev({ type: 'stage.changed', stageId: 'verify', state: 'failed' }),
-      ev({ type: 'stage.changed', stageId: 'verify', state: 'started' }),
+      ev({ type: 'step.changed', stepId: 'verify', state: 'started' }),
+      ev({ type: 'step.changed', stepId: 'verify', state: 'failed' }),
+      ev({ type: 'step.changed', stepId: 'verify', state: 'started' }),
     ]);
     expect(s.runs.map((r) => `${r.runId}:${r.state}`)).toEqual(['verify#1:failed', 'verify#2:running']);
   });
 
   it('承認待ちのときに、何を待っているかが分かる', () => {
-    let s = reduceAll(emptySession(wid), [ev({ type: 'plan.proposed', planVersion: 1, plan }), ev({ type: 'workitem.state', state: 'awaiting_approval' })]);
+    let s = reduceAll(emptySession(wid), [ev({ type: 'plan.proposed', planVersion: 1, plan }), ev({ type: 'task.state', state: 'awaiting_approval' })]);
     expect(pendingOf(s)).toMatchObject({ kind: 'plan', version: 1 });
     s = reduceAll(s, [
       ev({ type: 'plan.decided', planVersion: 1, decision: 'approved', by: '佐藤' }),
-      ev({ type: 'workitem.state', state: 'running' }),
+      ev({ type: 'task.state', state: 'running' }),
       ev({ type: 'approval.required', approvalId: 'a1', reason: 'egress', detail: 'd' }),
-      ev({ type: 'workitem.state', state: 'awaiting_approval' }),
+      ev({ type: 'task.state', state: 'awaiting_approval' }),
     ]);
     expect(pendingOf(s)).toMatchObject({ kind: 'approval', approval: { id: 'a1' } });
-    s = reduceAll(s, [ev({ type: 'approval.resolved', approvalId: 'a1', decision: 'approve', by: '佐藤' }), ev({ type: 'workitem.state', state: 'running' })]);
+    s = reduceAll(s, [ev({ type: 'approval.resolved', approvalId: 'a1', decision: 'approve', by: '佐藤' }), ev({ type: 'task.state', state: 'running' })]);
     expect(pendingOf(s)).toBeNull();
   });
 });

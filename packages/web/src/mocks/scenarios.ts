@@ -1,5 +1,5 @@
-// シミュレーターの台本。依頼の内容からシナリオを選び、ステージごとの手順（SimStep）を組み立てる
-import type { Plan, WorkItem } from '@factory/contracts';
+// シミュレーターの台本。タスクの内容からシナリオを選び、ステップごとの手順（SimStep）を組み立てる
+import type { Plan, Task } from '@factory/contracts';
 import type { Scenario, Sim, SimStep } from './db';
 
 let seq = 0;
@@ -18,8 +18,8 @@ export function pickScenario(title: string, message: string): Scenario {
 // ---------------------------------------------------------------- 小さな部品
 const say = (text: string, delay = 500): SimStep => ({ t: 'say', delay, text });
 const usage = (i: number, o: number, vm: number): SimStep => ({ t: 'emit', delay: 50, event: { type: 'usage', inputTokens: i, outputTokens: o, vmSeconds: vm } });
-const stage = (stageId: string, state: 'started' | 'completed' | 'failed', delay = 400): SimStep => ({ t: 'emit', delay, event: { type: 'stage.changed', stageId, state } });
-const state = (s: WorkItem['state'], delay = 200): SimStep => ({ t: 'emit', delay, event: { type: 'workitem.state', state: s } });
+const stepChanged = (stepId: string, state: 'started' | 'completed' | 'failed', delay = 400): SimStep => ({ t: 'emit', delay, event: { type: 'step.changed', stepId, state } });
+const state = (s: Task['state'], delay = 200): SimStep => ({ t: 'emit', delay, event: { type: 'task.state', state: s } });
 const write = (path: string, content: string | null, delay = 100): SimStep => ({ t: 'write', delay, path, content });
 
 function tool(name: string, summary: string, result: string, ok = true, ms = 900): SimStep[] {
@@ -36,7 +36,7 @@ function edit(path: string, content: string, summary: string, result = '保存�
 }
 
 // ---------------------------------------------------------------- 計画
-export function planFor(sc: Scenario, item: WorkItem, comments: string[]): Plan {
+export function planFor(sc: Scenario, item: Task, comments: string[]): Plan {
   const repo = item.repo ? `${item.repo.owner}/${item.repo.name}` : undefined;
   const base: Record<Scenario, Omit<Plan, 'repos'>> = {
     'web-form': {
@@ -85,11 +85,11 @@ export function planFor(sc: Scenario, item: WorkItem, comments: string[]): Plan 
       estimate: { minutes: 10, usd: 0.8 },
     },
     generic: {
-      summaryForHumans: `ご依頼の内容（${item.title}）に沿って作業し、結果をまとめてお渡しします。`,
+      summaryForHumans: `タスクの内容（${item.title}）に沿って作業し、結果をまとめてお渡しします。`,
       goal: item.title,
       deliverables: ['作業の結果（notes.md）'],
-      steps: ['依頼の内容と関係するファイルを確認する', '作業する', '結果を確かめて、まとめる'],
-      doneCriteria: ['依頼の内容を満たしている'],
+      steps: ['タスクの内容と関係するファイルを確認する', '作業する', '結果を確かめて、まとめる'],
+      doneCriteria: ['タスクの内容を満たしている'],
       externalAccess: [],
       estimate: { minutes: 5, usd: 0.3 },
     },
@@ -105,10 +105,10 @@ export function planFor(sc: Scenario, item: WorkItem, comments: string[]): Plan 
   };
 }
 
-export function planning(sc: Scenario, item: WorkItem, firstStage: string, version: number, comments: string[]): SimStep[] {
+export function planning(sc: Scenario, item: Task, firstStep: string, version: number, comments: string[]): SimStep[] {
   const files = item.repo ? 'リポジトリ' : 'ワークスペース';
   return [
-    ...(version === 1 ? [state('planning', 300), stage(firstStage, 'started', 500), say(`依頼を確認しました。${files}の中身を見てから、計画を立てます。`)] : [state('planning'), say('ご指摘を反映して、計画を見直します。')]),
+    ...(version === 1 ? [state('planning', 300), stepChanged(firstStep, 'started', 500), say(`内容を確認しました。${files}の中身を見てから、計画を立てます。`)] : [state('planning'), say('ご指摘を反映して、計画を見直します。')]),
     ...(version === 1 ? [...tool('list_files', `${files}のファイルを一覧する`, item.repo ? '6 件のファイル' : '添付ファイルを確認'), ...tool('read_file', item.repo ? 'README.md を読む' : '添付ファイルを読む', '読み込みました', true, 600)] : []),
     usage(5200, 900, 25),
     { t: 'emit', delay: 700, event: { type: 'plan.proposed', planVersion: version, plan: planFor(sc, item, comments) } },
@@ -118,7 +118,7 @@ export function planning(sc: Scenario, item: WorkItem, firstStage: string, versi
   ];
 }
 
-// ---------------------------------------------------------------- ステージごとの作業
+// ---------------------------------------------------------------- ステップごとの作業
 const formTs = (fixed: boolean) => `export type ContactInput = { name: string; email: string; body: string };
 export type FieldError = { field: keyof ContactInput; message: string };
 
@@ -237,16 +237,16 @@ export const reportHtml = `<!doctype html>
 </body></html>
 `;
 
-/** ステージの作業。最後は { t: 'next' } でラインの次へ進む */
-export function stageWork(sc: Scenario, stageId: string, attempt: number, sim: Sim, isFirstRun: boolean): SimStep[] {
-  const start = isFirstRun ? [] : [stage(stageId, 'started')];
-  if (stageId === 'implement' || stageId === 'workbench') {
+/** ステップの作業。最後は { t: 'next' } でワークフローの次へ進む */
+export function stepWork(sc: Scenario, stepId: string, attempt: number, sim: Sim, isFirstRun: boolean): SimStep[] {
+  const start = isFirstRun ? [] : [stepChanged(stepId, 'started')];
+  if (stepId === 'implement' || stepId === 'workbench') {
     const steps: SimStep[] = [...start];
     if (attempt > 1) {
       steps.push(say('検証で見つかった問題を直します。'));
       if (sc === 'web-form') steps.push(...edit('src/contact-form.ts', formTs(true), 'src/contact-form.ts: 前後の空白を取り除いてから確かめる'));
       if (sc === 'csv-cleanup') steps.push(...edit('scripts/normalize.py', normalizePy(attempt > 2), 'scripts/normalize.py: 法人の種類の表記を足す'));
-      steps.push(...tool('run', 'npm test', sc === 'csv-cleanup' ? 'pytest: 4 件が通過' : '4 件のテストが通過'), usage(8000, 2100, 60), stage(stageId, 'completed'), { t: 'next', delay: 200, outcome: 'pass' });
+      steps.push(...tool('run', 'npm test', sc === 'csv-cleanup' ? 'pytest: 4 件が通過' : '4 件のテストが通過'), usage(8000, 2100, 60), stepChanged(stepId, 'completed'), { t: 'next', delay: 200, outcome: 'pass' });
       return steps;
     }
     steps.push(say('承認ありがとうございます。作業を始めます。'));
@@ -305,13 +305,13 @@ export function stageWork(sc: Scenario, stageId: string, attempt: number, sim: S
         );
         break;
       default:
-        steps.push(...edit('notes.md', `# 作業のまとめ\n\n- 依頼の内容を確認しました\n- 必要な作業を行いました\n`, 'notes.md: 作業のまとめ'));
+        steps.push(...edit('notes.md', `# 作業のまとめ\n\n- タスクの内容を確認しました\n- 必要な作業を行いました\n`, 'notes.md: 作業のまとめ'));
     }
-    steps.push(usage(18000, 4200, 140), stage(stageId, 'completed'), { t: 'next', delay: 200, outcome: 'pass' });
+    steps.push(usage(18000, 4200, 140), stepChanged(stepId, 'completed'), { t: 'next', delay: 200, outcome: 'pass' });
     return steps;
   }
 
-  if (stageId === 'verify') {
+  if (stepId === 'verify') {
     const fail = (sc === 'web-form' && attempt === 1) || (sc === 'csv-cleanup' && !sim.flags['retried']);
     return [
       ...start,
@@ -320,44 +320,44 @@ export function stageWork(sc: Scenario, stageId: string, attempt: number, sim: S
       ...(sc === 'web-form' || sc === 'dashboard' ? tool('browser', 'ブラウザで画面を確かめる', fail ? '空白だけで送信できました' : '想定どおりに動きました', !fail, 1500) : []),
       usage(9000, 1600, 90),
       ...(fail
-        ? [say(sc === 'web-form' ? '空白だけの入力を、空として扱えていませんでした。実装に戻して直します。' : '全角カナの「カブシキガイシャ」がそろっていません。実装に戻して直します。'), stage(stageId, 'failed'), { t: 'next' as const, delay: 200, outcome: 'fail' as const }]
-        : [stage(stageId, 'completed'), { t: 'next' as const, delay: 200, outcome: 'pass' as const }]),
+        ? [say(sc === 'web-form' ? '空白だけの入力を、空として扱えていませんでした。実装に戻して直します。' : '全角カナの「カブシキガイシャ」がそろっていません。実装に戻して直します。'), stepChanged(stepId, 'failed'), { t: 'next' as const, delay: 200, outcome: 'fail' as const }]
+        : [stepChanged(stepId, 'completed'), { t: 'next' as const, delay: 200, outcome: 'pass' as const }]),
     ];
   }
 
-  if (stageId === 'review') {
+  if (stepId === 'review') {
     return [
       ...start,
       ...tool('review_diff', '差分をレビューする', '指摘 0 件（軽微な提案 1 件）', true, 1300),
       say('レビューでは問題は見つかりませんでした。提案: エラーの文言を定数にまとめると、あとで直しやすくなります。'),
       usage(7000, 900, 40),
-      stage(stageId, 'completed'),
+      stepChanged(stepId, 'completed'),
       { t: 'next', delay: 200, outcome: 'pass' },
     ];
   }
 
-  if (stageId === 'deliver') {
+  if (stepId === 'deliver') {
     return [
       ...start,
       ...tool('git_push', '作業ブランチを push する', 'push しました（Git ゲートウェイ経由）', true, 900),
       ...tool('create_pull_request', 'プルリクエストを作る', 'プルリクエストを作りました', true, 900),
       { t: 'pr', delay: 100 },
-      stage(stageId, 'completed'),
+      stepChanged(stepId, 'completed'),
       { t: 'next', delay: 200, outcome: 'pass' },
     ];
   }
 
-  if (stageId === 'publish') {
+  if (stepId === 'publish') {
     return [
       ...start,
       ...tool('publish_precheck', '公開の前のチェック（秘密情報・サイズ・外部の参照）', '問題なし（3 ファイル・6 KB）', true, 1000),
       say('公開の準備ができました。成果物の「社内に公開」から、公開する範囲を選んでください。'),
-      stage(stageId, 'completed'),
+      stepChanged(stepId, 'completed'),
       { t: 'next', delay: 200, outcome: 'pass' },
     ];
   }
 
-  return [...start, stage(stageId, 'completed'), { t: 'next', delay: 200, outcome: 'pass' }];
+  return [...start, stepChanged(stepId, 'completed'), { t: 'next', delay: 200, outcome: 'pass' }];
 }
 
 export function finalSummary(sc: Scenario, pr?: number): string {

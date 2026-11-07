@@ -1,11 +1,11 @@
-// ラインの進み具合（計画 → 実装 → 検証 → レビュー → 納品）。UI モックの StageLine を引き継いだ
-import type { Step } from '../lib/line';
+// ワークフローの進み具合（計画 → 実装 → 検証 → レビュー → 完了）。UI モックの StepProgress を引き継いだ
+import type { ProgressStep } from '../lib/workflow';
 import { IconCheck, IconClose } from './icons';
-import s from './StageLine.module.css';
+import s from './StepProgress.module.css';
 
 const statusText = { waiting: '未着手', running: '実行中', done: '完了', alert: '対応待ち', failed: '失敗' } as const;
 
-export function StageLine({ steps, size = 'md', showSub = false, label = 'ラインの進み具合' }: { steps: Step[]; size?: 'xs' | 'sm' | 'md'; showSub?: boolean; label?: string }) {
+export function StepProgress({ steps, size = 'md', showSub = false, label = 'ワークフローの進み具合' }: { steps: ProgressStep[]; size?: 'xs' | 'sm' | 'md'; showSub?: boolean; label?: string }) {
   return (
     <ol className={s.line} data-size={size} aria-label={label}>
       {steps.map((st, i) => (

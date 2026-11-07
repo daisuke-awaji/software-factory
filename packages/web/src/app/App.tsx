@@ -2,15 +2,15 @@ import { lazy, Suspense, useState, type ReactNode } from 'react';
 import { createBrowserRouter, RouterProvider, type RouteObject } from 'react-router';
 import { Loading } from '../components/kit';
 import { HomePage } from '../features/home/HomePage';
-import { RequestsPage } from '../features/requests/RequestsPage';
-import { WorkspacePage } from '../features/workitem/WorkspacePage';
+import { TasksPage } from '../features/tasks/TasksPage';
+import { WorkspacePage } from '../features/task/WorkspacePage';
 import { ServicesProvider, type Services } from '../lib/services';
 import { AppShell, NotFound } from './AppShell';
 
-// よく使うホーム・すべての依頼・ワークスペース以外は、開いたときに読み込む
+// よく使うホーム・すべてのタスク・ワークスペース以外は、開いたときに読み込む
 const AdminPage = lazy(() => import('../features/admin/AdminPage').then((m) => ({ default: m.AdminPage })));
 const ImagesPage = lazy(() => import('../features/images/ImagesPage').then((m) => ({ default: m.ImagesPage })));
-const LinesPage = lazy(() => import('../features/lines/LinesPage').then((m) => ({ default: m.LinesPage })));
+const WorkflowsPage = lazy(() => import('../features/workflows/WorkflowsPage').then((m) => ({ default: m.WorkflowsPage })));
 const PublicationsPage = lazy(() => import('../features/publications/PublicationsPage').then((m) => ({ default: m.PublicationsPage })));
 const SettingsPage = lazy(() => import('../features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const later = (node: ReactNode) => <Suspense fallback={<Loading />}>{node}</Suspense>;
@@ -21,11 +21,11 @@ export const routes: RouteObject[] = [
     element: <AppShell />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'requests', element: <RequestsPage /> },
-      { path: 'w/:id', element: <WorkspacePage /> },
+      { path: 'tasks', element: <TasksPage /> },
+      { path: 't/:id', element: <WorkspacePage /> },
       { path: 'publications', element: later(<PublicationsPage />) },
       { path: 'images', element: later(<ImagesPage />) },
-      { path: 'lines', element: later(<LinesPage />) },
+      { path: 'workflows', element: later(<WorkflowsPage />) },
       { path: 'admin', element: later(<AdminPage />) },
       { path: 'settings', element: later(<SettingsPage />) },
       { path: '*', element: <NotFound /> },

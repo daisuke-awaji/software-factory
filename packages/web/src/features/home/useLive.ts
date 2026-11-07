@@ -1,13 +1,13 @@
-// ホーム用: 一覧のワークアイテムのイベントを購読して、変わったら読み直す。承認待ちのものは、何を待っているかを履歴から調べる
-import type { WorkItem } from '@factory/contracts';
+// ホーム用: 一覧のタスクのイベントを購読して、変わったら読み直す。承認待ちのものは、何を待っているかを履歴から調べる
+import type { Task } from '@factory/contracts';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { isTerminal } from '../../lib/format';
 import { useServices } from '../../lib/services';
 import { emptySession, pendingOf, reduceAll, type Pending } from '../../lib/session';
 
-const TRIGGERS = new Set(['workitem.state', 'plan.proposed', 'plan.decided', 'approval.required', 'approval.resolved', 'stage.changed']);
+const TRIGGERS = new Set(['task.state', 'plan.proposed', 'plan.decided', 'approval.required', 'approval.resolved', 'step.changed']);
 
-export function useLiveReload(items: WorkItem[] | undefined, reload: () => void) {
+export function useLiveReload(items: Task[] | undefined, reload: () => void) {
   const { events } = useServices();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reloadRef = useRef(reload);
@@ -27,8 +27,8 @@ export function useLiveReload(items: WorkItem[] | undefined, reload: () => void)
   }, [ids, events]);
 }
 
-/** 承認待ちのワークアイテムが、何の回答を待っているか */
-export function usePending(items: WorkItem[] | undefined) {
+/** 承認待ちのタスクが、何の回答を待っているか */
+export function usePending(items: Task[] | undefined) {
   const { api } = useServices();
   const [pending, setPending] = useState<Record<string, Pending>>({});
   const targets = (items ?? []).filter((i) => i.state === 'awaiting_approval');
@@ -52,7 +52,7 @@ export function usePending(items: WorkItem[] | undefined) {
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-workflow react-hooks/exhaustive-deps
   }, [key, api]);
 
   return pending;
