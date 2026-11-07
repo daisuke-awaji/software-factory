@@ -10,7 +10,7 @@ import { StepProgress } from '../../components/StepProgress';
 import { errorMessage } from '../../lib/api';
 import { saveFromUrl } from '../../lib/download';
 import type { ConnectionState } from '../../lib/events';
-import { duration, isTerminal, reasonLabel, stepLabel, stateLabel, stateTone, tokens, usd } from '../../lib/format';
+import { isTerminal, reasonLabel, stepLabel, stateLabel, stateTone, tokens, usd } from '../../lib/format';
 import { progressFromSession } from '../../lib/workflow';
 import { useServices } from '../../lib/services';
 import { currentRun, type Pending, type Session } from '../../lib/session';
@@ -246,40 +246,30 @@ function Header({ item, session, workflow, pending, onRename, onCancel, onArchiv
   );
 }
 
+/** 下のステータスバー: 動いている VM・通信・トークンと費用。VM が止まった後の合計や経過時間は出さない */
 function StatusBar({ item, session, workflow }: { item: Task; session: Session; workflow: Workflow | undefined }) {
   const { events } = useServices();
   const [conn, setConn] = useState<ConnectionState>(events.state);
-  const [now, setNow] = useState(Date.now());
   useEffect(() => events.onState(setConn), [events]);
   const state = session.state ?? item.state;
   const terminal = isTerminal(state);
-  useEffect(() => {
-    if (terminal) return;
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, [terminal]);
   const run = currentRun(session);
   const step = workflow?.steps.find((st) => st.id === run?.stepId);
-  const vmCount = session.runs.filter((r) => workflow?.steps.find((st) => st.id === r.stepId)?.image).length;
   const vm =
     run?.state === 'running' && !terminal
       ? state === 'awaiting_approval' || state === 'suspended'
         ? <><Dot tone="alert" /> VM 待機中: {stepLabel(run.stepId)} · <span className="mono">{step?.image}</span></>
         : <><Dot tone="run" /> VM 実行中: {stepLabel(run.stepId)} · <span className="mono">{step?.image}</span></>
-      : vmCount
-        ? <><Dot tone="ok" /> VM はすべて停止しました（{vmCount} 台 · 合計 {duration(session.usage.vmSeconds * 1000)}）</>
-        : <><Dot /> VM は起動していません</>;
-  const end = terminal ? Date.parse(item.updatedAt) : now;
+      : null;
   return (
     <footer className={s.status}>
-      <span>{vm}</span>
+      {vm && <span className={s.statusKeep}>{vm}</span>}
       <span>通信: {step?.network && !terminal ? <><span className="mono">{step.network}</span>（許可リストのみ）</> : '許可リストのみ'}</span>
       {session.blocked.length > 0 && <span data-tone="alert">止めた通信 {session.blocked.length} 件</span>}
       <span>トークン {tokens(session.usage.inputTokens + session.usage.outputTokens)} · {usd(item.costUsd)}</span>
-      <span className={s.statusRight}>
-        {conn !== 'open' && <span data-tone="alert">{conn === 'reconnecting' ? '再接続しています… ' : '接続しています… '}</span>}
-        経過 {duration(end - Date.parse(item.createdAt))}
-      </span>
+      {conn !== 'open' && (
+        <span className={`${s.statusRight} ${s.statusKeep}`} data-tone="alert">{conn === 'reconnecting' ? '再接続しています…' : '接続しています…'}</span>
+      )}
     </footer>
   );
 }
