@@ -181,7 +181,10 @@ test('ワークスペース: スクロールするのは会話だけで、ヘッ
     const b = (await input.boundingBox())!;
     return b.y + b.height <= vp.height - 300;
   }).toBe(true);
-  expect((await head.boundingBox())!.y).toBe(before.head);
+  // ヘッダーは上に付いたまま（高さ 520px 以下では余白を詰めるので、少し上がることはある）
+  const headY = (await head.boundingBox())!.y;
+  expect(headY).toBeGreaterThanOrEqual(0);
+  expect(headY).toBeLessThanOrEqual(before.head);
 });
 
 test('ほかのページ: スクロールするのは中身だけで、上のバーは動かない', async ({ page }) => {
