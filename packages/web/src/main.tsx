@@ -4,6 +4,7 @@ import { App } from './app/App';
 import { createApiClient } from './lib/api';
 import { EventStream } from './lib/events';
 import type { Services } from './lib/services';
+import { trackVisualViewport } from './lib/viewport';
 import { applyTheme, useUi } from './stores/ui';
 import './styles/global.css';
 
@@ -24,6 +25,7 @@ async function main() {
   events.start();
   const services: Services = { api, events, mock };
 
+  trackVisualViewport();
   applyTheme(useUi.getState().theme);
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme(useUi.getState().theme));
 

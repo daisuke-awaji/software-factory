@@ -29,11 +29,11 @@
 /* ---------- 本体 ---------- */
 .body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(380px, 1fr) minmax(0, 1.15fr); }
 .chat { min-width: 0; min-height: 0; display: flex; flex-direction: column; border-right: 1px solid var(--line); background: var(--bg); }
-.chatScroll { flex: 1; min-height: 0; overflow: auto; padding: 20px 22px 12px; scrollbar-width: thin; }
-.chatComposer { flex: none; padding: 8px 14px 14px; }
+.chatScroll { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 20px 22px 12px; scrollbar-width: thin; }
+.chatComposer { flex: none; padding: 8px 14px calc(14px + var(--safe-bottom)); }
 .work { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg-subtle); }
 .tabs { flex: none; padding: 6px 14px 0; border-bottom: 1px solid var(--line); background: var(--bg); display: flex; align-items: center; gap: 8px; }
-.panel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.panel { flex: 1; min-height: 0; display: flex; flex-direction: column; padding-bottom: var(--safe-bottom); }
 .skeletonPad { display: grid; gap: 14px; align-content: start; max-width: 760px; width: 100%; margin: 0 auto; padding: 18px 20px; }
 
 /* ---------- 会話 ---------- */
@@ -122,26 +122,6 @@
 .spacer { flex: 1; }
 .kbd { font-size: 11px; color: var(--faint); margin-right: 4px; }
 
-/* ---------- ステータスバー ---------- */
-.status {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  height: calc(30px + var(--safe-bottom));
-  padding: 0 max(16px, var(--safe-right)) var(--safe-bottom) max(16px, var(--safe-left));
-  border-top: 1px solid var(--line);
-  background: var(--bg);
-  font-size: 12px;
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-}
-.status > span { display: inline-flex; align-items: center; gap: 6px; }
-.statusRight { margin-left: auto; }
-.statusKeep { flex: none; }
-.status [data-tone="alert"] { color: var(--alert); }
-
 @media (pointer: coarse) {
   .kbd { display: none; }
 }
@@ -164,13 +144,12 @@
   .title { max-width: none; }
   .crumbs { flex: 1; }
 }
-/* 横向きのスマホなど、高さが足りないとき: 入力欄の説明とステータスバーを隠して会話に回す */
+/* 横向きのスマホなど、高さが足りないとき: 入力欄の説明を隠して会話に回す */
 @media (max-width: 1023px) and (max-height: 520px) {
   .composerHint { display: none; }
   .composerInput { min-height: 40px; padding: 8px 12px 0; }
   .composerBar { padding: 4px 6px 6px 8px; }
   .chatComposer { padding-top: 4px; padding-bottom: calc(6px + var(--safe-bottom)); }
-  .status { display: none; }
   .head { padding-top: calc(4px + var(--safe-top)); padding-bottom: 4px; min-height: 44px; }
 }
 /* 720px 未満: ヘッダーは「サイドパネル・タイトル・状態・その他の操作」だけにする */
@@ -193,12 +172,10 @@
   .crumbs > :global(*:last-child) button { height: 30px; }
   .title { margin: 0; font-size: 15px; }
   .chatScroll { padding: 14px max(14px, var(--safe-right)) 8px max(14px, var(--safe-left)); }
-  .chatComposer { padding: 6px max(10px, var(--safe-right)) 8px max(10px, var(--safe-left)); }
+  .chatComposer { padding: 6px max(10px, var(--safe-right)) calc(8px + var(--safe-bottom)) max(10px, var(--safe-left)); }
   .composerHint { display: none; }
   .composerInput { min-height: 48px; padding: 10px 12px 2px; }
   .tabs { padding: 4px 8px 0; overflow-x: auto; scrollbar-width: none; }
-  /* 動いている VM（なければ通信）と、接続の状態だけを出す */
-  .status > span:not(:first-child):not(.statusKeep) { display: none; }
   .msg { grid-template-columns: 24px minmax(0, 1fr); gap: 8px; }
   .event, .thinking, .workRows { margin-left: 32px; }
   .detailGrid { grid-template-columns: 1fr; gap: 2px; }

@@ -21,11 +21,8 @@ test('タスクを作って、計画を承認すると、検証のやり直し�
   const deliver = chat.getByRole('region', { name: '成果物' });
   await expect(deliver).toBeVisible({ timeout: 40_000 });
   await expect(page.getByRole('button', { name: /PR #\d+/ })).toBeVisible();
-  // 終わった後のステータスバーには、VM の台数・合計時間や経過時間を出さない
-  const status = page.locator('main footer');
-  await expect(status).toContainText('トークン');
-  await expect(status).not.toContainText('VM はすべて停止しました');
-  await expect(status).not.toContainText('経過');
+  // 下のステータスバーは出さない（トークン・費用・止めた通信は実行ログのタブで見る）
+  await expect(page.locator('main footer')).toHaveCount(0);
 
   // プレビュー: VM の中のフォームを iframe で開き、誤った入力を送ると、欄の下に理由が出る
   await deliver.getByRole('button', { name: '開く' }).click();

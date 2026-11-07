@@ -1,4 +1,4 @@
-// タスクの画面（パターン B: ADR-0007）。左に会話、右に成果物のタブ、下にステータスバー
+// タスクの画面（パターン B: ADR-0007）。左に会話、右に成果物のタブ
 import type { Workflow, Task } from '@factory/contracts';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
@@ -10,11 +10,10 @@ import { IconBranch, IconChevron, IconExternal, IconMore, IconPR, IconRepo, Icon
 import { StepProgress } from '../../components/StepProgress';
 import { errorMessage } from '../../lib/api';
 import { saveFromUrl } from '../../lib/download';
-import type { ConnectionState } from '../../lib/events';
-import { isTerminal, reasonLabel, stepLabel, stateLabel, stateTone, tokens, usd } from '../../lib/format';
+import { isTerminal, reasonLabel, stateLabel, stateTone } from '../../lib/format';
 import { progressFromSession } from '../../lib/workflow';
 import { useServices } from '../../lib/services';
-import { currentRun, type Pending, type Session } from '../../lib/session';
+import { type Pending, type Session } from '../../lib/session';
 import { narrow, useMediaQuery } from '../../lib/useMediaQuery';
 import { useResource } from '../../lib/useResource';
 import { LogoToggle } from '../../app/LogoToggle';
@@ -173,7 +172,6 @@ export function WorkspacePage() {
           </div>
         </section>
       </div>
-      <StatusBar item={current} session={session} workflow={workflow} />
 
       <PublishDialog open={dialog === 'publish'} item={current} onClose={() => setDialog(null)} />
       <RenameDialog open={dialog === 'rename'} item={current} onClose={() => setDialog(null)} onSaved={() => void item.reload()} />
@@ -200,7 +198,7 @@ const TAB_LABELS: TabOption[] = [
 ];
 
 /**
- * 読み込み中のワークスペース。ヘッダー・会話・入力欄・タブ・ステータスバーを本物と同じ部品と大きさで先に出し、
+ * 読み込み中のワークスペース。ヘッダー・会話・入力欄・タブを本物と同じ部品と大きさで先に出し、
  * 中身だけを枠にする（届いたときに位置がずれないように）
  */
 export function WorkspaceSkeleton({ id }: { id?: string }) {
@@ -274,10 +272,6 @@ export function WorkspaceSkeleton({ id }: { id?: string }) {
           </div>
         </section>
       </div>
-      <footer className={s.status} aria-hidden="true">
-        <span><SkeletonText size={12} width={140} /></span>
-        <span><SkeletonText size={12} width={120} /></span>
-      </footer>
     </Busy>
   );
 }
@@ -348,33 +342,5 @@ function Header({ item, session, workflow, pending, onRename, onCancel, onArchiv
         />
       </div>
     </header>
-  );
-}
-
-/** 下のステータスバー: 動いている VM・通信・トークンと費用。VM が止まった後の合計や経過時間は出さない */
-function StatusBar({ item, session, workflow }: { item: Task; session: Session; workflow: Workflow | undefined }) {
-  const { events } = useServices();
-  const [conn, setConn] = useState<ConnectionState>(events.state);
-  useEffect(() => events.onState(setConn), [events]);
-  const state = session.state ?? item.state;
-  const terminal = isTerminal(state);
-  const run = currentRun(session);
-  const step = workflow?.steps.find((st) => st.id === run?.stepId);
-  const vm =
-    run?.state === 'running' && !terminal
-      ? state === 'awaiting_approval' || state === 'suspended'
-        ? <><Dot tone="alert" /> VM 待機中: {stepLabel(run.stepId)} · <span className="mono">{step?.image}</span></>
-        : <><Dot tone="run" /> VM 実行中: {stepLabel(run.stepId)} · <span className="mono">{step?.image}</span></>
-      : null;
-  return (
-    <footer className={s.status}>
-      {vm && <span className={s.statusKeep}>{vm}</span>}
-      <span>通信: {step?.network && !terminal ? <><span className="mono">{step.network}</span>（許可リストのみ）</> : '許可リストのみ'}</span>
-      {session.blocked.length > 0 && <span data-tone="alert">止めた通信 {session.blocked.length} 件</span>}
-      <span>トークン {tokens(session.usage.inputTokens + session.usage.outputTokens)} · {usd(item.costUsd)}</span>
-      {conn !== 'open' && (
-        <span className={`${s.statusRight} ${s.statusKeep}`} data-tone="alert">{conn === 'reconnecting' ? '再接続しています…' : '接続しています…'}</span>
-      )}
-    </footer>
   );
 }

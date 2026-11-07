@@ -55,6 +55,8 @@
     --fs-input-min: 16px;
   }
 }
+/* キーボードが出ている間は、下のホームバーの余白はいらない（lib/viewport.ts） */
+:root[data-keyboard] { --safe-bottom: 0px; }
 
 :root[data-theme="dark"] {
   --bg: #0b0b0c;
