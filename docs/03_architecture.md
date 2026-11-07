@@ -124,6 +124,17 @@ spec:
       action: create-pull-request
 ```
 - `type`: `agent`（VM 上のエージェント）/ `command`（VM 上で決まったコマンドを実行する。LLM は使わない）/ `approval`（人の承認を待つ）/ `system`（コントロールプレーン側の処理）
+- 分岐と並列（[ADR-0012](./adr/0012-workflow-graph-editor.md)）: `next` に配列を書くと並列で始め、合流するステップの `needs` に挙げたステップがすべて終わるまで待つ。`on.cases` は、エージェントが返す `StepResult.label` で行き先を分ける（合わなければ `next`）。`next` / `on.pass` / `on.cases` がなければ、そのステップで終わる。解釈と検証は `packages/contracts/src/workflow-graph.ts` に1か所だけ置き、エンジンも `resolveNext` で行き先を決める
+  ```yaml
+  - id: implement
+    next: [unit-test, e2e]          # 並列で始める
+  - id: triage
+    needs: [e2e, unit-test]         # 両方が終わるまで待つ
+    next: deliver
+    on:
+      cases: { large: security-review }   # 大きい変更だけレビューに回す
+      fail: { goto: implement, maxLoops: 2 }
+  ```
 - 標準のワークフローは2つ（FR-LINE-04 / 05）
   - `chat`: `workbench`（1ステップ。対話しながら作業する VM。計画の承認はステップの中で行う）→ `deliver`（任意）
   - `build-verify`: 上の例
