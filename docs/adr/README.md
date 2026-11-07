@@ -10,5 +10,8 @@
 | [0004](./0004-egress-boundary.md) | egress はルートのない subnet + 明示的なプロキシで統制し、クレデンシャルはゲートウェイで付ける | Accepted |
 | [0005](./0005-three-origins.md) | App / Preview / Publish を3つの CloudFront ディストリビューションに分ける | Accepted |
 | [0006](./0006-toolchain-versions.md) | TypeScript 6.0 と Node.js 24 に固定する | Accepted |
+| [0007](./0007-workspace-layout.md) | 画面はホームの一覧とワークスペース（パターン B）の2層にする | Proposed |
+| [0008](./0008-ui-components-and-styling.md) | UI の部品は AffectUI の無料の部品を取り込んで持ち、スタイルは CSS Modules とデザイントークンにする | Proposed |
+| [0009](./0009-mock-backend-simulator.md) | MSW のモックに、ラインの実行を流すシミュレーターを持たせる | Proposed |
 
 テンプレート: [template.md](./template.md)

@@ -11,3 +11,7 @@ cdk.out/
 .vscode/*
 !.vscode/extensions.json
 .idea/
+dist-mock/
+test-results/
+playwright-report/
+dist-pages/

@@ -1,0 +1,38 @@
+.app { display: flex; flex-direction: column; height: 100%; }
+.skip { position: absolute; left: -9999px; top: 8px; z-index: 100; padding: 6px 12px; border-radius: 8px; background: var(--ink); color: var(--bg); }
+.skip:focus { left: 8px; }
+.nav {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 52px;
+  padding: 0 16px 0 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+.brand { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; font-weight: 600; letter-spacing: -0.01em; }
+.mark { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: var(--ink); color: var(--bg); }
+.links { display: flex; gap: 2px; }
+.links a { padding: 6px 10px; border-radius: 9px; text-decoration: none; color: var(--muted); font-size: 13.5px; }
+.links a:hover { color: var(--ink); background: var(--hover); }
+.links a.active { color: var(--ink); background: var(--active); font-weight: 500; }
+.right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.mock { font-size: 11.5px; padding: 2px 8px; border-radius: 99px; border: 1px dashed var(--line-strong); color: var(--muted); }
+.conn { font-size: 12.5px; color: var(--alert); }
+.main { flex: 1; min-height: 0; overflow: auto; }
+.app[data-full] .main { overflow: hidden; display: flex; flex-direction: column; }
+.page { max-width: 1240px; margin: 0 auto; padding: 28px 28px 64px; }
+.page[data-wide] { max-width: 1440px; }
+.profile { position: relative; }
+.avatarButton { padding: 0; border: 0; background: none; border-radius: 50%; display: inline-flex; }
+.popover { position: absolute; right: 0; top: calc(100% + 8px); z-index: 40; width: 300px; animation: rise 180ms var(--ease) both; }
+
+@media (max-width: 760px) {
+  .nav { gap: 10px; padding: 0 10px; }
+  .brandText { display: none; }
+  .links { min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .links a { padding: 6px 7px; white-space: nowrap; }
+  .mock { display: none; }
+  .page { padding: 20px 16px 48px; }
+}

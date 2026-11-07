@@ -1,0 +1,39 @@
+{
+  "name": "@factory/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "VITE_API_MOCK=true vite",
+    "build": "tsc -p tsconfig.json && vite build",
+    "build:mock": "tsc -p tsconfig.json && VITE_API_MOCK=true vite build --outDir dist-mock",
+    "build:pages": "tsc -p tsconfig.json && VITE_API_MOCK=true vite build --base \"${PAGES_BASE:-/software-factory/}\" --outDir dist-pages && cp dist-pages/index.html dist-pages/404.html",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@factory/contracts": "workspace:*",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-router": "8.5.1",
+    "yaml": "2.9.1",
+    "zod": "4.6.7",
+    "zustand": "5.0.16"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.2.1",
+    "jsdom": "31.0.0",
+    "msw": "3.0.4",
+    "typescript": "6.0.3",
+    "vite": "8.3.6",
+    "vitest": "5.1.0"
+  },
+  "msw": { "workerDirectory": ["public"] }
+}

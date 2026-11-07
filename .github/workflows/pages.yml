@@ -1,0 +1,47 @@
+name: pages
+
+# Web 画面を MSW のモックつきでビルドし、GitHub Pages に公開する（バックエンドなしで操作できるデモ）
+on:
+  push:
+    branches: [main]
+    paths: ['packages/web/**', 'packages/contracts/**', 'pnpm-lock.yaml', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - id: pages
+        uses: actions/configure-pages@v6
+      # base_path は "/software-factory" のようにリポジトリ名になる（独自ドメインなら空）
+      - run: pnpm --filter @factory/web build:pages
+        env:
+          PAGES_BASE: ${{ steps.pages.outputs.base_path }}/
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: packages/web/dist-pages
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

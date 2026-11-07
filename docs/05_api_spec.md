@@ -183,3 +183,32 @@
 ```
 - この中身は snapshot には入らない（`/run` のときに渡るだけ）。秘密情報は vmToken だけにする
 - **durable execution の callbackId は VM に渡さない**。Callback API が vmToken → `StageRuns` の順に引いて、`SendDurableExecutionCallback*` を呼ぶ（VM が別のステージを完了させることを防ぐ）
+
+---
+
+## 7. Web の実装で足した契約（提案）
+
+`packages/web` を MSW のモックで最後まで動かすために、`packages/contracts` に次の項目を足した。どれも既存の項目を変えない追加で、バックエンドの実装（M1〜M2）で採用するかを決める。型の正は `packages/contracts/src/index.ts`。
+
+### 7.1 イベント
+| type / 項目 | 内容 | なぜ要るか |
+|---|---|---|
+| `message.user`（新規） | messageId、text、author、attachments? | 再読み込みしたときに、ユーザーの発言も履歴（`GET /events`）から組み立て直すため |
+| `tool.finished.summary`（追加） | 結果の要約（例: 「4 件のテストが通過」） | 会話の「作業のまとめ」と実行ログに結果を出すため |
+| `plan.decided`（新規） | planVersion、decision（approved / changes_requested / rejected）、by、comment? | だれがいつ承認・修正の依頼をしたかを会話に出すため |
+| `approval.required.approvalId`（追加） | 再承認の ID | `POST /approvals/{approvalId}` に必要（今の定義では ID が分からない） |
+| `approval.resolved`（新規） | approvalId、decision、by | 回答済みのカードにするため。ほかのタブ・端末にも反映するため |
+| `preview.ready`（新規） | port、path | プレビューのタブを開けるようになったことを知るため（`POST /previews` に port が要る） |
+| `eventId`（配信の封筒） | `FactoryEventEnvelope = FactoryEvent & { eventId }` | WebSocket と `GET /events` で同じ形にし、重複を除くため |
+
+### 7.2 REST
+| メソッド | パス | 内容 |
+|---|---|---|
+| GET | `/me` | ログインしているユーザー（名前、ロール、GitHub の連携状態） |
+| POST | `/attachments` | 作成する前の添付の presigned URL（新しい依頼の入力欄から上げるため）。作成時に `CreateWorkItemRequest.attachments` で渡す |
+| GET | `/admin/network-profiles`、`/admin/package-sources` | 一覧（§3 は名前ごとの GET / PUT だけだった） |
+
+### 7.3 型
+- `WorkItem` に `repo?`、`branch?`、`pullRequest?`、`usage?`、`costUsd?`、`archived` を足した（一覧とヘッダーに出すため）
+- `Line` に `title?`、`description?` を足した（画面に出す名前と説明）
+- 新規: `PlanRecord`、`StageRun`、`FileTree`、`Diff`、`AttachmentTicket`、`Download`、`Preview`、`PrecheckResult`、`Publication`（と作成・更新の入力）、`Me`、`Repo`、`ImageSpec`、`ImageSummary`、`ImageVersion`、`BuildLog`、`NetworkProfile`、`PackageSource`、`LineDefinition`、`VmInfo`、`Capacity`、`AdminUser`

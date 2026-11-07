@@ -1,0 +1,33 @@
+.line { display: flex; align-items: flex-start; gap: 0; margin: 0; padding: 0; list-style: none; }
+.item { position: relative; display: flex; align-items: center; gap: 7px; }
+.item + .item { padding-left: 34px; }
+.bar { position: absolute; left: 6px; top: 50%; width: 22px; height: 1.5px; background: var(--line-strong); }
+.item[data-status="done"] .bar, .item[data-status="running"] .bar, .item[data-status="alert"] .bar, .item[data-status="failed"] .bar { background: var(--muted); }
+.node {
+  display: inline-grid; place-items: center; flex: none;
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 1.5px solid var(--line-strong); background: var(--card); color: var(--card);
+}
+.node :global(.icon) { width: 10px; height: 10px; stroke-width: 3; }
+.item[data-status="done"] .node { background: var(--ink); border-color: var(--ink); }
+.item[data-status="running"] .node { border-color: var(--run); box-shadow: 0 0 0 3px var(--run-bg); }
+.item[data-status="running"] .node::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--run); animation: pulse 1.6s ease-in-out infinite; }
+.item[data-status="alert"] .node { border-color: var(--alert); background: var(--alert); box-shadow: 0 0 0 3px var(--alert-bg); }
+.item[data-status="failed"] .node { border-color: var(--err); background: var(--err); }
+.text { display: grid; line-height: 1.25; }
+.label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.item[data-status="running"] .label, .item[data-status="alert"] .label, .item[data-status="failed"] .label { color: var(--ink); font-weight: 500; }
+.item[data-status="done"] .label { color: var(--text); }
+.sub { font-family: var(--mono); font-size: 11px; color: var(--faint); white-space: nowrap; }
+
+.line[data-size="sm"] .item + .item { padding-left: 26px; }
+.line[data-size="sm"] .bar { width: 16px; left: 5px; }
+.line[data-size="sm"] .label { font-size: 12.5px; }
+
+.line[data-size="xs"] { align-items: center; }
+.line[data-size="xs"] .item + .item { padding-left: 12px; }
+.line[data-size="xs"] .bar { width: 8px; left: 2px; }
+.line[data-size="xs"] .node { width: 10px; height: 10px; border-width: 1.5px; }
+.line[data-size="xs"] .node :global(.icon) { display: none; }
+.line[data-size="xs"] .item[data-status="running"] .node::after { width: 4px; height: 4px; }
+.line[data-size="xs"] .item[data-status="running"] .node, .line[data-size="xs"] .item[data-status="alert"] .node { box-shadow: none; }
