@@ -189,7 +189,7 @@ export function MessageActions({
     if (next === index) return;
     if (version === undefined) setInner(next);
     onVersionChange?.(next);
-    announce(`Version ${fmt(next + 1)} of ${fmt(count)}`);
+    announce(`${fmt(count)} 件中 ${fmt(next + 1)} 件目`);
   };
 
   /* ----- Status line for screen readers ----- */
@@ -276,7 +276,7 @@ export function MessageActions({
     const t = window.setTimeout(() => {
       setInnerSpeaking(false);
       onSpeak?.(false);
-      announce("Finished reading");
+      announce("読み上げが終わりました");
     }, duration);
     return () => window.clearTimeout(t);
     // onSpeak is read when the timer ends – a new function each render must not restart it
@@ -286,7 +286,7 @@ export function MessageActions({
     const next = !playing;
     if (speaking === undefined) setInnerSpeaking(next);
     onSpeak?.(next);
-    announce(next ? "Reading aloud" : "Stopped reading");
+    announce(next ? "読み上げています" : "読み上げを止めました");
   };
 
   const active = Boolean(copied) || panel || playing || regenerating;
@@ -329,8 +329,8 @@ export function MessageActions({
     if (key === "copy")
       return button({
         key: "copy",
-        tip: copied ? "Copied" : "Copy",
-        labelText: copied ? "Copied" : "Copy message",
+        tip: copied ? "コピーしました" : "コピー",
+        labelText: copied ? "コピーしました" : "メッセージをコピー",
         onClick: copy,
         flash: Boolean(copied),
         extra: { "data-done": copied ? "" : undefined },
@@ -351,7 +351,7 @@ export function MessageActions({
           {button({
             key: "regenerate",
             tip: regenerating ? "Writing…" : "Regenerate",
-            labelText: "Regenerate response",
+            labelText: "もう一度生成",
             onClick: regenerate,
             extra: { "data-busy": regenerating ? "" : undefined },
             children: (
@@ -368,13 +368,13 @@ export function MessageActions({
                 type="button"
                 className="ui-ma__step"
                 data-dir="prev"
-                aria-label="Previous version"
+                aria-label="前の版"
                 disabled={index === 0}
                 onClick={() => goTo(index - 1)}
               >
                 <Glyph d={icons.prev} />
               </button>
-              <span className="ui-ma__count" aria-label={`Version ${fmt(index + 1)} of ${fmt(count)}`}>
+              <span className="ui-ma__count" aria-label={`${fmt(count)} 件中 ${fmt(index + 1)} 件目`}>
                 <Swap id={String(index)} className="ui-ma__count-now">
                   {fmt(index + 1)}
                 </Swap>
@@ -385,7 +385,7 @@ export function MessageActions({
                 type="button"
                 className="ui-ma__step"
                 data-dir="next"
-                aria-label="Next version"
+                aria-label="次の版"
                 disabled={index >= count - 1}
                 onClick={() => goTo(index + 1)}
               >
@@ -429,8 +429,8 @@ export function MessageActions({
       );
     return button({
       key: "speak",
-      tip: playing ? "Stop" : "Read aloud",
-      labelText: playing ? "Stop reading" : "Read aloud",
+      tip: playing ? "停止" : "読み上げ",
+      labelText: playing ? "読み上げを止める" : "読み上げる",
       pressed: playing,
       onClick: speak,
       children: (

@@ -47,7 +47,7 @@ export function seed(): MockDb {
     message: '添付の売上データ（10月分）を部署ごとに集計して、グラフ付きのレポートにしてください。部内に公開したいです。',
     attachments: [csvPath],
   });
-  fastForward(report.item.id, report.at, () => 'approve');
+  fastForward(report.item.id, report.at, () => 'approve', 2000, 9);
   const pubAt = new Date(report.at + 9 * MIN).toISOString();
   db.publications.push(
     Publication.parse({
@@ -59,22 +59,22 @@ export function seed(): MockDb {
 
   // 2. 表記ゆれ（検証が続けて失敗して止まった）
   const csv = make(130, { title: '顧客リストの表記ゆれを統一', lineRef: 'build-verify@3', repo: { owner: 'acme', name: 'crm-scripts' }, message: '顧客リストの会社名の表記ゆれ（全角・半角、(株) と株式会社）を統一してください。' });
-  fastForward(csv.item.id, csv.at, () => 'approve');
+  fastForward(csv.item.id, csv.at, () => 'approve', 2000, 6);
 
   // 3. フォーム（検証で一度失敗し、直して完了。PR #128）
   const form = make(122, { title: '問い合わせフォームの入力チェックを直す', lineRef: 'build-verify@3', repo: { owner: 'acme', name: 'support-site' }, message: '問い合わせフォームで、メールアドレスが正しくなくても送信できてしまいます。入力チェックを直してください。' });
-  fastForward(form.item.id, form.at, () => 'approve');
+  fastForward(form.item.id, form.at, () => 'approve', 2000, 8);
 
   // 4. ダッシュボード（計画の承認待ち）
-  const dash = make(3, { title: '週次売上ダッシュボードを追加', lineRef: 'build-verify@3', repo: { owner: 'acme', name: 'sales-insights' }, message: '売上データから、地域ごとの週次の売上をグラフで見られる画面を追加してください。' });
-  fastForward(dash.item.id, dash.at, () => 'stop');
+  const dash = make(4, { title: '週次売上ダッシュボードを追加', lineRef: 'build-verify@3', repo: { owner: 'acme', name: 'sales-insights' }, message: '売上データから、地域ごとの週次の売上をグラフで見られる画面を追加してください。' });
+  fastForward(dash.item.id, dash.at, () => 'stop', 2000, 6);
 
   // 5. README（実行中。続きは画面を開いている間に流れる）
-  const readme = make(1, { title: 'README に開発手順を追記', lineRef: 'build-verify@3', repo: { owner: 'acme', name: 'platform' }, message: 'README に、ローカルで開発を始めるための手順を追記してください。' });
-  fastForward(readme.item.id, readme.at, () => 'stop');
+  const readme = make(5, { title: 'README に開発手順を追記', lineRef: 'build-verify@3', repo: { owner: 'acme', name: 'platform' }, message: 'README に、ローカルで開発を始めるための手順を追記してください。' });
+  const planned = fastForward(readme.item.id, readme.at, () => 'stop', 2000, 6);
   // 計画を承認してから、少しだけ進めておく（fastForward の maxSteps=1 は「承認だけ」）
-  fastForward(readme.item.id, readme.at + 20_000, () => 'approve', 1);
-  advance(readme.item.id, readme.at + 22_000, 18);
+  fastForward(readme.item.id, planned + 40_000, () => 'approve', 1);
+  advance(readme.item.id, planned + 42_000, 14, 4);
 
   db.users[0]!.monthUsd = Math.round(db.workItems.reduce((s, w) => s + (w.costUsd ?? 0), 0) * 100) / 100;
   setDb(db);

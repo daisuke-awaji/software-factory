@@ -10,7 +10,7 @@ import './styles/global.css';
 const mock = import.meta.env.VITE_API_MOCK === 'true';
 
 async function main() {
-  if (mock) {
+  if (import.meta.env.VITE_API_MOCK === 'true') {
     // MSW を先に起動する（動的 import なので、モックのコードは本番のビルドに入らない）
     const { startMockWorker } = await import('./mocks/browser');
     await startMockWorker();

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { createBrowserRouter, RouterProvider, type RouteObject } from 'react-router';
 import { AdminPage } from '../features/admin/AdminPage';
 import { HomePage } from '../features/home/HomePage';
@@ -27,7 +28,7 @@ export const routes: RouteObject[] = [
 ];
 
 export function App({ services }: { services: Services }) {
-  const router = createBrowserRouter(routes);
+  const [router] = useState(() => createBrowserRouter(routes));
   return (
     <ServicesProvider value={services}>
       <RouterProvider router={router} />

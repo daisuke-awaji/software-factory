@@ -156,7 +156,7 @@ function SetupProgress({ done: rawDone, total: rawTotal, next, onContinue }: Pro
       {open && (
         <button type="button" className="ui-pm__next" onClick={onContinue}>
           <span className="ui-pm__next-label" dir="auto" title={next}>
-            <span className="ui-pm__next-hint">Next:</span> {next}
+            <span className="ui-pm__next-hint">次:</span> {next}
           </span>
           <ArrowIcon />
         </button>

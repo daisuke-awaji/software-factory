@@ -172,36 +172,37 @@ export function resumeAll() {
 }
 
 /** シード用: 待ちになるまで（または decide が 'stop' を返すまで）一気に流す */
-export function fastForward(id: string, startAt: number, decide: (sim: Sim) => 'approve' | 'stop', maxSteps = 2000) {
+export function fastForward(id: string, startAt: number, decide: (sim: Sim) => 'approve' | 'stop', maxSteps = 2000, scale = 1): number {
   virtualNow = startAt;
   try {
     for (let i = 0; i < maxSteps; i++) {
       const sim = getDb().sim[id]!;
       if (sim.waiting) {
-        if (decide(sim) === 'stop') return;
+        if (decide(sim) === 'stop') return virtualNow;
         if (sim.waiting === 'plan') approvePlan(id, sim.planVersion, '佐藤 美咲');
         else if (sim.waiting === 'approval' && sim.approvalId) answerApproval(id, sim.approvalId, 'approve', '佐藤 美咲');
         continue;
       }
       const step = sim.queue.shift();
-      if (!step) return;
-      virtualNow += Math.max(1, step.delay);
+      if (!step) return virtualNow;
+      virtualNow += Math.max(1, step.delay * scale);
       applyStep(id, step);
     }
+    return virtualNow;
   } finally {
     virtualNow = null;
   }
 }
 
 /** シード用: 指定した数の手順だけ進める（実行中の状態を作る） */
-export function advance(id: string, startAt: number, steps: number) {
+export function advance(id: string, startAt: number, steps: number, scale = 1) {
   virtualNow = startAt;
   try {
     for (let i = 0; i < steps; i++) {
       const sim = getDb().sim[id]!;
-      const step = sim.queue.shift();
-      if (!step || sim.waiting) return;
-      virtualNow += Math.max(1, step.delay);
+      if (sim.waiting || !sim.queue[0]) return;
+      const step = sim.queue.shift()!;
+      virtualNow += Math.max(1, step.delay * scale);
       applyStep(id, step);
     }
   } finally {

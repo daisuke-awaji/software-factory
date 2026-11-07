@@ -31,7 +31,7 @@ export type ThinkingLoaderProps = {
   className?: string;
 };
 
-const DEFAULT_PHASES = ["Thinking", "Searching the web", "Reading sources", "Writing response"];
+const DEFAULT_PHASES = ["考えています", "調べています", "まとめています"];
 const RAYS = Array.from({ length: 8 }, (_, i) => i);
 // 75s reads "1m 15s", a long run "2h 05m" or "3d 4h"
 const took = (s: number) => {
@@ -48,7 +48,7 @@ export function ThinkingLoader({
   phase,
   loop = false,
   done = false,
-  doneLabel = (s) => `Thought for ${took(s)}`,
+  doneLabel = (s) => `${took(s)}で完了`,
   size = "md",
   variant = "pill",
   className,
