@@ -9,16 +9,16 @@
 .newInput {
   display: block; width: 100%; min-height: 92px; padding: 14px 16px;
   border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); box-shadow: var(--shadow-sm);
-  resize: vertical; font-size: 15px; line-height: 1.6;
+  resize: vertical; font-size: max(15px, var(--fs-input-min)); line-height: 1.6;
 }
 .newInput:focus { outline: none; border-color: var(--line-strong); box-shadow: var(--shadow-sm), 0 0 0 3px var(--active); }
 .newBar { display: flex; align-items: center; gap: 6px; padding: 8px 6px 4px; flex-wrap: wrap; }
 .chip, .chipSelect {
-  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px;
+  display: inline-flex; align-items: center; gap: 6px; height: max(30px, var(--tap-min)); padding: 0 10px;
   border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--text); font-size: 13px;
 }
 .chip:hover, .chipSelect:hover { border-color: var(--line-strong); }
-.chipSelect select { border: 0; background: none; font-size: 13px; padding: 0 2px; max-width: 220px; cursor: pointer; }
+.chipSelect select { align-self: stretch; border: 0; background: none; font-size: max(13px, var(--fs-input-min)); padding: 0 2px; max-width: 220px; cursor: pointer; }
 .chipSelect select:focus { outline: none; }
 .chipSelect:focus-within { border-color: var(--muted); }
 .chipSelect label { color: var(--muted); }
@@ -32,9 +32,9 @@
 .fileChip :global(.icon) { width: 13px; height: 13px; }
 .newMeta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 0 4px; }
 .titleLabel { font-size: 12.5px; color: var(--muted); }
-.titleInput { max-width: 340px; min-height: 30px; padding: 4px 10px; font-size: 13px; }
+.titleInput { max-width: 340px; min-height: max(30px, var(--tap-min)); padding: 4px 10px; font-size: max(13px, var(--fs-input-min)); }
 .templates { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
-.template { border: 1px dashed var(--line-strong); background: none; border-radius: 999px; padding: 3px 10px; font-size: 12.5px; color: var(--muted); }
+.template { min-height: max(26px, var(--tap-min) - 8px); border: 1px dashed var(--line-strong); background: none; border-radius: 999px; padding: 3px 10px; font-size: 12.5px; color: var(--muted); }
 .template:hover { color: var(--ink); border-style: solid; }
 .lineDesc { margin: -2px 4px 0; font-size: 12.5px; color: var(--faint); }
 
@@ -42,7 +42,7 @@
 .listHead { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
 .search { margin-left: auto; position: relative; display: block; width: 260px; }
 .search :global(.icon) { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--faint); pointer-events: none; }
-.search input { padding-left: 32px; min-height: 34px; font-size: 13px; }
+.search input { padding-left: 32px; min-height: max(34px, var(--tap-min)); font-size: max(13px, var(--fs-input-min)); }
 .tableWrap { border: 1px solid var(--line); border-radius: var(--radius-card); overflow: auto; background: var(--card); }
 .table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .table th { position: sticky; top: 0; text-align: left; font-weight: 500; font-size: 12px; color: var(--muted); padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--bg-subtle); white-space: nowrap; }
@@ -57,6 +57,16 @@
 .lineCell { display: grid; gap: 4px; }
 .lineName { font-size: 11.5px; color: var(--faint); white-space: nowrap; }
 
+/* スマホの一覧（カード） */
+.cards { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.cardLink { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); text-decoration: none; color: inherit; }
+.cardLink:active { background: var(--hover); }
+.cardTop { display: flex; align-items: baseline; gap: 10px; }
+.cardTop .rowTitle { flex: 1; min-width: 0; }
+.cardTime { flex: none; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cardBottom { display: flex; align-items: center; gap: 10px; margin-top: 4px; min-width: 0; overflow: hidden; }
+.inboxFirst { margin: 0 0 20px; }
+
 /* ---------- 横の欄 ---------- */
 .stats { border: 1px solid var(--line); border-radius: var(--radius-card); padding: 14px 16px; background: var(--card); }
 .statsTitle { margin: 0 0 10px; font-size: 13px; font-weight: 500; color: var(--muted); }
@@ -65,15 +75,25 @@
 .statsList dt { font-size: 12px; color: var(--muted); }
 .statsList dd { margin: 0; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-@media (max-width: 1100px) {
+@media (max-width: 1099px) {
   .layout { grid-template-columns: 1fr; }
   .side { position: static; grid-template-columns: 1fr 1fr; }
 }
-@media (max-width: 720px) {
+@media (max-width: 719px) {
   .listHead > :first-child { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
   .table th:nth-child(3), .table td:nth-child(3), .table th:nth-child(4), .table td:nth-child(4), .table th:nth-child(5), .table td:nth-child(5) { display: none; }
   .side { grid-template-columns: 1fr; }
   .search { width: 100%; margin-left: 0; }
   .templates { margin-left: 0; }
+  .kbdHint { display: none; }
+  .greeting { font-size: 20px; margin-bottom: 10px; }
+  .newInput { min-height: 76px; padding: 12px 14px; }
+  .newBar .chipSelect { min-width: 0; max-width: 100%; }
+  .newBar .chipSelect select { min-width: 0; max-width: 100%; }
+  .newBar :global(.ui-button) { margin-left: auto; }
+  .newMeta { gap: 6px 10px; }
+  .titleInput { max-width: none; flex: 1; }
+}
+@media (pointer: coarse) {
   .kbdHint { display: none; }
 }

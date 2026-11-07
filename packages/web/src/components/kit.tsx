@@ -1,5 +1,5 @@
 // アプリで共通に使う小さな部品（AffectUI にないもの）。見た目は AffectUI のトレーとカードに揃える
-import { useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import type { Tone } from '../lib/format';
 import { useUi } from '../stores/ui';
 import { IconClose, IconWarning } from './icons';
@@ -155,7 +155,7 @@ export function Dialog({ open, onClose, title, children, footer, width = 520 }: 
     <dialog
       ref={ref}
       className={s.dialog}
-      style={{ width }}
+      style={{ '--dialog-w': `${width}px` } as CSSProperties}
       onClose={onClose}
       onCancel={(e) => {
         e.preventDefault();

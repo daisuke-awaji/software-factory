@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { Button } from '../../components/ui/button';
 import { SegmentedControl } from '../../components/ui/segmented-control';
-import { Banner, Dot, ErrorBanner, IconButton, Loading, Menu, Tag } from '../../components/kit';
-import { IconBranch, IconChevron, IconClose, IconExternal, IconMore, IconPanel, IconPR, IconRepo } from '../../components/icons';
+import { Banner, Dot, ErrorBanner, Loading, Menu, Tag } from '../../components/kit';
+import { IconBack, IconBranch, IconChevron, IconExternal, IconMore, IconPR, IconRepo } from '../../components/icons';
 import { StageLine } from '../../components/StageLine';
 import { errorMessage } from '../../lib/api';
 import { saveFromUrl } from '../../lib/download';
@@ -14,6 +14,7 @@ import { duration, isTerminal, reasonLabel, stageLabel, stateLabel, stateTone, t
 import { stepsFromSession } from '../../lib/line';
 import { useServices } from '../../lib/services';
 import { currentRun, type Pending, type Session } from '../../lib/session';
+import { narrow, useMediaQuery } from '../../lib/useMediaQuery';
 import { useResource } from '../../lib/useResource';
 import { useMe } from '../../stores/me';
 import { useUi, type Tab } from '../../stores/ui';
@@ -33,13 +34,15 @@ export function WorkspacePage() {
   const { item, line, session, state, pending, historyError } = useWorkspace(id);
   const tabState = useUi((u) => u.tabs[id]);
   const pickTab = useUi((u) => u.pickTab);
-  const [panelOpen, setPanelOpen] = useState(false);
+  /** 1024px 未満では、会話と成果物のどちらか一方を出す（06_ui_spec.md §6） */
+  const [view, setView] = useState<'chat' | 'work'>('chat');
+  const compact = useMediaQuery(narrow.tablet);
   const [dialog, setDialog] = useState<null | 'publish' | 'rename' | 'cancel'>(null);
   const diff = useResource(() => api.diff(id), [id, session?.fileVersion ?? 0, state === 'completed'], { enabled: !!item.data });
   const lastEntry = session?.timeline.at(-1);
   const scroller = useStickToBottom<HTMLDivElement>(`${session?.timeline.length ?? 0}:${lastEntry?.k === 'assistant' ? session?.messages[lastEntry.id]?.text.length : ''}:${lastEntry?.k === 'work' ? lastEntry.tools.length : ''}:${session?.state}`);
 
-  useEffect(() => setPanelOpen(false), [id]);
+  useEffect(() => setView('chat'), [id]);
 
   if (item.error && !item.data) {
     return (
@@ -54,7 +57,7 @@ export function WorkspacePage() {
   const tab: Tab = tabState?.tab ?? 'plan';
   const openTab = (t: Tab) => {
     pickTab(id, t);
-    setPanelOpen(true);
+    setView('work');
   };
 
   const guard = async (fn: () => Promise<unknown>, ok?: string) => {
@@ -102,7 +105,6 @@ export function WorkspacePage() {
         session={session}
         line={line}
         pending={pending}
-        onTogglePanel={() => setPanelOpen((o) => !o)}
         onRename={() => setDialog('rename')}
         onCancel={() => setDialog('cancel')}
         onArchive={() =>
@@ -114,8 +116,29 @@ export function WorkspacePage() {
         onInterrupt={() => void guard(() => api.interrupt(id)).catch(() => undefined)}
       />
       {historyError && <Banner tone="err">イベントの履歴を読み込めませんでした: {historyError}</Banner>}
-      <div className={s.body}>
-        <section className={s.chat} aria-label="会話">
+      {compact && (
+        <div className={s.views}>
+          <SegmentedControl<'chat' | 'work'>
+            size="sm"
+            kind="tabs"
+            fullWidth
+            aria-label="表示の切り替え"
+            value={view}
+            onChange={setView}
+            options={[
+              { value: 'chat', label: '会話', controls: 'view-chat' },
+              {
+                value: 'work',
+                label: '成果物',
+                controls: 'view-work',
+                ...(hint ? { badge: <Dot tone={hint === 'plan' ? 'alert' : 'run'} label={hint === 'plan' ? '対応が必要' : '新しい内容'} /> } : {}),
+              },
+            ]}
+          />
+        </div>
+      )}
+      <div className={s.body} data-view={compact ? view : undefined}>
+        <section className={s.chat} id="view-chat" aria-label="会話">
           <div className={s.chatScroll} ref={scroller}>
             <Conversation
               item={wi}
@@ -135,12 +158,9 @@ export function WorkspacePage() {
           </div>
         </section>
 
-        <section className={s.work} data-open={panelOpen || undefined} aria-label="成果物">
+        <section className={s.work} id="view-work" aria-label="成果物">
           <div className={s.tabs}>
             <SegmentedControl<Tab> variant="underline" kind="tabs" size="sm" aria-label="成果物の表示" value={tab} onChange={(v) => pickTab(id, v)} options={tabOptions.map((o) => ({ ...o, controls: `panel-${o.value}` }))} />
-            <span className={s.panelClose}>
-              <IconButton label="閉じる" onClick={() => setPanelOpen(false)}><IconClose /></IconButton>
-            </span>
           </div>
           <div className={s.panel} id={`panel-${tab}`} role="tabpanel">
             {tab === 'preview' && <PreviewTab item={wi} session={session} />}
@@ -168,17 +188,20 @@ export function WorkspacePage() {
   );
 }
 
-function Header({ item, session, line, pending, onTogglePanel, onRename, onCancel, onArchive, onInterrupt }: {
+function Header({ item, session, line, pending, onRename, onCancel, onArchive, onInterrupt }: {
   item: WorkItem; session: Session; line: Line | undefined; pending: Pending | null;
-  onTogglePanel: () => void; onRename: () => void; onCancel: () => void; onArchive: () => void; onInterrupt: () => void;
+  onRename: () => void; onCancel: () => void; onArchive: () => void; onInterrupt: () => void;
 }) {
   const { api } = useServices();
   const navigate = useNavigate();
+  const phone = useMediaQuery(narrow.phone);
+  const pr = item.pullRequest;
   const recent = useResource(() => api.listWorkItems({ limit: 8 }), []);
   const state = session.state ?? item.state;
   const label = pending?.kind === 'approval' ? `${reasonLabel[pending.approval.reason]}の承認待ち` : stateLabel[state];
   return (
     <header className={s.head}>
+      <Link to="/" className={s.back} aria-label="依頼の一覧に戻る" title="依頼の一覧に戻る"><IconBack /></Link>
       <nav className={s.crumbs} aria-label="場所">
         <Link to="/" className={s.crumb}>依頼</Link>
         <IconChevron />
@@ -202,23 +225,21 @@ function Header({ item, session, line, pending, onTogglePanel, onRename, onCance
           items={(recent.data?.items ?? []).filter((w) => w.id !== item.id).map((w) => ({ label: `${w.title}（${stateLabel[w.state]}）`, onSelect: () => void navigate(`/w/${w.id}`) }))}
         />
       </nav>
-      <Tag tone={stateTone[state]}>{label}</Tag>
+      <span className={s.headTag}><Tag tone={stateTone[state]}>{label}</Tag></span>
       <div className={s.headRight}>
         <div className={s.headLine}><StageLine size="sm" steps={stepsFromSession(line, session)} /></div>
-        {item.pullRequest ? (
+        {phone ? null : item.pullRequest ? (
           <Button size="sm" variant="secondary" icon={<IconPR />} iconRight={<IconExternal />} onClick={() => window.open(item.pullRequest!.url, '_blank', 'noopener')}>
             PR #{item.pullRequest.number}
           </Button>
         ) : item.repo ? (
           <Button size="sm" variant="secondary" icon={<IconPR />} disabled>PR はまだありません</Button>
         ) : null}
-        <span className={s.panelToggle}>
-          <Button size="sm" variant="secondary" icon={<IconPanel />} onClick={onTogglePanel}>成果物</Button>
-        </span>
         <Menu
           label="その他の操作"
           trigger={<IconMore />}
           items={[
+            ...(phone && pr ? [{ label: `PR #${pr.number} を開く`, onSelect: () => void window.open(pr.url, '_blank', 'noopener') }] : []),
             { label: '名前を変更', onSelect: onRename },
             { label: item.archived ? 'アーカイブから戻す' : 'アーカイブ', onSelect: onArchive },
             { label: '作業を中断', onSelect: onInterrupt, disabled: !(state === 'running' || state === 'planning') },

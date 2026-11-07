@@ -15,6 +15,8 @@ export const IconPlus = () => <Svg><path d="M12 5v14M5 12h14" /></Svg>;
 export const IconSend = () => <Svg><path d="M12 19V5M6 11l6-6 6 6" /></Svg>;
 export const IconCheck = () => <Svg><path d="M5 12.5l4.5 4.5L19 7.5" /></Svg>;
 export const IconChevron = () => <Svg><path d="M9 6l6 6-6 6" /></Svg>;
+export const IconBack = () => <Svg><path d="M15 6l-6 6 6 6" /></Svg>;
+export const IconMenu = () => <Svg><path d="M4 7h16M4 12h16M4 17h16" /></Svg>;
 export const IconChevronDown = () => <Svg><path d="M6 9l6 6 6-6" /></Svg>;
 export const IconExternal = () => <Svg><path d="M14 5h5v5M19 5l-8 8M18 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4" /></Svg>;
 export const IconRepo = () => <Svg><path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H19v15H7.5A2.5 2.5 0 0 0 5 20.5v-15zM5 20.5A2.5 2.5 0 0 1 7.5 18H19v3H7.5" /></Svg>;
