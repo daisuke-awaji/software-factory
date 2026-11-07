@@ -67,8 +67,9 @@
 .itemTitle { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .itemTime { flex: none; font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
 .empty { margin: 14px 10px; font-size: 12.5px; color: var(--faint); }
-.more { display: block; margin-top: 10px; padding: 6px 10px; font-size: 12.5px; color: var(--muted); text-decoration: none; border-radius: 9px; }
-.more:hover { background: var(--hover); color: var(--ink); }
+.loadMore { display: flex; justify-content: center; min-height: 36px; align-items: center; margin-top: 6px; font-size: 12px; color: var(--faint); }
+.retry { padding: 4px 10px; border: 0; border-radius: 8px; background: none; color: var(--muted); font-size: 12.5px; text-decoration: underline; text-underline-offset: 2px; }
+.retry:hover { background: var(--hover); color: var(--ink); }
 .spacer { flex: 1; }
 
 /* ---------- アカウント ---------- */

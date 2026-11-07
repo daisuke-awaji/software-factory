@@ -1,17 +1,17 @@
-// アプリの枠: 左のサイドパネルと、ページの中身（ADR-0010）。スマホでは上の細いバーと、左から出すサイドパネル
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+// アプリの枠: 左のサイドパネルと、ページの中身（ADR-0010）。1280px 未満では、左上のロゴで左からサイドパネルを出す
+import { useCallback, useEffect, useRef, useState, type ReactNode, type TouchEvent } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
-import { Banner, ErrorBanner, FactoryMark, Loading, Toasts } from '../components/kit';
-import { IconMenu } from '../components/icons';
+import { Banner, ErrorBanner, Loading, Toasts } from '../components/kit';
 import { useLiveReload } from '../features/home/useLive';
 import { errorMessage } from '../lib/api';
 import type { ConnectionState } from '../lib/events';
 import { useServices } from '../lib/services';
 import { narrow, useMediaQuery } from '../lib/useMediaQuery';
-import { useResource } from '../lib/useResource';
 import { useMe } from '../stores/me';
 import { useUi } from '../stores/ui';
+import { LogoToggle } from './LogoToggle';
 import { Sidebar } from './Sidebar';
+import { useWorkItemFeed } from './useWorkItemFeed';
 import s from './AppShell.module.css';
 
 export function AppShell() {
@@ -30,8 +30,8 @@ export function AppShell() {
   useEffect(() => events.onState(setConn), [events]);
 
   // サイドパネルの依頼の一覧。画面を移ったとき（新しい依頼を出したときなど）と、状態が変わったときに読み直す
-  const list = useResource(() => api.listWorkItems({ limit: 100 }), [location.pathname], { pollMs: 20_000, enabled: !!me });
-  useLiveReload(list.data?.items, () => void list.reload());
+  const feed = useWorkItemFeed([location.pathname], { pollMs: 20_000, enabled: !!me });
+  useLiveReload(feed.items, () => void feed.reload());
 
   const full = location.pathname.startsWith('/w/');
   const overlayMode = useMediaQuery(narrow.sidebar);
@@ -58,7 +58,6 @@ export function AppShell() {
     return () => document.removeEventListener('keydown', onKey);
   }, [toggle]);
 
-  const items = list.data?.items;
   const floating = overlayMode && overlay;
 
   return (
@@ -66,24 +65,19 @@ export function AppShell() {
       <a href="#main" className={s.skip}>本文へ移動</a>
       {!phone && (
         <aside className={s.side} aria-label="サイドパネル" inert={floating || undefined}>
-          <Sidebar expanded={!overlayMode && pinned} items={items} conn={conn} mock={mock} onToggle={toggle} />
+          <Sidebar expanded={!overlayMode && pinned} feed={feed} conn={conn} mock={mock} onToggle={toggle} />
         </aside>
       )}
-      {floating && (
-        <Drawer onClose={closeOverlay}>
-          <Sidebar expanded floating items={items} conn={conn} mock={mock} onToggle={closeOverlay} />
+      {overlayMode && (
+        <Drawer open={overlay} onClose={closeOverlay}>
+          <Sidebar expanded floating feed={feed} conn={conn} mock={mock} onToggle={closeOverlay} />
         </Drawer>
       )}
       <div className={s.content} inert={floating || undefined}>
         {phone && !full && (
           <header className={s.bar}>
-            <button type="button" className={s.menuButton} aria-label="サイドパネルを開く" aria-expanded={overlay} onClick={toggle}>
-              <IconMenu />
-            </button>
-            <Link to="/" className={s.brand} aria-label="Software Factory（ホーム）">
-              <span className={s.mark}><FactoryMark size={14} /></span>
-              <span>Software Factory</span>
-            </Link>
+            <LogoToggle label="サイドパネルを開く" expanded={overlay} onClick={toggle} />
+            <Link to="/" className={s.brand}>Software Factory</Link>
             {conn === 'reconnecting' && <span className={s.conn} role="status">再接続しています…</span>}
             {mock && <span className={s.mock}>モック</span>}
           </header>
@@ -103,24 +97,67 @@ export function AppShell() {
   );
 }
 
-/** 1280px 未満で、サイドパネルを重ねて出す。Esc か外側を押すと閉じる */
-function Drawer({ children, onClose }: { children: ReactNode; onClose: () => void }) {
+/** 1280px 未満で、サイドパネルを左から滑り込ませて重ねる。Esc・外側を押す・左へスワイプで閉じる */
+function Drawer({ open, children, onClose }: { open: boolean; children: ReactNode; onClose: () => void }) {
   const root = useRef<HTMLDivElement>(null);
+  const touch = useRef<{ x: number; y: number; dx: number; horizontal: boolean | null } | null>(null);
   useEffect(() => {
+    if (!open) return;
     const prev = document.activeElement as HTMLElement | null;
-    root.current?.querySelector<HTMLElement>('nav a')?.focus();
+    root.current?.querySelector<HTMLElement>('nav a')?.focus({ preventScroll: true });
     const esc = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', esc);
     return () => {
       document.removeEventListener('keydown', esc);
-      prev?.focus?.();
+      prev?.focus?.({ preventScroll: true });
     };
-  }, [onClose]);
+  }, [open, onClose]);
+
+  // 左へのスワイプ: 指に付いてきて、離したときに 1/4 以上動いていれば閉じる
+  const onTouchStart = (e: TouchEvent) => {
+    const t = e.touches[0];
+    if (t) touch.current = { x: t.clientX, y: t.clientY, dx: 0, horizontal: null };
+  };
+  const onTouchMove = (e: TouchEvent) => {
+    const t = e.touches[0];
+    const st = touch.current;
+    if (!t || !st || !root.current) return;
+    const dx = t.clientX - st.x;
+    st.horizontal ??= Math.abs(dx) > 8 || Math.abs(t.clientY - st.y) > 8 ? Math.abs(dx) > Math.abs(t.clientY - st.y) : null;
+    if (!st.horizontal) return;
+    st.dx = Math.min(0, dx);
+    root.current.style.transition = 'none';
+    root.current.style.transform = `translateX(${st.dx}px)`;
+  };
+  const onTouchEnd = () => {
+    const st = touch.current;
+    touch.current = null;
+    const el = root.current;
+    if (!st || !el) return;
+    el.style.transition = '';
+    el.style.transform = '';
+    if (st.horizontal && st.dx < -Math.min(80, el.offsetWidth / 4)) onClose();
+  };
+
   return (
-    <>
+    <div className={s.drawerRoot} data-open={open || undefined}>
       <div className={s.backdrop} onClick={onClose} aria-hidden="true" />
-      <div ref={root} className={s.drawer} role="dialog" aria-modal="true" aria-label="サイドパネル">{children}</div>
-    </>
+      <div
+        ref={root}
+        className={s.drawer}
+        role="dialog"
+        aria-modal={open}
+        aria-label="サイドパネル"
+        aria-hidden={!open || undefined}
+        inert={!open || undefined}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={onTouchEnd}
+      >
+        {children}
+      </div>
+    </div>
   );
 }
 

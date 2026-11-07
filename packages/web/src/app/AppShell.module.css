@@ -1,4 +1,4 @@
-/* アプリの枠（ADR-0010）: 左にサイドパネル、右にページ。1280px 未満はアイコンの列にして、広げるときは重ねる。720px 未満は上の細いバーと、左から出すサイドパネル */
+/* アプリの枠（ADR-0010）: 左にサイドパネル、右にページ。1280px 未満はアイコンの列にして、広げるときは左から重ねる。720px 未満は上の細いバーの左上のロゴで開く */
 .app { --sidebar-w: 264px; --sidebar-rail: 56px; display: flex; height: 100%; height: 100dvh; }
 .skip { position: absolute; left: -9999px; top: 8px; z-index: 100; padding: 6px 12px; border-radius: 8px; background: var(--ink); color: var(--bg); }
 .skip:focus { left: 8px; }
@@ -10,12 +10,22 @@
 .page { max-width: 1240px; margin: 0 auto; padding: calc(28px + var(--safe-top)) max(28px, var(--safe-right)) calc(64px + var(--safe-bottom)) 28px; }
 .page[data-wide] { max-width: 1440px; }
 
-/* 重ねて出すサイドパネル */
-.backdrop { position: fixed; inset: 0; z-index: 44; background: rgba(0, 0, 0, 0.24); animation: fade 160ms ease both; }
-.drawer { position: fixed; top: 0; bottom: 0; left: 0; z-index: 45; max-width: calc(100vw - 48px); animation: slide 200ms var(--ease) both; }
+/* 左から滑り込むサイドパネル。閉じているときも置いておき、画面の外に出して隠す */
+.drawerRoot { position: fixed; inset: 0; z-index: 45; pointer-events: none; }
+.drawerRoot[data-open] { pointer-events: auto; }
+.backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.32); opacity: 0; transition: opacity 240ms ease; }
+.drawerRoot[data-open] .backdrop { opacity: 1; }
+.drawer {
+  position: absolute; top: 0; bottom: 0; left: 0; max-width: calc(100vw - 48px);
+  transform: translateX(-100%); visibility: hidden;
+  transition: transform 280ms var(--ease), visibility 0s linear 280ms;
+  will-change: transform; touch-action: pan-y;
+}
+.drawerRoot[data-open] .drawer { transform: none; visibility: visible; transition: transform 280ms var(--ease), visibility 0s; }
 .drawer > * { max-width: 100%; }
-@keyframes fade { from { opacity: 0; } }
-@keyframes slide { from { transform: translateX(-16px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .backdrop, .drawer, .drawerRoot[data-open] .drawer { transition: none; }
+}
 
 /* スマホの上の細いバー */
 .bar {
@@ -24,10 +34,7 @@
   padding: var(--safe-top) max(12px, var(--safe-right)) 0 max(8px, var(--safe-left));
   border-bottom: 1px solid var(--line); background: var(--bg);
 }
-.brand { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 600; font-size: 14px; letter-spacing: -0.01em; color: var(--ink); }
-.mark { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; background: var(--ink); color: var(--bg); }
-.menuButton { display: inline-grid; place-items: center; width: max(36px, var(--tap-min)); height: max(36px, var(--tap-min)); padding: 0; border: 0; border-radius: 10px; background: none; color: var(--ink); }
-.menuButton:hover { background: var(--hover); }
+.brand { text-decoration: none; font-weight: 600; font-size: 14px; letter-spacing: -0.01em; color: var(--ink); white-space: nowrap; }
 .mock { margin-left: auto; font-size: 11px; padding: 1px 7px; border-radius: 99px; border: 1px dashed var(--line-strong); color: var(--muted); }
 .conn { margin-left: auto; font-size: 12px; color: var(--alert); }
 .conn + .mock { margin-left: 0; }

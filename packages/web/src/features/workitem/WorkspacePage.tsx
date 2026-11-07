@@ -5,7 +5,7 @@ import { Link, useParams } from 'react-router';
 import { Button } from '../../components/ui/button';
 import { SegmentedControl } from '../../components/ui/segmented-control';
 import { Banner, Dot, ErrorBanner, Loading, Menu, Tag } from '../../components/kit';
-import { IconBranch, IconChevron, IconExternal, IconMenu, IconMore, IconPR, IconRepo } from '../../components/icons';
+import { IconBranch, IconChevron, IconExternal, IconMore, IconPR, IconRepo } from '../../components/icons';
 import { StageLine } from '../../components/StageLine';
 import { errorMessage } from '../../lib/api';
 import { saveFromUrl } from '../../lib/download';
@@ -16,6 +16,7 @@ import { useServices } from '../../lib/services';
 import { currentRun, type Pending, type Session } from '../../lib/session';
 import { narrow, useMediaQuery } from '../../lib/useMediaQuery';
 import { useResource } from '../../lib/useResource';
+import { LogoToggle } from '../../app/LogoToggle';
 import { useMe } from '../../stores/me';
 import { useUi, type Tab } from '../../stores/ui';
 import type { PlanActions } from './Cards';
@@ -200,7 +201,7 @@ function Header({ item, session, line, pending, onRename, onCancel, onArchive, o
   return (
     <header className={s.head}>
       {phone && (
-        <button type="button" className={s.back} aria-label="サイドパネルを開く" onClick={() => openSidebar(true)}><IconMenu /></button>
+        <span className={s.back}><LogoToggle label="サイドパネルを開く" expanded={false} onClick={() => openSidebar(true)} /></span>
       )}
       <nav className={s.crumbs} aria-label="場所">
         <Link to="/requests" className={s.crumb}>依頼</Link>

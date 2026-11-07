@@ -1,5 +1,4 @@
 // 左のサイドパネル（ADR-0010）: 新しい依頼、画面の移動、依頼の一覧、アカウント。畳むとアイコンの列になる
-import type { WorkItem } from '@factory/contracts';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate, useParams } from 'react-router';
 import { ProfileMenu } from '../components/ui/profile-menu';
@@ -9,27 +8,44 @@ import type { ConnectionState } from '../lib/events';
 import { relative, stateLabel, stateTone } from '../lib/format';
 import { isAdmin, useMe } from '../stores/me';
 import { useUi } from '../stores/ui';
+import { LogoToggle, sidebarShortcut } from './LogoToggle';
+import type { WorkItemFeed } from './useWorkItemFeed';
 import s from './Sidebar.module.css';
 
 const RUNNING = new Set(['queued', 'planning', 'running', 'suspended']);
-/** 「最近」に出す件数。残りは「すべての依頼」で見る */
-const RECENT = 20;
+const DAY = 86_400_000;
+
+/** 終わった依頼を、更新した日で分ける（今日・昨日・過去7日間・それより前） */
+export function dayBucket(updatedAt: string, now = new Date()): 'today' | 'yesterday' | 'week' | 'older' {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const t = new Date(updatedAt).getTime();
+  if (t >= today) return 'today';
+  if (t >= today - DAY) return 'yesterday';
+  if (t >= today - 6 * DAY) return 'week';
+  return 'older';
+}
+const BUCKETS = [
+  { key: 'today', title: '今日' },
+  { key: 'yesterday', title: '昨日' },
+  { key: 'week', title: '過去7日間' },
+  { key: 'older', title: 'それより前' },
+] as const;
 
 export type SidebarProps = {
   /** false = アイコンの列 */
   expanded: boolean;
   /** 重ねて出しているとき（1280px 未満）。閉じるボタンを出す */
   floating?: boolean;
-  items: WorkItem[] | undefined;
+  feed: WorkItemFeed;
   conn: ConnectionState;
   mock: boolean;
   onToggle: () => void;
 };
 
-export function Sidebar({ expanded, floating = false, items, conn, mock, onToggle }: SidebarProps) {
+export function Sidebar({ expanded, floating = false, feed, conn, mock, onToggle }: SidebarProps) {
   const me = useMe((m) => m.me);
+  const items = feed.items;
   const toggleLabel = floating ? 'サイドパネルを閉じる' : expanded ? 'サイドパネルを畳む' : 'サイドパネルを広げる';
-  const shortcut = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘B' : 'Ctrl+B';
   const attention = (items ?? []).filter((i) => i.state === 'awaiting_approval').length;
   const links: { to: string; label: string; icon: ReactNode; end?: boolean; badge?: number }[] = [
     { to: '/requests', label: 'すべての依頼', icon: <IconList />, ...(attention ? { badge: attention } : {}) },
@@ -43,15 +59,19 @@ export function Sidebar({ expanded, floating = false, items, conn, mock, onToggl
   return (
     <div className={s.panel} data-expanded={expanded || undefined} data-floating={floating || undefined}>
       <div className={s.head}>
-        {expanded && (
-          <Link to="/" className={s.brand} aria-label="Software Factory（ホーム）">
-            <span className={s.mark}><FactoryMark size={14} /></span>
-            <span>Software Factory</span>
-          </Link>
+        {expanded ? (
+          <>
+            <Link to="/" className={s.brand} aria-label="Software Factory（ホーム）">
+              <span className={s.mark}><FactoryMark size={14} /></span>
+              <span>Software Factory</span>
+            </Link>
+            <button type="button" className={s.iconButton} aria-label={toggleLabel} title={`${toggleLabel}（${sidebarShortcut()}）`} aria-keyshortcuts="Meta+B Control+B" onClick={onToggle}>
+              {floating ? <IconClose /> : <IconSidebar />}
+            </button>
+          </>
+        ) : (
+          <LogoToggle label={toggleLabel} expanded={false} onClick={onToggle} />
         )}
-        <button type="button" className={s.iconButton} aria-label={toggleLabel} title={`${toggleLabel}（${shortcut}）`} aria-keyshortcuts="Meta+B Control+B" onClick={onToggle}>
-          {floating ? <IconClose /> : <IconSidebar />}
-        </button>
       </div>
 
       <nav className={s.nav} aria-label="メイン">
@@ -68,7 +88,7 @@ export function Sidebar({ expanded, floating = false, items, conn, mock, onToggl
         ))}
       </nav>
 
-      {expanded ? <Sessions items={items} /> : <div className={s.spacer} />}
+      {expanded ? <Sessions feed={feed} /> : <div className={s.spacer} />}
 
       <div className={s.foot}>
         {expanded && (conn === 'reconnecting' || mock) && (
@@ -83,22 +103,39 @@ export function Sidebar({ expanded, floating = false, items, conn, mock, onToggl
   );
 }
 
-/** 依頼の一覧: 対応が必要 → 実行中 → 最近 の順に出す */
-function Sessions({ items }: { items: WorkItem[] | undefined }) {
+/** 依頼の一覧: 対応が必要 → 実行中 → 終わったもの（日付で分ける）。下までスクロールしたら続きを読む */
+function Sessions({ feed }: { feed: WorkItemFeed }) {
+  const { items, hasMore, loadingMore, loadMore, error, reload } = feed;
   const { id: current } = useParams();
   const [query, setQuery] = useState('');
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
     const all = (items ?? []).filter((i) => !q || `${i.title} ${i.repo ? `${i.repo.owner}/${i.repo.name}` : ''}`.toLowerCase().includes(q));
-    const action = all.filter((i) => i.state === 'awaiting_approval');
-    const running = all.filter((i) => RUNNING.has(i.state));
     const rest = all.filter((i) => i.state !== 'awaiting_approval' && !RUNNING.has(i.state));
+    const now = new Date();
     return [
-      { key: 'action', title: '対応が必要', items: action },
-      { key: 'running', title: '実行中', items: running },
-      { key: 'recent', title: '最近', items: q ? rest : rest.slice(0, RECENT) },
+      { key: 'action', title: '対応が必要', items: all.filter((i) => i.state === 'awaiting_approval') },
+      { key: 'running', title: '実行中', items: all.filter((i) => RUNNING.has(i.state)) },
+      ...BUCKETS.map((b) => ({ key: b.key, title: b.title, items: rest.filter((i) => dayBucket(i.updatedAt, now) === b.key) })),
     ].filter((g) => g.items.length > 0);
   }, [items, query]);
+
+  // 下の印が見えたら続きを読む（読んでもまだ見えていれば、また読む。検索中は、見つかるまで読み進める）
+  const scroller = useRef<HTMLElement>(null);
+  const sentinel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinel.current;
+    // 失敗したときは自動では読み直さない（「続きを読み込む」を押してもらう）
+    if (!el || !hasMore || loadingMore || error || typeof IntersectionObserver !== 'function') return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) void loadMore();
+      },
+      { root: scroller.current, rootMargin: '120px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, loadingMore, loadMore, error, items]);
 
   return (
     <div className={s.sessions}>
@@ -107,10 +144,14 @@ function Sessions({ items }: { items: WorkItem[] | undefined }) {
         <span className="sr-only">依頼を探す</span>
         <input type="search" placeholder="依頼を探す" value={query} onChange={(e) => setQuery(e.target.value)} />
       </label>
-      <nav className={s.scroll} aria-label="依頼">
+      <nav ref={scroller} className={s.scroll} aria-label="依頼">
         {!items ? (
-          <p className={s.empty}>読み込んでいます…</p>
-        ) : groups.length === 0 ? (
+          error ? (
+            <p className={s.empty}>読み込めませんでした。<button type="button" className={s.retry} onClick={() => void reload()}>もう一度</button></p>
+          ) : (
+            <p className={s.empty}>読み込んでいます…</p>
+          )
+        ) : groups.length === 0 && !hasMore ? (
           <p className={s.empty}>{query ? '見つかりませんでした' : 'まだ依頼はありません'}</p>
         ) : (
           groups.map((g) => (
@@ -130,8 +171,10 @@ function Sessions({ items }: { items: WorkItem[] | undefined }) {
             </section>
           ))
         )}
-        {items && items.length > 0 && !query && (
-          <Link to="/requests" className={s.more}>すべての依頼を見る</Link>
+        {items && hasMore && (
+          <div ref={sentinel} className={s.loadMore}>
+            {loadingMore ? <span role="status">読み込んでいます…</span> : <button type="button" className={s.retry} onClick={() => void loadMore()}>続きを読み込む</button>}
+          </div>
         )}
       </nav>
     </div>
