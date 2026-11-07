@@ -101,6 +101,49 @@ steps:
     type: system
     action: create-pull-request
 `,
+  'build-parallel': `name: build-parallel
+version: 1
+title: 並べて確かめる
+description: 単体テストと E2E を別々の VM で同時に流し、変更の大きさでレビューを分けてから、プルリクエストで届ける
+steps:
+  - id: implement
+    type: agent
+    image: web@5
+    network: web
+    instructions: skills/implement.md
+    gates: [plan-approval]
+    next: [unit-test, e2e]   # 並列で始める
+  - id: unit-test
+    type: command
+    image: web@5
+    network: none
+    next: triage
+  - id: e2e
+    type: agent
+    image: web-playwright@2
+    network: none
+    instructions: skills/verify.md
+    next: triage
+  - id: triage
+    type: agent
+    image: base@3
+    network: none
+    instructions: skills/triage.md
+    needs: [e2e, unit-test]  # 両方が終わるまで待つ
+    next: deliver
+    on:
+      cases: { large: security-review }  # 大きい変更だけレビューに回す
+      fail: { goto: implement, maxLoops: 2 }
+  - id: security-review
+    type: agent
+    image: base@3
+    network: none
+    instructions: skills/security-review.md
+    next: deliver
+  - id: deliver
+    type: system
+    action: create-pull-request
+`,
   'report-publish': `name: report-publish
 version: 1
 title: 集計して公開

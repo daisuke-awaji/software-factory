@@ -42,6 +42,10 @@ const stepNames: Record<string, string> = {
   review: 'レビュー',
   deliver: '完了',
   publish: '公開の提案',
+  'unit-test': '単体テスト',
+  e2e: 'E2E',
+  triage: '振り分け',
+  'security-review': 'セキュリティレビュー',
 };
 export const stepLabel = (id: string) => stepNames[id] ?? id;
 

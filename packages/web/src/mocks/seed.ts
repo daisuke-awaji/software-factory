@@ -45,7 +45,7 @@ const PAST: [days: number, title: string, repo?: PastRepo | undefined, end?: 'ca
 
 export function seed(): MockDb {
   const db: MockDb = {
-    version: 5,
+    version: 6,
     settings: { speed: 1 },
     me: structuredClone(fx.me),
     users: structuredClone(fx.users),
@@ -118,6 +118,10 @@ export function seed(): MockDb {
   // 3. フォーム（検証で一度失敗し、直して完了。PR #128）
   const form = make(122, { title: '問い合わせフォームの入力チェックを直す', workflowRef: 'build-verify@3', repo: { owner: 'acme', name: 'support-site' }, message: '問い合わせフォームで、メールアドレスが正しくなくても送信できてしまいます。入力チェックを直してください。' });
   fastForward(form.item.id, form.at, () => 'approve', 2000, 8);
+
+  // 3b. 並列（単体テストと E2E を同時に流し、小さい変更なのでセキュリティレビューを飛ばして完了。PR #129）
+  const sort = make(60, { title: '在庫一覧に並び替えを付ける', workflowRef: 'build-parallel@1', repo: { owner: 'acme', name: 'sales-insights' }, message: '在庫一覧の表で、列の見出しを押すと並び替えられるようにしてください。' });
+  fastForward(sort.item.id, sort.at, () => 'approve', 2000, 8);
 
   // 4. ダッシュボード（計画の承認待ち）
   const dash = make(4, { title: '週次売上ダッシュボードを追加', workflowRef: 'build-verify@3', repo: { owner: 'acme', name: 'sales-insights' }, message: '売上データから、地域ごとの週次の売上をグラフで見られる画面を追加してください。' });

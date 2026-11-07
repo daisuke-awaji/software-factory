@@ -18,7 +18,7 @@ export function pickScenario(title: string, message: string): Scenario {
 // ---------------------------------------------------------------- 小さな部品
 const say = (text: string, delay = 500): SimStep => ({ t: 'say', delay, text });
 const usage = (i: number, o: number, vm: number): SimStep => ({ t: 'emit', delay: 50, event: { type: 'usage', inputTokens: i, outputTokens: o, vmSeconds: vm } });
-const stepChanged = (stepId: string, state: 'started' | 'completed' | 'failed', delay = 400): SimStep => ({ t: 'emit', delay, event: { type: 'step.changed', stepId, state } });
+const stepChanged = (stepId: string, state: 'started' | 'completed' | 'failed', delay = 400, label?: string): SimStep => ({ t: 'emit', delay, event: { type: 'step.changed', stepId, state, ...(label ? { label } : {}) } });
 const state = (s: Task['state'], delay = 200): SimStep => ({ t: 'emit', delay, event: { type: 'task.state', state: s } });
 const write = (path: string, content: string | null, delay = 100): SimStep => ({ t: 'write', delay, path, content });
 
@@ -352,6 +352,55 @@ export function stepWork(sc: Scenario, stepId: string, attempt: number, sim: Sim
       ...start,
       ...tool('publish_precheck', '公開の前のチェック（秘密情報・サイズ・外部の参照）', '問題なし（3 ファイル・6 KB）', true, 1000),
       say('公開の準備ができました。成果物の「社内に公開」から、公開する範囲を選んでください。'),
+      stepChanged(stepId, 'completed'),
+      { t: 'next', delay: 200, outcome: 'pass' },
+    ];
+  }
+
+  // build-parallel: 単体テストと E2E を並列で流し、振り分けで変更の大きさを見る
+  if (stepId === 'unit-test') {
+    return [
+      ...start,
+      ...tool('run', sc === 'csv-cleanup' ? 'pytest -q' : 'npm test -- --reporter=dot', sc === 'csv-cleanup' ? 'pytest: 4 件が通過' : '12 件のテストが通過', true, 1600),
+      usage(0, 0, 45),
+      stepChanged(stepId, 'completed'),
+      { t: 'next', delay: 200, outcome: 'pass' },
+    ];
+  }
+
+  if (stepId === 'e2e') {
+    return [
+      ...start,
+      ...tool('run', 'npx playwright test', '5 件のシナリオが通過', true, 2200),
+      ...tool('browser', 'ブラウザで画面を確かめる', '想定どおりに動きました', true, 1200),
+      usage(6000, 900, 80),
+      stepChanged(stepId, 'completed'),
+      { t: 'next', delay: 200, outcome: 'pass' },
+    ];
+  }
+
+  if (stepId === 'triage') {
+    const fail = sc === 'web-form' && attempt === 1;
+    const label = sc === 'dashboard' ? 'large' : 'small';
+    return [
+      ...start,
+      ...tool('review_diff', '単体テストと E2E の結果、差分の大きさを確かめる', fail ? 'E2E の録画で、空白だけの入力が送信されていました' : label === 'large' ? '外部のライブラリを追加（大きい変更）' : '変更は 3 ファイル・小さい変更', !fail, 1100),
+      usage(5000, 700, 30),
+      ...(fail
+        ? [say('E2E の録画を見ると、空白だけの入力でも送信できていました。実装に戻して直します。'), stepChanged(stepId, 'failed'), { t: 'next' as const, delay: 200, outcome: 'fail' as const }]
+        : [
+            say(label === 'large' ? '外部のライブラリを追加しているので、セキュリティレビューに回します。' : '小さい変更なので、そのままプルリクエストにします。'),
+            stepChanged(stepId, 'completed', 400, label),
+            { t: 'next' as const, delay: 200, outcome: 'pass' as const, label },
+          ]),
+    ];
+  }
+
+  if (stepId === 'security-review') {
+    return [
+      ...start,
+      ...tool('review_diff', '追加したライブラリのライセンスと既知の脆弱性を確かめる', 'MIT・既知の脆弱性なし', true, 1400),
+      usage(7000, 900, 40),
       stepChanged(stepId, 'completed'),
       { t: 'next', delay: 200, outcome: 'pass' },
     ];

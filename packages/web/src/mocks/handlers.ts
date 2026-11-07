@@ -543,9 +543,6 @@ export const handlers = [
     const parsed = WorkflowDefinition.shape.workflow.safeParse({ ...(raw as object), version: (cur?.version ?? 0) + 1 });
     if (!parsed.success) return err(400, 'VALIDATION_ERROR', parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join(' / '));
     if (parsed.data.name !== params['name']) return err(400, 'VALIDATION_ERROR', 'name がパスと違います');
-    const ids = new Set(parsed.data.steps.map((s) => s.id));
-    const bad = parsed.data.steps.flatMap((s) => [s.next, s.on?.pass, s.on?.fail?.goto].filter((x): x is string => !!x && !ids.has(x)));
-    if (bad.length) return err(400, 'VALIDATION_ERROR', `存在しないステップを参照しています: ${bad.join(', ')}`);
     const raws = raw as Record<string, unknown>;
     const def = WorkflowDefinition.parse({ name: parsed.data.name, version: parsed.data.version, yaml: stringify({ ...raws, version: parsed.data.version }), workflow: parsed.data, updatedAt: new Date().toISOString() });
     d.workflows = [...d.workflows.filter((x) => x.name !== def.name), def];

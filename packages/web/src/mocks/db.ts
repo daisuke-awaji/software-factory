@@ -10,7 +10,7 @@ export type SimStep =
   | { t: 'say'; delay: number; text: string } // エージェントの発言（delta に分けて流す）
   | { t: 'write'; delay: number; path: string; content: string | null } // null は削除
   | { t: 'gate'; delay: number; gate: 'plan' | 'approval' | 'message'; approvalId?: string }
-  | { t: 'next'; delay: number; outcome: 'pass' | 'fail' } // ステップが終わった。ワークフローの次へ進む
+  | { t: 'next'; delay: number; outcome: 'pass' | 'fail'; from?: string; label?: string } // ステップ（from）が終わった。ワークフローの次へ進む（label は on.cases の分かれ道）
   | { t: 'pr'; delay: number }
   | { t: 'finish'; delay: number; state: 'completed' | 'failed' };
 
@@ -34,10 +34,12 @@ export type Sim = {
   flags: Record<string, boolean>;
   /** 中断された（指示が来たら続きから） */
   interrupted: boolean;
+  /** 並列の合流（needs）で、もう終わった枝のステップ */
+  arrived?: Record<string, string[]>;
 };
 
 export type MockDb = {
-  version: 5;
+  version: 6;
   settings: { speed: number };
   me: Me;
   users: AdminUser[];
@@ -101,7 +103,7 @@ export function loadDb(): MockDb | null {
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as MockDb;
-    return parsed.version === 5 ? parsed : null;
+    return parsed.version === 6 ? parsed : null;
   } catch {
     return null;
   }
@@ -131,7 +133,15 @@ export function emit(taskId: string, event: DistributiveOmit<FactoryEvent, 'task
   if (current) {
     current.updatedAt = new Date(at).toISOString();
     if (env.type === 'task.state') current.state = env.state;
-    if (env.type === 'step.changed' && env.state === 'started') current.currentStepId = env.stepId;
+    if (env.type === 'step.changed') {
+      const active = (current.activeStepIds ?? []).filter((x) => x !== env.stepId);
+      if (env.state === 'started') {
+        current.currentStepId = env.stepId;
+        active.push(env.stepId);
+      }
+      current.activeStepIds = active;
+    }
+    if (env.type === 'task.state' && ['completed', 'failed', 'cancelled'].includes(env.state)) current.activeStepIds = [];
     if (env.type === 'usage') {
       const u = (current.usage ??= { inputTokens: 0, outputTokens: 0, vmSeconds: 0 });
       u.inputTokens += env.inputTokens;
