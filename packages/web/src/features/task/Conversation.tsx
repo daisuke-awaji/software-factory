@@ -288,7 +288,13 @@ export function useStickToBottom<T extends HTMLElement>(dep: unknown) {
       stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
     };
     el.addEventListener('scroll', onScroll);
-    return () => el.removeEventListener('scroll', onScroll);
+    // キーボードが出て会話の高さが縮んだときも、一番下を見ていたなら一番下のままにする
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => { if (stick.current) el.scrollTop = el.scrollHeight; }) : null;
+    ro?.observe(el);
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      ro?.disconnect();
+    };
   }, []);
   useLayoutEffect(() => {
     const el = ref.current;

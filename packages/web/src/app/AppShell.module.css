@@ -1,11 +1,16 @@
 /* アプリの枠（ADR-0010）: 左にサイドパネル、右にページ。1280px 未満はアイコンの列にして、広げるときは左から重ねる。720px 未満は上の細いバーの左上のロゴで開く */
-.app { --sidebar-w: 264px; --sidebar-rail: 56px; display: flex; height: 100%; height: 100dvh; }
+/* 見えている範囲（キーボードを除く）に枠を置く。--app-h / --app-top は lib/viewport.ts が入れる */
+.app {
+  --sidebar-w: 264px; --sidebar-rail: 56px; display: flex;
+  position: fixed; left: 0; right: 0; top: var(--app-top, 0px);
+  height: 100%; height: var(--app-h, 100dvh);
+}
 .skip { position: absolute; left: -9999px; top: 8px; z-index: 100; padding: 6px 12px; border-radius: 8px; background: var(--ink); color: var(--bg); }
 .skip:focus { left: 8px; }
 
 .side { flex: none; height: 100%; min-height: 0; }
 .content { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
-.main { flex: 1; min-height: 0; overflow: auto; }
+.main { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
 .app[data-full] .main { overflow: hidden; display: flex; flex-direction: column; }
 .page { max-width: 1240px; margin: 0 auto; padding: calc(28px + var(--safe-top)) max(28px, var(--safe-right)) calc(64px + var(--safe-bottom)) 28px; }
 .page[data-wide] { max-width: 1440px; }

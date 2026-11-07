@@ -140,3 +140,62 @@ test('ダイアログは、画面の下から出るシートになる', async ({
   expect(Math.round(box.width)).toBe(vp.width);
   expect(Math.round(box.y + box.height)).toBe(vp.height);
 });
+
+/** 文書全体はスクロールしない（スクロールするのは内側だけ） */
+const expectDocumentFixed = async (page: Page) => {
+  const d = await page.evaluate(() => {
+    window.scrollTo(0, 500);
+    return { y: window.scrollY, html: getComputedStyle(document.documentElement).overflowY, body: getComputedStyle(document.body).overflowY };
+  });
+  expect(d.y).toBe(0);
+  expect(d.html).toBe('hidden');
+  expect(d.body).toBe('hidden');
+};
+
+test('ワークスペース: スクロールするのは会話だけで、ヘッダーと入力欄は動かない', async ({ page }) => {
+  await fresh(page);
+  await openItem(page, /問い合わせフォームの入力チェックを直す/);
+  const chat = page.getByRole('region', { name: '会話' });
+  await expect(chat.getByRole('region', { name: '成果物' })).toBeVisible();
+  await expectDocumentFixed(page);
+
+  const head = page.getByRole('button', { name: 'サイドパネルを開く' });
+  const input = chat.getByLabel('メッセージ');
+  const before = { head: (await head.boundingBox())!.y, input: (await input.boundingBox())!.y };
+
+  // 会話は内側でスクロールする
+  const scroller = chat.locator('> div').first();
+  const top = await scroller.evaluate((el) => { el.scrollTop = 0; return el.scrollHeight > el.clientHeight; });
+  expect(top).toBe(true);
+  await scroller.hover();
+  await page.mouse.wheel(0, 2000);
+  await expect.poll(() => scroller.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  expect((await head.boundingBox())!.y).toBe(before.head);
+  expect((await input.boundingBox())!.y).toBe(before.input);
+
+  // 見えている範囲が縮んでも（キーボードが出たとき）、入力欄は画面の下に付いたまま
+  const vp = page.viewportSize()!;
+  await page.setViewportSize({ width: vp.width, height: vp.height - 300 });
+  await expect.poll(async () => {
+    const b = (await input.boundingBox())!;
+    return b.y + b.height <= vp.height - 300;
+  }).toBe(true);
+  expect((await head.boundingBox())!.y).toBe(before.head);
+});
+
+test('ほかのページ: スクロールするのは中身だけで、上のバーは動かない', async ({ page }) => {
+  await fresh(page);
+  for (const path of ['/tasks', '/publications', '/workflows', '/admin']) {
+    await page.goto(path);
+    const main = page.getByRole('main');
+    await expect(main).toBeVisible();
+    await expectDocumentFixed(page);
+    const bar = page.getByRole('link', { name: 'Software Factory', exact: true });
+    const y = (await bar.boundingBox())!.y;
+    await main.hover();
+    await page.mouse.wheel(0, 2000);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+    expect((await bar.boundingBox())!.y).toBe(y);
+  }
+});

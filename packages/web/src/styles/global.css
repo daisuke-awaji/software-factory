@@ -3,6 +3,8 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 html, body, #root { height: 100%; }
+/* 文書全体はスクロールさせない。スクロールするのは、ページの中身・会話・成果物などの内側だけ */
+html, body { overflow: hidden; overscroll-behavior: none; }
 body {
   margin: 0;
   background: var(--bg);

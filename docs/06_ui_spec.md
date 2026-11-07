@@ -117,6 +117,8 @@
 - 幅の値は CSS の `@media` と `lib/useMediaQuery.ts` の `narrow` で揃える。見た目だけの違いは CSS で、出す部品が変わるもの（切り替え、カードの一覧）は `useMediaQuery` で書く
 - **タッチの画面**（`pointer: coarse`）では、押せる部品の高さを 40px 以上（`--tap-min`）、入力欄の文字を 16px 以上（`--fs-input-min`。iOS がフォーカスで拡大しないように）にする。AffectUI の部品はファイルを変えず、`global.css` から CSS 変数で上書きする（ADR-0008）。`⌘ / Ctrl + Enter` の案内は出さない
 - ノッチとホームバー: `viewport-fit=cover` にし、サイドパネル・上の細いバー・ワークスペースのヘッダー・入力欄・タブの中身・ページの余白に `env(safe-area-inset-*)`（`--safe-*`）を足す。画面の高さは `100dvh`（アドレスバーの出入りで変わらないように）
+- **スクロールは内側だけ**: 文書全体（`html` / `body`）はスクロールさせない。スクロールするのはページの中身（`main`）・会話・成果物のタブの中身・ダイアログの中身だけで、ワークスペースのヘッダー・「会話｜成果物」の切り替え・入力欄と、スマホの上の細いバーは動かさない。内側の端まで行っても外へスクロールを渡さない（`overscroll-behavior: contain`）
+- **キーボード**: iOS Safari はキーボードを出しても画面の高さを変えず、ページ全体を持ち上げる（`interactive-widget=resizes-content` も効かない）。`lib/viewport.ts` で見えている範囲（`visualViewport`）の高さと位置を `--app-h` / `--app-top` に入れ、アプリの枠をそこに置く。キーボードが出ている間は `data-keyboard` を付けて下のセーフエリアを 0 にし、一番下を見ていた会話は一番下のままにする。ピンチで拡大しているときは合わせない
 - 確かめ方: Playwright の `iphone`（iPhone 13 の寸法を Chromium で）と `android`（Pixel 7）のプロジェクトで `e2e/mobile.spec.ts` を、デスクトップで `e2e/sidebar.spec.ts`（1440px と 1100px）を動かす。全画面で横スクロールが出ないことも確かめる
 
 ## 7. LoB の人への配慮（D1・D5）
