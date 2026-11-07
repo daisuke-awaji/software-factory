@@ -13,6 +13,7 @@ import { duration, reasonLabel, relative, stateLabel, stateTone, usd } from '../
 import { findLine, stepsFromItem } from '../../lib/line';
 import { useApi } from '../../lib/services';
 import type { Pending } from '../../lib/session';
+import { narrow, useMediaQuery } from '../../lib/useMediaQuery';
 import { useResource } from '../../lib/useResource';
 import { useUi } from '../../stores/ui';
 import { NewRequest } from './NewRequest';
@@ -38,6 +39,9 @@ export function HomePage() {
   const lines = useResource(() => api.lines(), []);
   useLiveReload(list.data?.items, () => void list.reload());
   const pending = usePending(list.data?.items);
+  /** 1列のとき、判断が必要な項目があれば一覧より先に出す（06_ui_spec.md §6） */
+  const oneCol = useMediaQuery(narrow.home);
+  const phone = useMediaQuery(narrow.phone);
 
   const items = useMemo(() => list.data?.items ?? [], [list.data]);
   const shown = useMemo(() => {
@@ -46,11 +50,15 @@ export function HomePage() {
     return q ? base.filter((i) => `${i.title} ${i.repo ? `${i.repo.owner}/${i.repo.name}` : ''}`.toLowerCase().includes(q)) : base;
   }, [items, archived.data, filter, query]);
 
+  const inboxFirst = oneCol && Object.keys(pending).length > 0;
+  const inbox = <Inbox items={items} pending={pending} onDone={() => void list.reload()} />;
+
   return (
     <Page wide>
       <div className={s.layout}>
         <div className={s.main}>
           <h1 className={s.greeting}>依頼</h1>
+          {inboxFirst && <section className={s.inboxFirst} aria-label="対応が必要な項目">{inbox}</section>}
           <NewRequest lines={lines.data} />
 
           <div className={s.listHead}>
@@ -82,13 +90,15 @@ export function HomePage() {
             <Empty title={query ? '見つかりませんでした' : 'この条件の依頼はありません'} icon={<IconInbox />}>
               {filter === 'all' && !query && '上の入力欄から、最初の依頼を出してみましょう。'}
             </Empty>
+          ) : phone ? (
+            <WorkItemCards items={shown} lines={lines.data} pending={pending} />
           ) : (
             <WorkItemTable items={shown} lines={lines.data} pending={pending} />
           )}
         </div>
 
-        <aside className={s.side} aria-label="対応が必要な項目と集計">
-          <Inbox items={items} pending={pending} onDone={() => void list.reload()} />
+        <aside className={s.side} aria-label={inboxFirst ? '集計' : '対応が必要な項目と集計'}>
+          {!inboxFirst && inbox}
           <WeekStats items={items} />
         </aside>
       </div>
@@ -145,6 +155,37 @@ function WorkItemTable({ items, lines, pending }: { items: WorkItem[]; lines: Li
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** スマホの一覧: 表の代わりに、1件を1枚のカードにする */
+function WorkItemCards({ items, lines, pending }: { items: WorkItem[]; lines: Line[] | undefined; pending: Record<string, Pending> }) {
+  return (
+    <ul className={s.cards} aria-label="依頼の一覧">
+      {items.map((i) => {
+        const line = findLine(lines, i.lineRef);
+        const p = pending[i.id];
+        return (
+          <li key={i.id}>
+            <Link to={`/w/${i.id}`} className={s.cardLink}>
+              <span className={s.cardTop}>
+                <span className={s.rowTitle}>{i.title}</span>
+                <span className={s.cardTime}>{relative(i.updatedAt)}</span>
+              </span>
+              <span className={s.rowSub}>
+                {i.repo ? `${i.repo.owner}/${i.repo.name}` : 'リポジトリなし'}
+                {i.pullRequest && ` · PR #${i.pullRequest.number}`}
+                {i.costUsd != null && ` · ${usd(i.costUsd)}`}
+              </span>
+              <span className={s.cardBottom}>
+                <Tag tone={stateTone[i.state]}>{p?.kind === 'approval' ? `${reasonLabel[p.approval.reason]}の承認待ち` : stateLabel[i.state]}</Tag>
+                <StageLine size="xs" steps={stepsFromItem(line, i, p?.kind)} label={`${line?.title ?? i.lineRef} の進み具合`} />
+              </span>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
