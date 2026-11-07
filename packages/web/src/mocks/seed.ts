@@ -1,8 +1,8 @@
 // モックの初期データ。ワークアイテムは、シミュレーターを過去の時刻で一気に流して作る（イベントの履歴と中身が必ず揃う）
-import { CreateWorkItemRequest, Publication, ulid } from '@factory/contracts';
+import { CreateTaskRequest, Publication, ulid } from '@factory/contracts';
 import { setDb, type MockDb } from './db';
 import * as fx from './fixtures';
-import { advance, atTime, cancel, createWorkItem, fastForward, withPrNumbers } from './simulator';
+import { advance, atTime, cancel, createTask, fastForward, withPrNumbers } from './simulator';
 
 const MIN = 60_000;
 
@@ -50,11 +50,11 @@ export function seed(): MockDb {
     me: structuredClone(fx.me),
     users: structuredClone(fx.users),
     repos: structuredClone(fx.repos),
-    lines: structuredClone(fx.lines),
-    workItems: [],
+    workflows: structuredClone(fx.workflows),
+    tasks: [],
     events: {},
     plans: {},
-    stageRuns: {},
+    stepRuns: {},
     files: {},
     baseFiles: {},
     attachments: {},
@@ -69,9 +69,9 @@ export function seed(): MockDb {
   };
   setDb(db);
   const now = Date.now();
-  const make = (minutesAgo: number, input: Parameters<typeof CreateWorkItemRequest.parse>[0]) => {
+  const make = (minutesAgo: number, input: Parameters<typeof CreateTaskRequest.parse>[0]) => {
     const at = now - minutesAgo * MIN;
-    const item = atTime(at, () => createWorkItem(CreateWorkItemRequest.parse(input), db.me.id, db.me.name, at));
+    const item = atTime(at, () => createTask(CreateTaskRequest.parse(input), db.me.id, db.me.name, at));
     return { item, at };
   };
 
@@ -80,7 +80,7 @@ export function seed(): MockDb {
   for (const [days, title, repo, end] of PAST) {
     const past = make(days * 24 * 60 + 90, {
       title,
-      lineRef: repo ? 'build-verify@3' : 'chat@1',
+      workflowRef: repo ? 'build-verify@3' : 'chat@1',
       ...(repo ? { repo: { owner: 'acme', name: repo } } : {}),
       message: `「${title}」の作業をお願いします。`,
     });
@@ -97,7 +97,7 @@ export function seed(): MockDb {
   db.attachments[csvPath] = { fileName: 'sales.csv', contentType: 'text/csv', content: '日付,部署,売上\n2026-10-01,営業1部,620000\n2026-10-01,営業2部,410000\n2026-10-01,企画部,350000\n' };
   const report = make(26 * 60, {
     title: '部署別の売上レポートを作って公開',
-    lineRef: 'report-publish@1',
+    workflowRef: 'report-publish@1',
     message: '添付の売上データ（10月分）を部署ごとに集計して、グラフ付きのレポートにしてください。部内に公開したいです。',
     attachments: [csvPath],
   });
@@ -105,33 +105,33 @@ export function seed(): MockDb {
   const pubAt = new Date(report.at + 9 * MIN).toISOString();
   db.publications.push(
     Publication.parse({
-      id: ulid(report.at + 9 * MIN), workItemId: report.item.id, title: '部署別の売上レポート（2026年10月）', path: 'report/',
+      id: ulid(report.at + 9 * MIN), taskId: report.item.id, title: '部署別の売上レポート（2026年10月）', path: 'report/',
       url: `https://d3k8x2pub0.cloudfront.net/p/${report.item.id.toLowerCase()}/`, acl: { scope: 'restricted', groups: ['営業企画部'] },
       version: 1, status: 'active', createdAt: pubAt, updatedAt: pubAt, expiresAt: new Date(now + 29 * 86_400_000).toISOString(),
     }),
   );
 
   // 2. 表記ゆれ（検証が続けて失敗して止まった）
-  const csv = make(130, { title: '顧客リストの表記ゆれを統一', lineRef: 'build-verify@3', repo: { owner: 'acme', name: 'crm-scripts' }, message: '顧客リストの会社名の表記ゆれ（全角・半角、(株) と株式会社）を統一してください。' });
+  const csv = make(130, { title: '顧客リストの表記ゆれを統一', workflowRef: 'build-verify@3', repo: { owner: 'acme', name: 'crm-scripts' }, message: '顧客リストの会社名の表記ゆれ（全角・半角、(株) と株式会社）を統一してください。' });
   fastForward(csv.item.id, csv.at, () => 'approve', 2000, 6);
 
   // 3. フォーム（検証で一度失敗し、直して完了。PR #128）
-  const form = make(122, { title: '問い合わせフォームの入力チェックを直す', lineRef: 'build-verify@3', repo: { owner: 'acme', name: 'support-site' }, message: '問い合わせフォームで、メールアドレスが正しくなくても送信できてしまいます。入力チェックを直してください。' });
+  const form = make(122, { title: '問い合わせフォームの入力チェックを直す', workflowRef: 'build-verify@3', repo: { owner: 'acme', name: 'support-site' }, message: '問い合わせフォームで、メールアドレスが正しくなくても送信できてしまいます。入力チェックを直してください。' });
   fastForward(form.item.id, form.at, () => 'approve', 2000, 8);
 
   // 4. ダッシュボード（計画の承認待ち）
-  const dash = make(4, { title: '週次売上ダッシュボードを追加', lineRef: 'build-verify@3', repo: { owner: 'acme', name: 'sales-insights' }, message: '売上データから、地域ごとの週次の売上をグラフで見られる画面を追加してください。' });
+  const dash = make(4, { title: '週次売上ダッシュボードを追加', workflowRef: 'build-verify@3', repo: { owner: 'acme', name: 'sales-insights' }, message: '売上データから、地域ごとの週次の売上をグラフで見られる画面を追加してください。' });
   fastForward(dash.item.id, dash.at, () => 'stop', 2000, 6);
 
   // 5. README（実行中。続きは画面を開いている間に流れる）
-  const readme = make(5, { title: 'README に開発手順を追記', lineRef: 'build-verify@3', repo: { owner: 'acme', name: 'platform' }, message: 'README に、ローカルで開発を始めるための手順を追記してください。' });
+  const readme = make(5, { title: 'README に開発手順を追記', workflowRef: 'build-verify@3', repo: { owner: 'acme', name: 'platform' }, message: 'README に、ローカルで開発を始めるための手順を追記してください。' });
   const planned = fastForward(readme.item.id, readme.at, () => 'stop', 2000, 6);
   // 計画を承認してから、少しだけ進めておく（fastForward の maxSteps=1 は「承認だけ」）
   fastForward(readme.item.id, planned + 40_000, () => 'approve', 1);
   advance(readme.item.id, planned + 42_000, 14, 4);
 
   const month = new Date(now).toISOString().slice(0, 7);
-  db.users[0]!.monthUsd = Math.round(db.workItems.filter((w) => w.createdAt.startsWith(month)).reduce((s, w) => s + (w.costUsd ?? 0), 0) * 100) / 100;
+  db.users[0]!.monthUsd = Math.round(db.tasks.filter((w) => w.createdAt.startsWith(month)).reduce((s, w) => s + (w.costUsd ?? 0), 0) * 100) / 100;
   setDb(db);
   return db;
 }

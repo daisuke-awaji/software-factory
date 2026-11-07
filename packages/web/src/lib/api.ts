@@ -1,9 +1,9 @@
 // 型付きの API クライアント。レスポンスは必ず contracts の Zod で検証する（実装計画 §5.2）
 import {
-  AdminUser, ApiError, AttachmentTicket, BuildLog, Capacity, CreatePublicationRequest, CreateWorkItemRequest, Diff, Download, EventPage,
-  FileTree, ImageSpec, ImageSummary, ImageVersion, Line, LineDefinition, Me, NetworkProfile, PackageSource, PlanRecord, PrecheckResult,
-  Preview, Publication, Repo, StageRun, UpdateAdminUserRequest, UpdatePublicationRequest, UpdateWorkItemRequest, VmInfo, WorkItem,
-  WorkItemPage, type ApprovalDecisionBody, type ImageScope,
+  AdminUser, ApiError, AttachmentTicket, BuildLog, Capacity, CreatePublicationRequest, CreateTaskRequest, Diff, Download, EventPage,
+  FileTree, ImageSpec, ImageSummary, ImageVersion, Workflow, WorkflowDefinition, Me, NetworkProfile, PackageSource, PlanRecord, PrecheckResult,
+  Preview, Publication, Repo, StepRun, UpdateAdminUserRequest, UpdatePublicationRequest, UpdateTaskRequest, VmInfo, Task,
+  TaskPage, type ApprovalDecisionBody, type ImageScope,
 } from '@factory/contracts';
 import { z } from 'zod';
 
@@ -59,59 +59,59 @@ export function createApiClient({ baseUrl = globalThis.location?.origin ?? 'http
     const s = new URLSearchParams(Object.entries(params).filter((e): e is [string, string] => e[1] !== undefined)).toString();
     return s ? `?${s}` : '';
   };
-  const wi = (id: string) => `/work-items/${encodeURIComponent(id)}`;
+  const taskPath = (id: string) => `/tasks/${encodeURIComponent(id)}`;
 
   return {
     me: () => request(Me, '/me'),
 
     // ---- ワークアイテム ----
-    listWorkItems: (p: { state?: string; archived?: boolean; cursor?: string; limit?: number } = {}) =>
-      request(WorkItemPage, `/work-items${q({ state: p.state, archived: p.archived ? 'true' : undefined, cursor: p.cursor, limit: p.limit?.toString() })}`),
-    createWorkItem: (input: z.input<typeof CreateWorkItemRequest>) =>
-      request(WorkItem, '/work-items', json('POST', CreateWorkItemRequest.parse(input))),
-    getWorkItem: (id: string) => request(WorkItem, wi(id)),
-    updateWorkItem: (id: string, patch: z.input<typeof UpdateWorkItemRequest>) => request(WorkItem, wi(id), json('PATCH', UpdateWorkItemRequest.parse(patch))),
+    listTasks: (p: { state?: string; archived?: boolean; cursor?: string; limit?: number } = {}) =>
+      request(TaskPage, `/tasks${q({ state: p.state, archived: p.archived ? 'true' : undefined, cursor: p.cursor, limit: p.limit?.toString() })}`),
+    createTask: (input: z.input<typeof CreateTaskRequest>) =>
+      request(Task, '/tasks', json('POST', CreateTaskRequest.parse(input))),
+    getTask: (id: string) => request(Task, taskPath(id)),
+    updateTask: (id: string, patch: z.input<typeof UpdateTaskRequest>) => request(Task, taskPath(id), json('PATCH', UpdateTaskRequest.parse(patch))),
     postMessage: (id: string, text: string, attachments: string[] = []) =>
-      request(NoContent, `${wi(id)}/messages`, json('POST', { text, ...(attachments.length ? { attachments } : {}) })),
-    interrupt: (id: string) => request(NoContent, `${wi(id)}/interrupt`, json('POST')),
-    cancel: (id: string) => request(NoContent, `${wi(id)}/cancel`, json('POST')),
-    events: (id: string, after?: string) => request(EventPage, `${wi(id)}/events${q({ after })}`),
+      request(NoContent, `${taskPath(id)}/messages`, json('POST', { text, ...(attachments.length ? { attachments } : {}) })),
+    interrupt: (id: string) => request(NoContent, `${taskPath(id)}/interrupt`, json('POST')),
+    cancel: (id: string) => request(NoContent, `${taskPath(id)}/cancel`, json('POST')),
+    events: (id: string, after?: string) => request(EventPage, `${taskPath(id)}/events${q({ after })}`),
 
     // ---- 計画と承認 ----
-    plans: (id: string) => request(z.array(PlanRecord), `${wi(id)}/plans`),
-    approvePlan: (id: string, version: number) => request(NoContent, `${wi(id)}/plans/${version}/approve`, json('POST')),
+    plans: (id: string) => request(z.array(PlanRecord), `${taskPath(id)}/plans`),
+    approvePlan: (id: string, version: number) => request(NoContent, `${taskPath(id)}/plans/${version}/approve`, json('POST')),
     requestChanges: (id: string, version: number, comment: string) =>
-      request(NoContent, `${wi(id)}/plans/${version}/request-changes`, json('POST', { comment })),
-    rejectPlan: (id: string, version: number) => request(NoContent, `${wi(id)}/plans/${version}/reject`, json('POST')),
+      request(NoContent, `${taskPath(id)}/plans/${version}/request-changes`, json('POST', { comment })),
+    rejectPlan: (id: string, version: number) => request(NoContent, `${taskPath(id)}/plans/${version}/reject`, json('POST')),
     answerApproval: (id: string, approvalId: string, body: ApprovalDecisionBody) =>
-      request(NoContent, `${wi(id)}/approvals/${encodeURIComponent(approvalId)}`, json('POST', body)),
+      request(NoContent, `${taskPath(id)}/approvals/${encodeURIComponent(approvalId)}`, json('POST', body)),
 
     // ---- ステージ・ファイル・成果物 ----
-    stages: (id: string) => request(z.array(StageRun), `${wi(id)}/stages`),
-    retryStage: (id: string, runId: string) => request(NoContent, `${wi(id)}/stages/${encodeURIComponent(runId)}/retry`, json('POST')),
-    files: (id: string, path = '') => request(FileTree, `${wi(id)}/files${q({ path })}`),
+    steps: (id: string) => request(z.array(StepRun), `${taskPath(id)}/steps`),
+    retryStep: (id: string, runId: string) => request(NoContent, `${taskPath(id)}/steps/${encodeURIComponent(runId)}/retry`, json('POST')),
+    files: (id: string, path = '') => request(FileTree, `${taskPath(id)}/files${q({ path })}`),
     /** presigned URL へのリダイレクトを fetch がたどる */
     fileContent: async (id: string, path: string) => {
-      const res = await raw(`${wi(id)}/files/content${q({ path })}`);
+      const res = await raw(`${taskPath(id)}/files/content${q({ path })}`);
       return { text: await res.text(), contentType: res.headers.get('content-type') ?? 'text/plain' };
     },
-    diff: (id: string) => request(Diff, `${wi(id)}/diff`),
+    diff: (id: string) => request(Diff, `${taskPath(id)}/diff`),
     /** 添付: presigned URL を受け取り、そこに PUT する。id を省くと作成前の添付（提案の API） */
     upload: async (file: File, id?: string) => {
       const ticket = await request(
         AttachmentTicket,
-        id ? `${wi(id)}/attachments` : '/attachments',
+        id ? `${taskPath(id)}/attachments` : '/attachments',
         json('POST', { fileName: file.name, contentType: file.type || 'application/octet-stream', size: file.size }),
       );
       const put = await fetch(ticket.uploadUrl, { method: 'PUT', body: file, headers: { 'content-type': file.type || 'application/octet-stream' } });
       if (!put.ok) throw new ApiRequestError(put.status, { code: 'UPLOAD_FAILED', message: 'アップロードに失敗しました' });
       return ticket.path;
     },
-    download: (id: string, body: { paths?: string[]; format: 'file' | 'zip' }) => request(Download, `${wi(id)}/downloads`, json('POST', body)),
-    preview: (id: string, port: number) => request(Preview, `${wi(id)}/previews`, json('POST', { port })),
+    download: (id: string, body: { paths?: string[]; format: 'file' | 'zip' }) => request(Download, `${taskPath(id)}/downloads`, json('POST', body)),
+    preview: (id: string, port: number) => request(Preview, `${taskPath(id)}/previews`, json('POST', { port })),
 
     // ---- 社内公開 ----
-    precheck: (id: string, path: string) => request(PrecheckResult, `${wi(id)}/publications/precheck`, json('POST', { path })),
+    precheck: (id: string, path: string) => request(PrecheckResult, `${taskPath(id)}/publications/precheck`, json('POST', { path })),
     publish: (input: z.input<typeof CreatePublicationRequest>) => request(Publication, '/publications', json('POST', CreatePublicationRequest.parse(input))),
     publications: () => request(z.array(Publication), '/publications'),
     updatePublication: (pid: string, patch: z.input<typeof UpdatePublicationRequest>) =>
@@ -130,7 +130,7 @@ export function createApiClient({ baseUrl = globalThis.location?.origin ?? 'http
     buildLog: (name: string, v: number) => request(BuildLog, `/images/${encodeURIComponent(name)}/versions/${v}/build-log`),
     setImageVisibility: (name: string, scope: Exclude<ImageScope, 'default'>) =>
       request(ImageSummary, `/images/${encodeURIComponent(name)}/visibility`, json('POST', { scope })),
-    lines: () => request(z.array(Line), '/lines'),
+    workflows: () => request(z.array(Workflow), '/workflows'),
 
     // ---- 管理 ----
     admin: {
@@ -138,8 +138,8 @@ export function createApiClient({ baseUrl = globalThis.location?.origin ?? 'http
       putNetworkProfile: (p: Omit<NetworkProfile, 'updatedAt'>) => request(NetworkProfile, `/admin/network-profiles/${encodeURIComponent(p.name)}`, json('PUT', p)),
       packageSources: () => request(z.array(PackageSource), '/admin/package-sources'),
       putPackageSource: (p: Omit<PackageSource, 'updatedAt'>) => request(PackageSource, `/admin/package-sources/${encodeURIComponent(p.name)}`, json('PUT', p)),
-      line: (name: string) => request(LineDefinition, `/admin/lines/${encodeURIComponent(name)}`),
-      putLine: (name: string, yaml: string) => request(LineDefinition, `/admin/lines/${encodeURIComponent(name)}`, json('PUT', { yaml })),
+      workflow: (name: string) => request(WorkflowDefinition, `/admin/workflows/${encodeURIComponent(name)}`),
+      putWorkflow: (name: string, yaml: string) => request(WorkflowDefinition, `/admin/workflows/${encodeURIComponent(name)}`, json('PUT', { yaml })),
       approveOrgImage: (name: string) => request(ImageSummary, `/admin/images/${encodeURIComponent(name)}/approve-org`, json('POST')),
       vms: () => request(z.array(VmInfo), '/admin/vms'),
       terminateVm: (id: string) => request(NoContent, `/admin/vms/${encodeURIComponent(id)}/terminate`, json('POST')),

@@ -53,7 +53,7 @@ export const IconLock = () => <Svg><rect x="5" y="11" width="14" height="9" rx="
 export const IconMore = () => <Svg><circle cx="5.5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="18.5" cy="12" r="1" /></Svg>;
 export const IconFolder = () => <Svg><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" /></Svg>;
 export const IconImage = () => <Svg><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" /><path d="M8 9.8l4 2.2 4-2.2" /></Svg>;
-export const IconLine = () => <Svg><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /><path d="M7 12h3M14 12h3" /></Svg>;
+export const IconWorkflow = () => <Svg><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /><path d="M7 12h3M14 12h3" /></Svg>;
 export const IconUsers = () => <Svg><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.2a6.5 6.5 0 0 1 3.5 5.8" /></Svg>;
 export const IconCopy = () => <Svg><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></Svg>;
 

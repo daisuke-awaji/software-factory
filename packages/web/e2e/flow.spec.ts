@@ -11,7 +11,7 @@ test('依頼を出して、計画を承認すると、検証のやり直しを�
   await page.getByLabel('依頼の内容').fill('問い合わせフォームで、メールアドレスが正しくなくても送信できます。入力チェックを直してください。');
   await page.getByLabel('リポジトリ').selectOption('acme/support-site');
   await page.getByRole('button', { name: '依頼する' }).click();
-  await expect(page).toHaveURL(/\/w\//);
+  await expect(page).toHaveURL(/\/t\//);
 
   const chat = page.getByRole('region', { name: '会話' });
   await chat.getByRole('button', { name: '承認して開始' }).click();

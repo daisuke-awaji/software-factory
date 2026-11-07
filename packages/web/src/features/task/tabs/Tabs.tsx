@@ -1,5 +1,5 @@
 // 右の列のタブの中身
-import type { Diff, Line, WorkItem } from '@factory/contracts';
+import type { Diff, Workflow, Task } from '@factory/contracts';
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { ToolCallCard, ToolCallGroup } from '../../../components/ui/tool-call-card';
@@ -7,7 +7,7 @@ import { Banner, Dot, ErrorBanner, IconButton, Loading, Tag } from '../../../com
 import { IconBlock, IconChevron, IconChevronDown, IconDownload, IconExternal, IconEye, IconFile, IconFolder, IconList, IconRefresh, toolIcon } from '../../../components/icons';
 import { errorMessage } from '../../../lib/api';
 import { saveFromUrl } from '../../../lib/download';
-import { bytes, duration, stageLabel, time, tokens, usd } from '../../../lib/format';
+import { bytes, duration, stepLabel, time, tokens, usd } from '../../../lib/format';
 import { useApi } from '../../../lib/services';
 import type { Session } from '../../../lib/session';
 import { useResource } from '../../../lib/useResource';
@@ -16,7 +16,7 @@ import { PlanCard, type PlanActions } from '../Cards';
 import t from './tabs.module.css';
 
 // ---------------------------------------------------------------- プレビュー（FR-UI-06・D16）
-export function PreviewTab({ item, session }: { item: WorkItem; session: Session }) {
+export function PreviewTab({ item, session }: { item: Task; session: Session }) {
   const api = useApi();
   const toast = useUi((u) => u.toast);
   const [url, setUrl] = useState<string | null>(null);
@@ -155,7 +155,7 @@ export function ChangesTab({ diff }: { diff: { data: Diff | undefined; error: st
 }
 
 // ---------------------------------------------------------------- ファイル（FR-UI-05）
-export function FilesTab({ item, version, onPublish }: { item: WorkItem; version: number; onPublish: () => void }) {
+export function FilesTab({ item, version, onPublish }: { item: Task; version: number; onPublish: () => void }) {
   const api = useApi();
   const toast = useUi((u) => u.toast);
   const root = useResource(() => api.files(item.id, ''), [item.id, version]);
@@ -167,7 +167,7 @@ export function FilesTab({ item, version, onPublish }: { item: WorkItem; version
   useEffect(() => {
     // 開いているフォルダは、ファイルが変わったら読み直す
     for (const dir of Object.keys(open).filter((d) => open[d])) void api.files(item.id, dir).then((tr) => setChildren((c) => ({ ...c, [dir]: tr.entries })));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-workflow react-hooks/exhaustive-deps
   }, [version]);
 
   const toggle = async (dir: string) => {
@@ -256,7 +256,7 @@ export function FilesTab({ item, version, onPublish }: { item: WorkItem; version
 }
 
 // ---------------------------------------------------------------- 計画とステージの構成
-export function PlanTab({ session, line, actions }: { session: Session; line: Line | undefined; actions: PlanActions }) {
+export function PlanTab({ session, workflow, actions }: { session: Session; workflow: Workflow | undefined; actions: PlanActions }) {
   const latest = session.latestPlan ? session.plans[session.latestPlan] : undefined;
   const older = Object.values(session.plans).filter((p) => p.version !== session.latestPlan).sort((a, b) => b.version - a.version);
   return (
@@ -271,25 +271,25 @@ export function PlanTab({ session, line, actions }: { session: Session; line: Li
             <span>エージェントが依頼の内容と関係するファイルを確かめて、計画を出します。承認するまで作業は始まりません（D3）。</span>
           </div>
         )}
-        {line && (
+        {workflow && (
           <>
-            <h3 className={t.h}>ライン「{line.title ?? line.name}」のステージ（{line.name}@{line.version}）</h3>
-            <table className={t.stageTable}>
+            <h3 className={t.h}>ライン「{workflow.title ?? workflow.name}」のステージ（{workflow.name}@{workflow.version}）</h3>
+            <table className={t.stepTable}>
               <thead>
                 <tr><th>ステージ</th><th>VM のイメージ</th><th>通信</th><th>進み方</th></tr>
               </thead>
               <tbody>
-                {line.stages.map((st) => (
+                {workflow.steps.map((st) => (
                   <tr key={st.id}>
-                    <td><strong>{stageLabel(st.id)}</strong> <span className="faint mono">{st.id}</span></td>
+                    <td><strong>{stepLabel(st.id)}</strong> <span className="faint mono">{st.id}</span></td>
                     <td className="mono">{st.image ?? (st.type === 'system' ? '（VM なし）' : '—')}</td>
                     <td>{st.network ? <span className="mono">{st.network}</span> : '—'}</td>
                     <td className="muted">
                       {st.gates.includes('plan-approval') && '計画の承認のあと / '}
                       {st.action === 'create-pull-request' && 'プルリクエストを作る'}
                       {st.action === 'propose-publish' && '公開を提案する'}
-                      {st.on?.fail && `失敗したら ${stageLabel(st.on.fail.goto)} に戻る（最大 ${st.on.fail.maxLoops} 回）`}
-                      {!st.action && !st.on?.fail && (st.on?.pass ?? st.next ? `次は ${stageLabel(st.on?.pass ?? st.next!)}` : '最後のステージ')}
+                      {st.on?.fail && `失敗したら ${stepLabel(st.on.fail.goto)} に戻る（最大 ${st.on.fail.maxLoops} 回）`}
+                      {!st.action && !st.on?.fail && (st.on?.pass ?? st.next ? `次は ${stepLabel(st.on?.pass ?? st.next!)}` : '最後のステージ')}
                     </td>
                   </tr>
                 ))}
@@ -313,7 +313,7 @@ export function PlanTab({ session, line, actions }: { session: Session; line: Li
 }
 
 // ---------------------------------------------------------------- 実行ログ（FR-UI-04）
-export function LogTab({ item, session, line, onRetry }: { item: WorkItem; session: Session; line: Line | undefined; onRetry: (runId: string) => Promise<void> }) {
+export function LogTab({ item, session, workflow, onRetry }: { item: Task; session: Session; workflow: Workflow | undefined; onRetry: (runId: string) => Promise<void> }) {
   const runs = [...session.runs].reverse();
   return (
     <div className={t.pad}>
@@ -342,13 +342,13 @@ export function LogTab({ item, session, line, onRetry }: { item: WorkItem; sessi
           </div>
         )}
         {runs.map((r) => {
-          const st = line?.stages.find((x) => x.id === r.stageId);
+          const st = workflow?.steps.find((x) => x.id === r.stepId);
           const tools = r.tools.map((tid) => session.tools[tid]).filter((x): x is NonNullable<typeof x> => !!x);
           return (
-            <section key={r.runId} className={t.run} aria-label={`${stageLabel(r.stageId)} ${r.runId}`}>
+            <section key={r.runId} className={t.run} aria-label={`${stepLabel(r.stepId)} ${r.runId}`}>
               <div className={t.runHead}>
                 <Dot tone={r.state === 'running' ? 'run' : r.state === 'failed' ? 'err' : 'ok'} />
-                <span className={t.runLabel}>{stageLabel(r.stageId)}</span>
+                <span className={t.runLabel}>{stepLabel(r.stepId)}</span>
                 <span className={t.runMeta}>{r.runId}{st?.image ? ` · ${st.image}` : ''}{st?.network ? ` · 通信: ${st.network}` : ''}</span>
                 <span className={t.runRight}>
                   {r.state === 'failed' && <Tag tone="err">失敗</Tag>}
@@ -359,7 +359,7 @@ export function LogTab({ item, session, line, onRetry }: { item: WorkItem; sessi
                 </span>
               </div>
               {tools.length > 0 && (
-                <ToolCallGroup key={`${r.runId}:${r.state}`} defaultOpen={r.state !== 'completed'} label={`${tools.length} 件の作業`} runningLabel={`${stageLabel(r.stageId)}をしています…`}>
+                <ToolCallGroup key={`${r.runId}:${r.state}`} defaultOpen={r.state !== 'completed'} label={`${tools.length} 件の作業`} runningLabel={`${stepLabel(r.stepId)}をしています…`}>
                   {tools.map((tl) => (
                     <ToolCallCard
                       key={tl.id}

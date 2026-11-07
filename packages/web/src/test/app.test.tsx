@@ -113,7 +113,7 @@ describe('すべての依頼', () => {
     await user.type(await screen.findByLabelText('依頼の内容'), 'README にテストの実行手順を追記してください');
     await user.selectOptions(await screen.findByLabelText('リポジトリ'), 'acme/platform');
     await user.click(screen.getByRole('button', { name: '依頼する' }));
-    await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/w\//));
+    await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/t\//));
     // タイトルは本文から作られる（後から「名前を変更」で直せる）
     expect(await screen.findByRole('heading', { level: 1, name: 'README にテストの実行手順を追記してください' })).toBeInTheDocument();
 
@@ -130,8 +130,8 @@ describe('すべての依頼', () => {
 describe('ワークスペース', () => {
   it('計画の修正を依頼すると、第2版が出る', async () => {
     const user = userEvent.setup();
-    const dash = getDb().workItems.find((w) => w.title.includes('ダッシュボード'))!;
-    renderAt(`/w/${dash.id}`);
+    const dash = getDb().tasks.find((w) => w.title.includes('ダッシュボード'))!;
+    renderAt(`/t/${dash.id}`);
     const buttons = await screen.findAllByRole('button', { name: '修正を依頼' });
     await user.click(buttons[0]!);
     await user.type(screen.getAllByPlaceholderText(/直してほしい点/)[0]!, 'グラフは折れ線にしてください');
@@ -141,14 +141,14 @@ describe('ワークスペース', () => {
   }, 20000);
 
   it('失敗した依頼は、理由とやり直すボタンを出す', async () => {
-    const failed = getDb().workItems.find((w) => w.state === 'failed')!;
-    renderAt(`/w/${failed.id}`);
+    const failed = getDb().tasks.find((w) => w.state === 'failed')!;
+    renderAt(`/t/${failed.id}`);
     expect(await screen.findByText('ラインが止まりました')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'やり直す' }).length).toBeGreaterThan(0);
   });
 
   it('存在しない依頼は、見つからないと伝える', async () => {
-    renderAt('/w/01J00000000000000000000000');
+    renderAt('/t/01J00000000000000000000000');
     expect(await screen.findByRole('alert')).toHaveTextContent('見つかりません');
   });
 });

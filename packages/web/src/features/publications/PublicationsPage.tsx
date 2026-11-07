@@ -11,7 +11,7 @@ import { date, relative } from '../../lib/format';
 import { useApi } from '../../lib/services';
 import { useResource } from '../../lib/useResource';
 import { useUi } from '../../stores/ui';
-import { ConfirmDialog } from '../workitem/Dialogs';
+import { ConfirmDialog } from '../task/Dialogs';
 import p from '../pages.module.css';
 
 const statusLabel = { active: '公開中', stopped: '停止', expired: '期限切れ' } as const;
@@ -57,7 +57,7 @@ export function PublicationsPage() {
                     <span className={p.link}>{pub.title}</span>
                   )}
                   <span className={p.sub}>
-                    <span className="mono">{pub.path}</span> · <Link to={`/w/${pub.workItemId}`}>元の依頼</Link>
+                    <span className="mono">{pub.path}</span> · <Link to={`/t/${pub.taskId}`}>元の依頼</Link>
                   </span>
                 </td>
                 <td>

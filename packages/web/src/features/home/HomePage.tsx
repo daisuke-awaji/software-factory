@@ -3,18 +3,18 @@ import { Page } from '../../app/AppShell';
 import { ErrorBanner } from '../../components/kit';
 import { useApi } from '../../lib/services';
 import { useResource } from '../../lib/useResource';
-import { NewRequest } from './NewRequest';
+import { NewTask } from './NewTask';
 import s from './home.module.css';
 
 export function HomePage() {
   const api = useApi();
-  const lines = useResource(() => api.lines(), []);
+  const workflows = useResource(() => api.workflows(), []);
   return (
     <Page>
       <div className={s.main}>
         <h1 className={s.greeting}>新しい依頼</h1>
-        <NewRequest lines={lines.data} />
-        <ErrorBanner error={lines.error} onRetry={() => void lines.reload()} />
+        <NewTask workflows={workflows.data} />
+        <ErrorBanner error={workflows.error} onRetry={() => void workflows.reload()} />
       </div>
     </Page>
   );

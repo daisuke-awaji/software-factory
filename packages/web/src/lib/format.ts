@@ -1,9 +1,9 @@
 // 表示の整形（日本語の UI。06_ui_spec.md §4: 状態の名前は日本語で統一する）
-import type { ApprovalReason, WorkItemState } from '@factory/contracts';
+import type { ApprovalReason, TaskState } from '@factory/contracts';
 
 export type Tone = 'run' | 'ok' | 'alert' | 'err' | undefined;
 
-export const stateLabel: Record<WorkItemState, string> = {
+export const stateLabel: Record<TaskState, string> = {
   queued: '受付済み',
   planning: '計画中',
   awaiting_approval: '承認待ち',
@@ -14,7 +14,7 @@ export const stateLabel: Record<WorkItemState, string> = {
   cancelled: '中止',
 };
 
-export const stateTone: Record<WorkItemState, Tone> = {
+export const stateTone: Record<TaskState, Tone> = {
   queued: undefined,
   planning: 'run',
   awaiting_approval: 'alert',
@@ -32,10 +32,10 @@ export const reasonLabel: Record<ApprovalReason, string> = {
   time: '作業時間',
 };
 
-export const terminalStates: WorkItemState[] = ['completed', 'failed', 'cancelled'];
-export const isTerminal = (s: WorkItemState | null | undefined) => !!s && terminalStates.includes(s);
+export const terminalStates: TaskState[] = ['completed', 'failed', 'cancelled'];
+export const isTerminal = (s: TaskState | null | undefined) => !!s && terminalStates.includes(s);
 
-const stageNames: Record<string, string> = {
+const stepNames: Record<string, string> = {
   workbench: '作業',
   implement: '実装',
   verify: '検証',
@@ -43,7 +43,7 @@ const stageNames: Record<string, string> = {
   deliver: '納品',
   publish: '公開の提案',
 };
-export const stageLabel = (id: string) => stageNames[id] ?? id;
+export const stepLabel = (id: string) => stepNames[id] ?? id;
 
 export function time(t: number | string) {
   return new Date(t).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });

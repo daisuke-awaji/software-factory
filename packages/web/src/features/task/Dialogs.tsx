@@ -1,5 +1,5 @@
 // ワークスペースのダイアログ: 社内公開（FR-SHARE）、名前の変更、確認
-import type { Acl, FileEntry, PrecheckResult, Publication, WorkItem } from '@factory/contracts';
+import type { Acl, FileEntry, PrecheckResult, Publication, Task } from '@factory/contracts';
 import { useEffect, useId, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Button } from '../../components/ui/button';
@@ -44,7 +44,7 @@ export function ConfirmDialog({ open, title, body, confirm, danger, onConfirm, o
   );
 }
 
-export function RenameDialog({ open, item, onClose, onSaved }: { open: boolean; item: WorkItem; onClose: () => void; onSaved: (w: WorkItem) => void }) {
+export function RenameDialog({ open, item, onClose, onSaved }: { open: boolean; item: Task; onClose: () => void; onSaved: (w: Task) => void }) {
   const api = useApi();
   const [title, setTitle] = useState(item.title);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +52,7 @@ export function RenameDialog({ open, item, onClose, onSaved }: { open: boolean; 
   useEffect(() => setTitle(item.title), [item.title, open]);
   const save = async () => {
     try {
-      onSaved(await api.updateWorkItem(item.id, { title: title.trim() }));
+      onSaved(await api.updateTask(item.id, { title: title.trim() }));
       onClose();
     } catch (e) {
       setError(errorMessage(e));
@@ -86,7 +86,7 @@ const expiryOptions = [
 ];
 
 /** 社内公開: 公開するフォルダを選ぶ → 公開前のチェック → 範囲と期限 → 公開 */
-export function PublishDialog({ open, item, onClose }: { open: boolean; item: WorkItem; onClose: () => void }) {
+export function PublishDialog({ open, item, onClose }: { open: boolean; item: Task; onClose: () => void }) {
   const api = useApi();
   const navigate = useNavigate();
   const toast = useUi((u) => u.toast);
@@ -132,7 +132,7 @@ export function PublishDialog({ open, item, onClose }: { open: boolean; item: Wo
     setError(null);
     try {
       const pub = await api.publish({
-        workItemId: item.id,
+        taskId: item.id,
         path,
         title: title.trim() || item.title,
         acl: scope === 'org' ? { scope } : { scope, ...(list(groups).length ? { groups: list(groups) } : {}), ...(list(users).length ? { users: list(users) } : {}) },

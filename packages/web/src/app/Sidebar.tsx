@@ -3,13 +3,13 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate, useParams } from 'react-router';
 import { ProfileMenu } from '../components/ui/profile-menu';
 import { Avatar, Dot, FactoryMark } from '../components/kit';
-import { IconClose, IconCompose, IconGlobe, IconImage, IconLine, IconList, IconMoon, IconSearch, IconSettings, IconShield, IconSidebar, IconSun } from '../components/icons';
+import { IconClose, IconCompose, IconGlobe, IconImage, IconWorkflow, IconList, IconMoon, IconSearch, IconSettings, IconShield, IconSidebar, IconSun } from '../components/icons';
 import type { ConnectionState } from '../lib/events';
 import { relative, stateLabel, stateTone } from '../lib/format';
 import { isAdmin, useMe } from '../stores/me';
 import { useUi } from '../stores/ui';
 import { LogoToggle, sidebarShortcut } from './LogoToggle';
-import type { WorkItemFeed } from './useWorkItemFeed';
+import type { TaskFeed } from './useTaskFeed';
 import s from './Sidebar.module.css';
 
 const RUNNING = new Set(['queued', 'planning', 'running', 'suspended']);
@@ -36,7 +36,7 @@ export type SidebarProps = {
   expanded: boolean;
   /** 重ねて出しているとき（1280px 未満）。閉じるボタンを出す */
   floating?: boolean;
-  feed: WorkItemFeed;
+  feed: TaskFeed;
   conn: ConnectionState;
   mock: boolean;
   onToggle: () => void;
@@ -51,7 +51,7 @@ export function Sidebar({ expanded, floating = false, feed, conn, mock, onToggle
     { to: '/requests', label: 'すべての依頼', icon: <IconList />, ...(attention ? { badge: attention } : {}) },
     { to: '/publications', label: '公開物', icon: <IconGlobe /> },
     { to: '/images', label: 'イメージ', icon: <IconImage /> },
-    { to: '/lines', label: 'ライン', icon: <IconLine /> },
+    { to: '/workflows', label: 'ライン', icon: <IconWorkflow /> },
     ...(isAdmin(me) ? [{ to: '/admin', label: '管理', icon: <IconShield /> }] : []),
   ];
   const navClass = ({ isActive }: { isActive: boolean }) => (isActive ? s.active : undefined);
@@ -75,7 +75,7 @@ export function Sidebar({ expanded, floating = false, feed, conn, mock, onToggle
       </div>
 
       <nav className={s.nav} aria-label="メイン">
-        <NavLink to="/" end className={({ isActive }) => `${s.newRequest} ${isActive ? s.active : ''}`} title={expanded ? undefined : '新しい依頼'}>
+        <NavLink to="/" end className={({ isActive }) => `${s.newTask} ${isActive ? s.active : ''}`} title={expanded ? undefined : '新しい依頼'}>
           <IconCompose />
           {expanded ? <span>新しい依頼</span> : <span className="sr-only">新しい依頼</span>}
         </NavLink>
@@ -104,7 +104,7 @@ export function Sidebar({ expanded, floating = false, feed, conn, mock, onToggle
 }
 
 /** 依頼の一覧: 対応が必要 → 実行中 → 終わったもの（日付で分ける）。下までスクロールしたら続きを読む */
-function Sessions({ feed }: { feed: WorkItemFeed }) {
+function Sessions({ feed }: { feed: TaskFeed }) {
   const { items, hasMore, loadingMore, loadMore, error, reload } = feed;
   const { id: current } = useParams();
   const [query, setQuery] = useState('');
@@ -160,7 +160,7 @@ function Sessions({ feed }: { feed: WorkItemFeed }) {
               <ul className={s.list}>
                 {g.items.map((i) => (
                   <li key={i.id}>
-                    <Link to={`/w/${i.id}`} className={s.item} aria-current={i.id === current ? 'page' : undefined} title={i.title}>
+                    <Link to={`/t/${i.id}`} className={s.item} aria-current={i.id === current ? 'page' : undefined} title={i.title}>
                       <Dot tone={stateTone[i.state]} label={stateLabel[i.state]} />
                       <span className={s.itemTitle}>{i.title}</span>
                       <span className={s.itemTime}>{relative(i.updatedAt)}</span>

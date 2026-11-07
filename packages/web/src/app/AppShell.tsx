@@ -11,7 +11,7 @@ import { useMe } from '../stores/me';
 import { useUi } from '../stores/ui';
 import { LogoToggle } from './LogoToggle';
 import { Sidebar } from './Sidebar';
-import { useWorkItemFeed } from './useWorkItemFeed';
+import { useTaskFeed } from './useTaskFeed';
 import s from './AppShell.module.css';
 
 export function AppShell() {
@@ -30,10 +30,10 @@ export function AppShell() {
   useEffect(() => events.onState(setConn), [events]);
 
   // サイドパネルの依頼の一覧。画面を移ったとき（新しい依頼を出したときなど）と、状態が変わったときに読み直す
-  const feed = useWorkItemFeed([location.pathname], { pollMs: 20_000, enabled: !!me });
+  const feed = useTaskFeed([location.pathname], { pollMs: 20_000, enabled: !!me });
   useLiveReload(feed.items, () => void feed.reload());
 
-  const full = location.pathname.startsWith('/w/');
+  const full = location.pathname.startsWith('/t/');
   const overlayMode = useMediaQuery(narrow.sidebar);
   const phone = useMediaQuery(narrow.phone);
   const pinned = useUi((u) => u.sidebarPinned);

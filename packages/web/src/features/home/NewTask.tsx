@@ -1,5 +1,5 @@
 // 新しい依頼の入力欄（FR-UI-01・03）。本文・添付・リポジトリだけを受け取る。タイトルはサーバーが本文から作り、ワークスペースの「名前を変更」で直せる
-import type { Line } from '@factory/contracts';
+import type { Workflow } from '@factory/contracts';
 import { useId, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Button } from '../../components/ui/button';
@@ -12,7 +12,7 @@ import s from './home.module.css';
 
 type Attached = { key: string; name: string; path?: string; error?: string };
 
-export function NewRequest({ lines }: { lines: Line[] | undefined }) {
+export function NewTask({ workflows }: { workflows: Workflow[] | undefined }) {
   const api = useApi();
   const navigate = useNavigate();
   const repos = useResource(() => api.repos(), []);
@@ -26,7 +26,7 @@ export function NewRequest({ lines }: { lines: Line[] | undefined }) {
 
   const selectedRepo = repos.data?.find((r) => `${r.owner}/${r.name}` === repo);
   /** ラインは選ばせない: リポジトリを使うなら「作って確かめる」、使わないなら会話 */
-  const line = repo ? 'build-verify' : 'chat';
+  const workflow = repo ? 'build-verify' : 'chat';
   const uploading = files.some((f) => !f.path && !f.error);
   const canSubmit = text.trim().length > 0 && !busy && !uploading;
 
@@ -48,16 +48,16 @@ export function NewRequest({ lines }: { lines: Line[] | undefined }) {
     setBusy(true);
     setError(null);
     try {
-      const l = lines?.find((x) => x.name === line);
+      const l = workflows?.find((x) => x.name === workflow);
       const [owner, name] = repo.split('/');
       const attachments = files.flatMap((f) => (f.path ? [f.path] : []));
-      const wi = await api.createWorkItem({
+      const created = await api.createTask({
         message: text.trim(),
-        lineRef: `${line}@${l?.version ?? 1}`,
+        workflowRef: `${workflow}@${l?.version ?? 1}`,
         ...(owner && name ? { repo: { owner, name, baseBranch: selectedRepo?.defaultBranch ?? 'main' } } : {}),
         ...(attachments.length ? { attachments } : {}),
       });
-      void navigate(`/w/${wi.id}`);
+      void navigate(`/t/${created.id}`);
     } catch (e) {
       setError(errorMessage(e));
       setBusy(false);
@@ -65,7 +65,7 @@ export function NewRequest({ lines }: { lines: Line[] | undefined }) {
   };
 
   return (
-    <section className={s.newRequest} aria-label="新しい依頼">
+    <section className={s.newTask} aria-label="新しい依頼">
       <div className={s.newCard}>
         <label htmlFor={ids.text} className="sr-only">依頼の内容</label>
         <textarea

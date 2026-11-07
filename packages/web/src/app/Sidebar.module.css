@@ -35,7 +35,7 @@
 .nav a :global(.icon) { flex: none; width: 17px; height: 17px; color: var(--muted); }
 .nav a.active :global(.icon), .nav a:hover :global(.icon) { color: var(--ink); }
 .panel:not([data-expanded]) .nav a { justify-content: center; padding: 0; position: relative; }
-.newRequest { margin-bottom: 6px; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow-sm); font-weight: 500; color: var(--ink) !important; }
+.newTask { margin-bottom: 6px; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow-sm); font-weight: 500; color: var(--ink) !important; }
 .label { flex: 1; min-width: 0; }
 .badge {
   display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px;
@@ -92,7 +92,7 @@
 @media (max-height: 520px) {
   .head { height: 36px; margin-bottom: 2px; }
   .nav a { min-height: 34px; }
-  .newRequest { margin-bottom: 2px; }
+  .newTask { margin-bottom: 2px; }
   .panel[data-expanded] { overflow-y: auto; }
   .panel[data-expanded] .sessions { flex: none; }
   .panel[data-expanded] .scroll { overflow: visible; }

@@ -10,7 +10,7 @@ const fresh = async (page: Page) => {
 const openItem = async (page: Page, title: RegExp) => {
   await page.getByRole('button', { name: 'サイドパネルを開く' }).click();
   await page.getByRole('dialog', { name: 'サイドパネル' }).getByRole('link', { name: title }).click();
-  await expect(page).toHaveURL(/\/w\//);
+  await expect(page).toHaveURL(/\/t\//);
   await expect(page.getByRole('dialog', { name: 'サイドパネル' })).toHaveCount(0);
 };
 
@@ -82,7 +82,7 @@ test('左上のロゴでサイドパネルを左から出し、ほかの画面�
   await expect(page.getByRole('list', { name: '依頼の一覧' })).toBeVisible();
   await expect(page.getByRole('table', { name: '依頼の一覧' })).toHaveCount(0);
   await expectNoHorizontalScroll(page);
-  for (const path of ['/publications', '/images', '/lines', '/settings', '/admin']) {
+  for (const path of ['/publications', '/images', '/workflows', '/settings', '/admin']) {
     await page.goto(path);
     await expect(page.getByRole('main')).toBeVisible();
     await expectNoHorizontalScroll(page);

@@ -22,7 +22,7 @@ const until = async (fn: () => boolean, ms = 5000) => {
 describe('EventStream', () => {
   it('再接続したら、取りこぼしを GET /events?after= で埋める', async () => {
     initMockBackend({ fresh: true, speed: 0.01 });
-    const id = getDb().workItems[0]!.id;
+    const id = getDb().tasks[0]!.id;
     const api = createApiClient({ baseUrl: 'http://localhost', getToken: () => 't' });
     const stream = new EventStream('wss://ws.factory.mock/ws', () => 't', api);
     const got: FactoryEventEnvelope[] = [];

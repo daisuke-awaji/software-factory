@@ -1,5 +1,5 @@
 // 会話の入力欄（FR-UI-07: 追加の指示と中断。FR-UI-03: 添付）
-import type { WorkItemState } from '@factory/contracts';
+import type { TaskState } from '@factory/contracts';
 import { useId, useRef, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { IconButton } from '../../components/kit';
@@ -15,7 +15,7 @@ type Attached = { key: string; name: string; path?: string; error?: string };
 export function Composer({
   state, pending, onSend, onInterrupt, upload,
 }: {
-  state: WorkItemState | null;
+  state: TaskState | null;
   pending: Pending | null;
   onSend: (text: string, attachments: string[]) => Promise<void>;
   onInterrupt: () => Promise<void>;

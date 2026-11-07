@@ -13,10 +13,10 @@ import { useApi } from '../../lib/services';
 import { useResource } from '../../lib/useResource';
 import { isAdmin, useMe } from '../../stores/me';
 import { useUi } from '../../stores/ui';
-import { ConfirmDialog } from '../workitem/Dialogs';
+import { ConfirmDialog } from '../task/Dialogs';
 import p from '../pages.module.css';
 
-type Tab = 'network' | 'packages' | 'lines' | 'vms' | 'users' | 'images';
+type Tab = 'network' | 'packages' | 'workflows' | 'vms' | 'users' | 'images';
 
 export function AdminPage() {
   const me = useMe((m) => m.me);
@@ -42,7 +42,7 @@ export function AdminPage() {
           options={[
             { value: 'network', label: '通信の許可リスト' },
             { value: 'packages', label: 'パッケージソース' },
-            { value: 'lines', label: 'ライン' },
+            { value: 'workflows', label: 'ライン' },
             { value: 'vms', label: 'VM と容量' },
             { value: 'users', label: 'ユーザー' },
             { value: 'images', label: 'イメージの申請' },
@@ -51,7 +51,7 @@ export function AdminPage() {
       </div>
       {tab === 'network' && <NetworkProfiles />}
       {tab === 'packages' && <PackageSources />}
-      {tab === 'lines' && <Lines />}
+      {tab === 'workflows' && <Workflows />}
       {tab === 'vms' && <Vms />}
       {tab === 'users' && <Users />}
       {tab === 'images' && <ImageRequests />}
@@ -163,12 +163,12 @@ function PackageSources() {
   );
 }
 
-function Lines() {
+function Workflows() {
   const api = useApi();
   const toast = useUi((u) => u.toast);
-  const lines = useResource(() => api.lines(), []);
+  const workflows = useResource(() => api.workflows(), []);
   const [name, setName] = useState('build-verify');
-  const def = useResource(() => api.admin.line(name), [name]);
+  const def = useResource(() => api.admin.workflow(name), [name]);
   const [yaml, setYaml] = useState('');
   const [error, setError] = useState<string | null>(null);
   const id = useId();
@@ -178,11 +178,11 @@ function Lines() {
   }, [def.data]);
   const save = async () => {
     try {
-      const r = await api.admin.putLine(name, yaml);
+      const r = await api.admin.putWorkflow(name, yaml);
       toast(`${r.name}@${r.version} を登録しました`, 'ok');
       setError(null);
       await def.reload();
-      await lines.reload();
+      await workflows.reload();
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -191,7 +191,7 @@ function Lines() {
     <div className={p.stack}>
       <div className={p.row}>
         <Select aria-label="ライン" value={name} onChange={(e) => setName(e.target.value)} style={{ width: 260 }}>
-          {lines.data?.map((l) => <option key={l.name} value={l.name}>{l.title ?? l.name}（{l.name}@{l.version}）</option>)}
+          {workflows.data?.map((l) => <option key={l.name} value={l.name}>{l.title ?? l.name}（{l.name}@{l.version}）</option>)}
         </Select>
         <span className="muted" style={{ fontSize: 13 }}>保存すると新しいバージョンになります。動いている依頼は、始めたときのバージョンのまま進みます。</span>
       </div>
@@ -235,8 +235,8 @@ function Vms() {
         <Table head={['VM', '依頼', '利用者', 'イメージ', '状態', '起動', '']} label="VM の一覧">
           {vms.data?.map((v) => (
             <tr key={v.id}>
-              <td className="mono">{v.id}<span className={p.sub}>{v.stageRunId}</span></td>
-              <td><Link to={`/w/${v.workItemId}`} className={p.link}>開く</Link></td>
+              <td className="mono">{v.id}<span className={p.sub}>{v.stepRunId}</span></td>
+              <td><Link to={`/t/${v.taskId}`} className={p.link}>開く</Link></td>
               <td>{v.owner}</td>
               <td className="mono">{v.image} · {mib(v.memoryMiB)}</td>
               <td><Tag tone={v.state === 'running' ? 'run' : undefined}>{v.state === 'running' ? '実行中' : '一時停止'}</Tag></td>
@@ -300,7 +300,7 @@ function Users() {
               <input type="checkbox" aria-label={`${u.name} を管理者にする`} checked={u.roles.includes('admin')} onChange={(e) => set({ roles: e.target.checked ? ['user', 'admin'] : ['user'] })} />
             </td>
             <td>
-              <TextInput className={p.numInput} type="number" min={1} max={20} aria-label={`${u.name} の同時に進める依頼`} value={u.limits.concurrentWorkItems} onChange={(e) => set({ limits: { ...u.limits, concurrentWorkItems: Number(e.target.value) } })} />
+              <TextInput className={p.numInput} type="number" min={1} max={20} aria-label={`${u.name} の同時に進める依頼`} value={u.limits.concurrentTasks} onChange={(e) => set({ limits: { ...u.limits, concurrentTasks: Number(e.target.value) } })} />
             </td>
             <td>
               <TextInput className={p.numInput} type="number" min={0} aria-label={`${u.name} の月の上限（ドル）`} value={u.limits.monthlyUsd} onChange={(e) => set({ limits: { ...u.limits, monthlyUsd: Number(e.target.value) } })} />

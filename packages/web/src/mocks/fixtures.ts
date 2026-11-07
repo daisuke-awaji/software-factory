@@ -1,5 +1,5 @@
 // モックの固定データ（リポジトリ、ライン、イメージ、許可リスト、ユーザー）。すべて contracts で検証してから使う
-import { AdminUser, ImageSpec, ImageSummary, ImageVersion, Line, LineDefinition, Me, NetworkProfile, PackageSource, Repo } from '@factory/contracts';
+import { AdminUser, ImageSpec, ImageSummary, ImageVersion, Workflow, WorkflowDefinition, Me, NetworkProfile, PackageSource, Repo } from '@factory/contracts';
 import { parse } from 'yaml';
 
 const at = (daysAgo: number) => new Date(Date.now() - daysAgo * 86_400_000).toISOString();
@@ -13,9 +13,9 @@ export const me = Me.parse({
 });
 
 export const users = AdminUser.array().parse([
-  { id: 'u-sato', name: '佐藤 美咲', email: 'misaki.sato@example.co.jp', roles: ['user', 'admin'], limits: { concurrentWorkItems: 5, monthlyUsd: 200 }, monthUsd: 0 },
-  { id: 'u-tanaka', name: '田中 健', email: 'ken.tanaka@example.co.jp', roles: ['user'], limits: { concurrentWorkItems: 3, monthlyUsd: 100 }, monthUsd: 12.4 },
-  { id: 'u-suzuki', name: '鈴木 花子', email: 'hanako.suzuki@example.co.jp', roles: ['user'], limits: { concurrentWorkItems: 3, monthlyUsd: 100 }, monthUsd: 3.15 },
+  { id: 'u-sato', name: '佐藤 美咲', email: 'misaki.sato@example.co.jp', roles: ['user', 'admin'], limits: { concurrentTasks: 5, monthlyUsd: 200 }, monthUsd: 0 },
+  { id: 'u-tanaka', name: '田中 健', email: 'ken.tanaka@example.co.jp', roles: ['user'], limits: { concurrentTasks: 3, monthlyUsd: 100 }, monthUsd: 12.4 },
+  { id: 'u-suzuki', name: '鈴木 花子', email: 'hanako.suzuki@example.co.jp', roles: ['user'], limits: { concurrentTasks: 3, monthlyUsd: 100 }, monthUsd: 3.15 },
 ]);
 
 export const repos = Repo.array().parse([
@@ -59,12 +59,12 @@ export const repoFiles: Record<string, Record<string, string>> = {
 };
 
 // ---------------------------------------------------------------- ライン（YAML で持ち、Zod で検証する）
-export const lineYaml: Record<string, string> = {
+export const workflowYaml: Record<string, string> = {
   chat: `name: chat
 version: 1
 title: チャット
 description: 1台の VM で、計画から仕上げまでを会話しながら進める
-stages:
+steps:
   - id: workbench
     type: agent
     image: base@3
@@ -75,7 +75,7 @@ stages:
 version: 3
 title: 作って確かめる
 description: 実装・検証・レビューを別々の VM で行い、プルリクエストで届ける
-stages:
+steps:
   - id: implement
     type: agent
     image: web@5
@@ -105,7 +105,7 @@ stages:
 version: 1
 title: 集計して公開
 description: 添付したデータを集計し、グラフ付きのレポートを社内に公開できる形で届ける
-stages:
+steps:
   - id: workbench
     type: agent
     image: data@2
@@ -118,12 +118,12 @@ stages:
 `,
 };
 
-export function parseLineYaml(yaml: string): ReturnType<typeof Line.parse> {
-  return Line.parse(parse(yaml));
+export function parseWorkflowYaml(yaml: string): ReturnType<typeof Workflow.parse> {
+  return Workflow.parse(parse(yaml));
 }
 
-export const lines = Object.entries(lineYaml).map(([name, yaml]) =>
-  LineDefinition.parse({ name, version: parseLineYaml(yaml).version, yaml, line: parseLineYaml(yaml), updatedAt: at(12) }),
+export const workflows = Object.entries(workflowYaml).map(([name, yaml]) =>
+  WorkflowDefinition.parse({ name, version: parseWorkflowYaml(yaml).version, yaml, workflow: parseWorkflowYaml(yaml), updatedAt: at(12) }),
 );
 
 // ---------------------------------------------------------------- イメージ

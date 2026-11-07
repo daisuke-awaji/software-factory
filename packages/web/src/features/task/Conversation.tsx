@@ -1,12 +1,12 @@
 // 会話（左の列）。イベントを畳み込んだタイムラインを、発言・計画・承認・作業のまとめ・成果物として並べる
-import type { Line, WorkItem } from '@factory/contracts';
+import type { Workflow, Task } from '@factory/contracts';
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { Button } from '../../components/ui/button';
 import { MessageActions } from '../../components/ui/message-actions';
 import { ThinkingLoader } from '../../components/ui/thinking-loader';
 import { Avatar, Dot } from '../../components/kit';
 import { IconBlock, IconClip, IconDownload, IconExternal, IconEye, IconGlobe, IconPR, IconStop } from '../../components/icons';
-import { duration, stageLabel, time, usd } from '../../lib/format';
+import { duration, stepLabel, time, usd } from '../../lib/format';
 import type { Entry, Session, ToolState } from '../../lib/session';
 import type { Tab } from '../../stores/ui';
 import { useUi } from '../../stores/ui';
@@ -14,9 +14,9 @@ import { ApprovalCard, PlanCard, type PlanActions } from './Cards';
 import s from './workspace.module.css';
 
 export type ConversationProps = {
-  item: WorkItem;
+  item: Task;
   session: Session;
-  line: Line | undefined;
+  workflow: Workflow | undefined;
   me: string;
   planActions: PlanActions;
   answerApproval: (approvalId: string, d: 'approve' | 'deny') => Promise<void>;
@@ -153,7 +153,7 @@ function Msg({ who, name, at, children, actions }: { who: 'user' | 'agent'; name
 }
 
 /** 作業のまとめ: ステージの実行ごとに1行（細かい内容は実行ログのタブで見る） */
-function WorkRows({ tools, session, line, openTab }: ConversationProps & { tools: ToolState[] }) {
+function WorkRows({ tools, session, workflow, openTab }: ConversationProps & { tools: ToolState[] }) {
   const approvedAt = Object.values(session.plans).find((pl) => pl.decision?.decision === 'approved')?.decision?.at ?? Infinity;
   const groups: { key: string; label: string; image?: string | undefined; tools: ToolState[] }[] = [];
   for (const t of tools) {
@@ -162,9 +162,9 @@ function WorkRows({ tools, session, line, openTab }: ConversationProps & { tools
     const key = planning ? 'planning' : (t.runId ?? 'none');
     let g = groups.find((x) => x.key === key);
     if (!g) {
-      const stageId = run?.stageId ?? '';
+      const stepId = run?.stepId ?? '';
       const n = run ? Number(run.runId.split('#')[1]) : 1;
-      g = { key, label: planning ? '計画のための確認' : `${stageLabel(stageId)}${n > 1 ? `（${n} 回目）` : ''}`, image: planning ? undefined : line?.stages.find((st) => st.id === stageId)?.image, tools: [] };
+      g = { key, label: planning ? '計画のための確認' : `${stepLabel(stepId)}${n > 1 ? `（${n} 回目）` : ''}`, image: planning ? undefined : workflow?.steps.find((st) => st.id === stepId)?.image, tools: [] };
       groups.push(g);
     }
     g.tools.push(t);
@@ -199,8 +199,8 @@ function WorkRows({ tools, session, line, openTab }: ConversationProps & { tools
   );
 }
 
-function Deliverables({ item, session, line, openTab, onPublish, onDownload }: ConversationProps) {
-  const publishable = line?.stages.some((st) => st.action === 'propose-publish') || Object.keys(session.tools).length > 0;
+function Deliverables({ item, session, workflow, openTab, onPublish, onDownload }: ConversationProps) {
+  const publishable = workflow?.steps.some((st) => st.action === 'propose-publish') || Object.keys(session.tools).length > 0;
   const rows: { icon: ReactNode; title: string; detail: string; action: ReactNode }[] = [];
   if (session.preview) rows.push({ icon: <IconEye />, title: 'プレビュー', detail: `VM の中で動いているアプリ（ポート ${session.preview.port}）を開けます`, action: <Button size="sm" variant="secondary" onClick={() => openTab('preview')}>開く</Button> });
   if (item.pullRequest)
@@ -261,10 +261,10 @@ function Failure({ session, openTab, onRetry }: ConversationProps) {
         <header className={s.trayHead}>
           <span className={s.badge} data-tone="err">失敗</span>
           <span>ラインが止まりました</span>
-          {failedRun && <span className={s.trayRight}>{stageLabel(failedRun.stageId)} · {failedRun.runId}</span>}
+          {failedRun && <span className={s.trayRight}>{stepLabel(failedRun.stepId)} · {failedRun.runId}</span>}
         </header>
         <div className={s.card}>
-          <p className={s.failText}>{failedRun ? `${stageLabel(failedRun.stageId)}のステージが失敗しました。` : '作業が止まりました。'}原因を直してから、やり直せます。</p>
+          <p className={s.failText}>{failedRun ? `${stepLabel(failedRun.stepId)}のステージが失敗しました。` : '作業が止まりました。'}原因を直してから、やり直せます。</p>
           {failedTool && <div className={s.failReason}>{failedTool.summary} → {failedTool.result}</div>}
           <div className={s.actions}>
             <span className={s.actionsHint}>やり直すと、同じステージを新しい VM で実行します</span>
