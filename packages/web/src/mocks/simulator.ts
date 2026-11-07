@@ -15,6 +15,17 @@ export function now() {
 }
 const instant = () => virtualNow !== null;
 
+/** シード用: PR の番号を決める（既定は、いちばん大きい番号の次。最初は 128） */
+let nextPr: (() => number) | null = null;
+export function withPrNumbers<T>(next: () => number, fn: () => T): T {
+  nextPr = next;
+  try {
+    return fn();
+  } finally {
+    nextPr = null;
+  }
+}
+
 /** シード用: 時計を止めた状態で fn を実行する */
 export function atTime<T>(t: number, fn: () => T): T {
   const prev = virtualNow;
@@ -97,7 +108,7 @@ function applyStep(id: string, step: SimStep) {
       if (step.approvalId) sim.approvalId = step.approvalId;
       break;
     case 'pr': {
-      const number = 128 + d.workItems.filter((w) => w.pullRequest && w.id !== id).length;
+      const number = nextPr?.() ?? Math.max(127, ...d.workItems.filter((w) => w.pullRequest && w.id !== id).map((w) => w.pullRequest!.number)) + 1;
       item.pullRequest = { number, url: `https://github.com/${item.repo?.owner}/${item.repo?.name}/pull/${number}` };
       break;
     }

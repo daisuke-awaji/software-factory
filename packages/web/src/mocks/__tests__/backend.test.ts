@@ -45,6 +45,20 @@ describe('モックのバックエンド', () => {
     expect(runs.map((r) => `${r.runId}:${r.state}`)).toEqual(['implement#1:completed', 'verify#1:failed', 'implement#2:completed', 'verify#2:completed', 'review#1:completed', 'deliver#1:completed']);
   });
 
+  it('一覧は更新の新しい順で、カーソルで続きを重ならずに取れる', async () => {
+    const Page = z.object({ items: z.array(WorkItem), nextCursor: z.string().optional() });
+    const first = await get(Page, '/work-items?limit=30');
+    expect(first.items).toHaveLength(30);
+    expect(first.nextCursor).toBeDefined();
+    const rest = await get(Page, `/work-items?limit=30&cursor=${first.nextCursor}`);
+    expect(rest.nextCursor).toBeUndefined();
+    const all = [...first.items, ...rest.items];
+    expect(new Set(all.map((i) => i.id)).size).toBe(all.length);
+    expect(all.map((i) => i.updatedAt)).toEqual(all.map((i) => i.updatedAt).sort().reverse());
+    // 過去の依頼の PR は 128 より前の番号にする
+    expect(Math.max(...rest.items.map((i) => i.pullRequest?.number ?? 0))).toBeLessThan(128);
+  });
+
   it('作成 → 計画 → 承認 → 完了までイベントが届き、履歴から取り直せる', async () => {
     const ws = new WebSocket('wss://ws.factory.mock/ws?token=t');
     const received: FactoryEventEnvelope[] = [];

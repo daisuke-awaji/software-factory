@@ -2,13 +2,50 @@
 import { CreateWorkItemRequest, Publication, ulid } from '@factory/contracts';
 import { setDb, type MockDb } from './db';
 import * as fx from './fixtures';
-import { advance, atTime, createWorkItem, fastForward } from './simulator';
+import { advance, atTime, cancel, createWorkItem, fastForward, withPrNumbers } from './simulator';
 
 const MIN = 60_000;
 
+type PastRepo = 'support-site' | 'sales-insights' | 'platform' | 'crm-scripts' | 'handbook';
+/** サイドパネルの「過去の依頼」と、続きの読み込みを確かめるための、終わった依頼（何日前・タイトル・リポジトリ。リポジトリがなければ chat ライン） */
+const PAST: [days: number, title: string, repo?: PastRepo | undefined, end?: 'cancelled'][] = [
+  [1, '請求書の PDF から金額を抜き出す'],
+  [1, '採用ページの文言を直す', 'support-site'],
+  [2, '会議室の予約状況を一覧にする'],
+  [3, '週報のひな形を作る'],
+  [3, 'ログイン画面を英語にも対応させる', 'support-site'],
+  [4, '顧客アンケートの自由記述を分類'],
+  [5, '社内 FAQ のページを追加', 'handbook'],
+  [6, '問い合わせメールの返信文の下書き', undefined, 'cancelled'],
+  [8, '商品一覧のページ送りを直す', 'sales-insights'],
+  [9, '研修の申し込み状況をまとめる'],
+  [10, 'バッチの実行時間を短くする', 'crm-scripts'],
+  [12, '議事録から宿題を抜き出す'],
+  [13, '画像の代替テキストを付ける', 'support-site'],
+  [15, '取引先の住所を最新にする'],
+  [16, 'API の応答の遅いところを調べる', 'platform'],
+  [18, '新人向けのチェックリストを作る'],
+  [20, '依存パッケージを最新にする', 'platform'],
+  [22, 'メール配信の停止リンクを追加', 'support-site'],
+  [24, '出張旅費の精算ルールを要約'],
+  [26, '共通ヘッダーのリンク切れを直す', 'handbook'],
+  [29, '営業日の計算を祝日に対応させる', 'crm-scripts', 'cancelled'],
+  [33, 'プレスリリースの校正'],
+  [37, 'サイトの表示速度を測る', 'support-site'],
+  [41, '社内用語集を作る'],
+  [45, 'エラーメッセージを分かりやすくする', 'platform'],
+  [50, '問い合わせの件数を月ごとに数える'],
+  [56, 'ダークモードの配色を整える', 'sales-insights'],
+  [63, '契約書のひな形の差分を確かめる'],
+  [70, 'タイムゾーンの扱いを直す', 'crm-scripts'],
+  [78, 'アクセシビリティの点検', 'support-site'],
+  [86, '年末の挨拶文を考える'],
+  [95, 'セッションの有効期限を延ばす', 'platform'],
+];
+
 export function seed(): MockDb {
   const db: MockDb = {
-    version: 3,
+    version: 4,
     settings: { speed: 1 },
     me: structuredClone(fx.me),
     users: structuredClone(fx.users),
@@ -37,6 +74,23 @@ export function seed(): MockDb {
     const item = atTime(at, () => createWorkItem(CreateWorkItemRequest.parse(input), db.me.id, db.me.name, at));
     return { item, at };
   };
+
+  // 0. 過去の依頼（終わったもの）。PR は新しいものから #127, #126, … にする（下のフォームの依頼を #128 にするため）
+  let pastPr = 128;
+  for (const [days, title, repo, end] of PAST) {
+    const past = make(days * 24 * 60 + 90, {
+      title,
+      lineRef: repo ? 'build-verify@3' : 'chat@1',
+      ...(repo ? { repo: { owner: 'acme', name: repo } } : {}),
+      message: `「${title}」の作業をお願いします。`,
+    });
+    if (end === 'cancelled') {
+      const stopped = fastForward(past.item.id, past.at, () => 'stop', 2000, 6);
+      atTime(stopped + 3 * MIN, () => cancel(past.item.id, '計画を見て、依頼を取り下げました。'));
+    } else {
+      withPrNumbers(() => --pastPr, () => fastForward(past.item.id, past.at, () => 'approve', 2000, 6));
+    }
+  }
 
   // 1. 集計して公開（完了・公開済み）
   const csvPath = 'uploads/seed/sales.csv';
@@ -76,7 +130,8 @@ export function seed(): MockDb {
   fastForward(readme.item.id, planned + 40_000, () => 'approve', 1);
   advance(readme.item.id, planned + 42_000, 14, 4);
 
-  db.users[0]!.monthUsd = Math.round(db.workItems.reduce((s, w) => s + (w.costUsd ?? 0), 0) * 100) / 100;
+  const month = new Date(now).toISOString().slice(0, 7);
+  db.users[0]!.monthUsd = Math.round(db.workItems.filter((w) => w.createdAt.startsWith(month)).reduce((s, w) => s + (w.costUsd ?? 0), 0) * 100) / 100;
   setDb(db);
   return db;
 }

@@ -37,7 +37,7 @@ export type Sim = {
 };
 
 export type MockDb = {
-  version: 3;
+  version: 4;
   settings: { speed: number };
   me: Me;
   users: AdminUser[];
@@ -101,7 +101,7 @@ export function loadDb(): MockDb | null {
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as MockDb;
-    return parsed.version === 3 ? parsed : null;
+    return parsed.version === 4 ? parsed : null;
   } catch {
     return null;
   }

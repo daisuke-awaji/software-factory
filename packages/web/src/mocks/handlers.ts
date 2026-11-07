@@ -210,8 +210,13 @@ export const handlers = [
     const state = u.searchParams.get('state');
     const archived = u.searchParams.get('archived') === 'true';
     const limit = Math.min(100, Number(u.searchParams.get('limit') ?? 20));
-    const items = getDb().workItems.filter((w) => w.ownerId === getDb().me.id && (state ? w.state === state : true) && !!w.archived === archived);
-    return HttpResponse.json({ items: items.slice(0, limit), ...(items.length > limit ? { nextCursor: String(limit) } : {}) });
+    // 更新の新しい順。カーソルは読み終えた件数（本物は不透明な文字列: 05_api_spec.md）
+    const from = Math.max(0, Number(u.searchParams.get('cursor') ?? 0) || 0);
+    const items = getDb()
+      .workItems.filter((w) => w.ownerId === getDb().me.id && (state ? w.state === state : true) && !!w.archived === archived)
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    const next = from + limit;
+    return HttpResponse.json({ items: items.slice(from, next), ...(items.length > next ? { nextCursor: String(next) } : {}) });
   }),
   http.post(`${API}/work-items`, async ({ request }) => {
     const input = await body(CreateWorkItemRequest, request);
