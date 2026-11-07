@@ -32,6 +32,7 @@
 | D17 | Git ホスト | **GitHub.com** を使う（GHES には対応しない） | 11/06 |
 | D18 | 実行エンジン | **Lambda durable functions** を使う（Step Functions は使わない） | 11/06 |
 | D19 | 技術スタック | フロントエンド: **TypeScript / React / Vite / Zustand / MSW（モックの確認用） / Zod**。バックエンド: **TypeScript / Hono** | 11/06 |
+| D20 | 画面の構成 | UI モックのパターン **B（会話と成果物を左右に並べるワークスペース）** を採用する | 11/06 |
 
 ### 0.2 前提（実装時に変更する場合は ADR を書く）
 | # | 論点 | 仮置きの内容 |
@@ -40,6 +41,16 @@
 | A3 | モデル | Amazon Bedrock（Claude）。認証は IAM で行い、VM 内に API キーを置かない |
 | A4 | 提供形態 | お客様の AWS アカウントに CDK でデプロイする（シングルテナント）。東京リージョンを主とする |
 | A5 | 認証 | Cognito + 企業 IdP（SAML / OIDC）による SSO |
+
+### 0.2.1 提案中（ADR の承認を待っている）
+| # | 論点 | 提案の内容 | ADR |
+|---|---|---|---|
+| P1 | 依頼の一覧の置き場所 | ホームを一覧（パターン C の表）にし、行を開くとワークスペース（B）に入る | [ADR-0007](./adr/0007-workspace-layout.md) |
+| P2 | UI の部品 | AffectUI の無料の部品を取り込んで持つ（型エラーは直す）。Pro は今は買わない | [ADR-0008](./adr/0008-ui-components-and-styling.md) |
+| P3 | スタイル | CSS Modules とデザイントークン（CSS 変数） | [ADR-0008](./adr/0008-ui-components-and-styling.md) |
+| P4 | モック | MSW の裏に、ラインの実行を流すシミュレーターを持たせる | [ADR-0009](./adr/0009-mock-backend-simulator.md) |
+
+画面の細かい規則（タブ、自動の切り替え、承認の出し方、狭い画面、LoB への配慮）は [06 UI 仕様](./06_ui_spec.md) に書いた。
 
 ### 0.3 変更点
 - LoB モード（Git を意識させない画面）を廃止し、画面を1種類にした（D5）

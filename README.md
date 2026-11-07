@@ -6,7 +6,16 @@ AI コーディングエージェントに、**隔離された作業環境で、
 - 工程（ステージ）ごとに**別の VM と別のイメージ**を使う「ファクトリーライン」で、実装 → 検証 → レビューを分業させられます
 - 統制はプロンプトではなく、エージェントが回避できない**インフラの境界**で行います（allowlist、クレデンシャルの付与、ブランチ保護、公開の操作）
 
-> **現在の状態: 計画が確定し、実装を始める段階です（M0: PoC と M1: 基盤）。** このリポジトリには、計画書と、検証済みのコードの雛形が入っています。
+> **現在の状態: 計画が確定し、実装を始める段階です（M0: PoC と M1: 基盤）。** このリポジトリには、計画書・検証済みのコードの雛形に加えて、**MSW のモックで全画面が動く Web 画面（`packages/web`）と契約（`packages/contracts`）**が入っています。
+
+## 画面を動かす（バックエンドなし）
+
+```bash
+corepack enable && pnpm install
+pnpm --filter @factory/web dev    # http://localhost:5173 を開く（?mock-reset でデータを作り直す）
+```
+
+依頼を出す → 計画を承認する → ステージごとの VM で作業が進む → 検証で失敗して実装に戻る → PR・プレビュー・社内公開、までを MSW のシミュレーターで操作できます。詳しくは [packages/web/README.md](./packages/web/README.md) と [06 UI 仕様](./docs/06_ui_spec.md) を参照してください。
 
 ## AWS 構成図
 
@@ -22,8 +31,9 @@ AI コーディングエージェントに、**隔離された作業環境で、
 | [02 要件定義書 v1.0](./docs/02_requirements.md) | 決定事項（D1〜D19）、機能要件 99 件、非機能要件、介入ポリシー、allowlist、容量の見積もり |
 | [03 アーキテクチャ設計書 v1.0](./docs/03_architecture.md) | 全体構成、ファクトリーラインとステージ VM、VM の内部（agentd）、カスタムイメージ、ネットワーク、プレビューと公開、IAM、脅威モデル、データモデル、PoC の検証項目 |
 | [04 実装計画書 v1.0](./docs/04_implementation_plan.md) | **技術スタックとバージョン**、モノレポの構成、規約、テスト戦略、CI/CD、**マイルストーン（M0〜M4）と完了条件** |
-| [05 API・イベント仕様 v1.0](./docs/05_api_spec.md) | REST API、WebSocket のイベント、Agent Callback API、agentd のインターフェース |
-| [ADR](./docs/adr/README.md) | 設計上の主な決定（6件） |
+| [05 API・イベント仕様 v1.0](./docs/05_api_spec.md) | REST API、WebSocket のイベント、Agent Callback API、agentd のインターフェース。§7 は Web の実装で足した契約（提案） |
+| [06 UI 仕様 v0.1](./docs/06_ui_spec.md) | 画面の一覧、ワークスペース、タブと自動の切り替え、言葉の約束、承認の出し方、狭い画面、LoB への配慮 |
+| [ADR](./docs/adr/README.md) | 設計上の主な決定（9件。0007〜0009 は提案中） |
 | [バックログ](./docs/backlog.md) | GitHub Issues に起票する元データ（マイルストーン・領域・優先度・完了条件つき） |
 | [検証済みのコードの雛形](./docs/samples/README.md) | 計画書に載せたコード片（Zod / Hono / MSW / Zustand / Durable Functions / CDK）。型チェック・テスト・synth を確認済み |
 
@@ -31,7 +41,7 @@ AI コーディングエージェントに、**隔離された作業環境で、
 
 | 領域 | 採用するもの |
 |---|---|
-| フロントエンド | TypeScript / React 19 / Vite 8 / **Zustand 5** / **MSW 3**（モックの確認用） / **Zod 4** |
+| フロントエンド | TypeScript / React 19 / Vite 8 / **Zustand 5** / **MSW 3**（モックの確認用） / **Zod 4** / React Router 8 / CSS Modules + AffectUI の部品（[ADR-0008](./docs/adr/0008-ui-components-and-styling.md)） |
 | バックエンド | TypeScript / **Hono 4**（`@hono/zod-openapi`、`hono/aws-lambda`） / Node.js 24 |
 | ワークフロー | **Lambda durable functions**（`@aws/durable-execution-sdk-js` v3） |
 | 実行環境 | **Lambda MicroVMs**（ステージごとに1台）、Claude Code（Amazon Bedrock、JP 推論プロファイル） |
@@ -53,10 +63,10 @@ AI コーディングエージェントに、**隔離された作業環境で、
 
 すべての決定事項は [要件定義書 §0](./docs/02_requirements.md) にあります。
 
-## 計画しているリポジトリの構成
+## リポジトリの構成（計画。✅ は実装済み）
 
 ```
-packages/  contracts · web · api · callback-api · engine · vm-manager · image-builder · agentd
+packages/  contracts ✅ · web ✅ · api · callback-api · engine · vm-manager · image-builder · agentd
            egress-proxy · git-gateway · preview-proxy · edge-auth · shared
 infra/     CDK アプリ
 images/    factory-base と既定のイメージ（base / web / data）
