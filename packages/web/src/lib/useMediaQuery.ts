@@ -9,8 +9,6 @@ export const narrow = {
   tablet: '(max-width: 1023px)',
   /** 720px 未満: スマホ */
   phone: '(max-width: 719px)',
-  /** 1100px 未満: ホームを1列にする */
-  home: '(max-width: 1099px)',
 } as const;
 
 export function useMediaQuery(query: string): boolean {
