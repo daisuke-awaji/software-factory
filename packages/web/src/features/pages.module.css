@@ -22,13 +22,6 @@
 .full { grid-column: 1 / -1; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .chips li { padding: 2px 9px; border-radius: 999px; background: var(--active); font-family: var(--mono); font-size: 12px; }
-.flow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-.flowStep { display: grid; gap: 2px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); min-width: 120px; }
-.flowStep strong { font-size: 13px; }
-.flowStep span { font-family: var(--mono); font-size: 11px; color: var(--faint); }
-.flowArrow { color: var(--faint); }
-.flowArrow :global(.icon) { width: 14px; height: 14px; }
-.loop { font-size: 12px; color: var(--alert); }
 .settingRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 14px 16px; }
 .settingRow + .settingRow { border-top: 1px solid var(--line); }
 .settingRow h3 { margin: 0; font-size: 14px; font-weight: 600; }

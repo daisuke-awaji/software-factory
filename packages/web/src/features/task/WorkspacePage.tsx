@@ -39,6 +39,7 @@ export function WorkspacePage() {
   const [view, setView] = useState<'chat' | 'work'>('chat');
   const compact = useMediaQuery(narrow.tablet);
   const [dialog, setDialog] = useState<null | 'publish' | 'rename' | 'cancel'>(null);
+  const [focusStep, setFocusStep] = useState<{ id: string; at: number } | null>(null);
   const diff = useResource(() => api.diff(id), [id, session?.fileVersion ?? 0, state === 'completed'], { enabled: !!item.data });
   const lastEntry = session?.timeline.at(-1);
   const scroller = useStickToBottom<HTMLDivElement>(`${session?.timeline.length ?? 0}:${lastEntry?.k === 'assistant' ? session?.messages[lastEntry.id]?.text.length : ''}:${lastEntry?.k === 'work' ? lastEntry.tools.length : ''}:${session?.state}`);
@@ -167,8 +168,8 @@ export function WorkspacePage() {
             {tab === 'preview' && <PreviewTab item={current} session={session} />}
             {tab === 'changes' && <ChangesTab diff={diff} />}
             {tab === 'files' && <FilesTab item={current} version={session.fileVersion} onPublish={() => setDialog('publish')} />}
-            {tab === 'plan' && <PlanTab session={session} workflow={workflow} actions={planActions} />}
-            {tab === 'log' && <LogTab item={current} session={session} workflow={workflow} onRetry={retry} />}
+            {tab === 'plan' && <PlanTab session={session} workflow={workflow} actions={planActions} onOpenStep={(stepId) => { setFocusStep({ id: stepId, at: Date.now() }); openTab('log'); }} />}
+            {tab === 'log' && <LogTab item={current} session={session} workflow={workflow} onRetry={retry} focusStep={focusStep} />}
           </div>
         </section>
       </div>

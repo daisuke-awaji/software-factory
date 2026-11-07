@@ -55,6 +55,16 @@ export const IconFolder = () => <Svg><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0
 export const IconImage = () => <Svg><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" /><path d="M8 9.8l4 2.2 4-2.2" /></Svg>;
 export const IconWorkflow = () => <Svg><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /><path d="M7 12h3M14 12h3" /></Svg>;
 export const IconUsers = () => <Svg><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.2a6.5 6.5 0 0 1 3.5 5.8" /></Svg>;
+export const IconSpark = () => <Svg><path d="M12 3.5l1.9 4.6 4.6 1.9-4.6 1.9L12 16.5l-1.9-4.6L5.5 10l4.6-1.9L12 3.5zM18.5 15.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8.8-1.9z" /></Svg>;
+export const IconPersonCheck = () => <Svg><circle cx="10" cy="8" r="3.5" /><path d="M3.5 20a6.5 6.5 0 0 1 11-4.7M15.5 18.5l2 2 4-4" /></Svg>;
+export const IconFork = () => <Svg><circle cx="6" cy="12" r="2" /><circle cx="18" cy="6" r="2" /><circle cx="18" cy="18" r="2" /><path d="M8 12h3c2 0 2-6 5-6M11 12c2 0 2 6 5 6" /></Svg>;
+export const IconMerge = () => <Svg><circle cx="6" cy="6" r="2" /><circle cx="6" cy="18" r="2" /><circle cx="18" cy="12" r="2" /><path d="M8 6c3 0 3 6 5 6h3M8 18c3 0 3-6 5-6" /></Svg>;
+export const IconUndo = () => <Svg><path d="M9 14L4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></Svg>;
+export const IconRedo = () => <Svg><path d="M15 14l5-5-5-5" /><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" /></Svg>;
+export const IconTrash = () => <Svg><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" /></Svg>;
+export const IconFit = () => <Svg><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4" /></Svg>;
+export const IconZoomIn = () => <Svg><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-4.3-4.3M11 8.5v5M8.5 11h5" /></Svg>;
+export const IconZoomOut = () => <Svg><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-4.3-4.3M8.5 11h5" /></Svg>;
 export const IconCopy = () => <Svg><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></Svg>;
 
 /** ツールの種類ごとのアイコン（ToolCallCard の icon に渡す） */

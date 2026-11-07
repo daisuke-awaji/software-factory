@@ -1,0 +1,131 @@
+/* ワークフローの図（ADR-0012）。色・角丸はデザイントークンだけを使う */
+.wrap {
+  position: relative; width: 100%; min-height: 140px;
+  border: 1px solid var(--line); border-radius: var(--radius-card);
+  background-color: var(--bg-subtle);
+  background-image: radial-gradient(var(--line-strong) 1px, transparent 1px);
+  background-size: 18px 18px;
+  overflow: hidden;
+  font-family: var(--font);
+}
+.wrap :global(.react-flow) { --xy-background-color: transparent; background: transparent; }
+.wrap :global(.react-flow__attribution) { background: transparent; font-size: 9px; opacity: 0.45; }
+.wrap :global(.react-flow__attribution a) { color: var(--faint); }
+.wrap :global(.react-flow__node) { cursor: default; }
+.wrap[data-mode="run"] :global(.react-flow__node-step) { cursor: pointer; }
+.wrap[data-mode="edit"] :global(.react-flow__node-step) { cursor: pointer; }
+.wrap :global(.react-flow__node:focus-visible) { outline: 2px solid var(--run); outline-offset: 3px; border-radius: 12px; }
+.markers { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* ---- ノード ---- */
+.node {
+  box-sizing: border-box; width: 100%; height: 100%;
+  display: grid; align-content: start; gap: 3px;
+  padding: 9px 11px;
+  border: 1px solid var(--line-strong); border-radius: 12px;
+  background: var(--card); color: var(--text);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease), opacity 0.15s var(--ease);
+}
+.nodeHead { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.typeIcon { display: inline-grid; place-items: center; flex: none; color: var(--muted); }
+.typeIcon :global(.icon) { width: 14px; height: 14px; }
+.nodeLabel { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--ink); }
+.nodeSub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); font-size: 11px; color: var(--faint); }
+.badges { display: flex; gap: 4px; min-width: 0; overflow: hidden; }
+.badge {
+  display: inline-flex; align-items: center; gap: 3px; flex: none;
+  height: 18px; padding: 0 6px; border-radius: 999px;
+  background: var(--tray); color: var(--muted); font-size: 10.5px; white-space: nowrap;
+}
+.badge :global(.icon) { width: 11px; height: 11px; }
+.badge[data-tone="flow"] { background: var(--run-bg); color: var(--run); }
+.attempts { flex: none; height: 18px; padding: 0 6px; border-radius: 999px; background: var(--tray); color: var(--muted); font-size: 10.5px; line-height: 18px; white-space: nowrap; }
+.state { display: inline-grid; place-items: center; flex: none; width: 16px; height: 16px; border-radius: 50%; }
+.state :global(.icon) { width: 10px; height: 10px; stroke-width: 3; }
+.state[data-tone="ok"] { background: var(--ink); color: var(--card); }
+.state[data-tone="err"] { background: var(--err); color: var(--card); }
+.state[data-tone="warn"] { color: var(--alert); }
+.state[data-tone="warn"] :global(.icon) { width: 14px; height: 14px; stroke-width: 1.8; }
+
+.node[data-status="waiting"] { box-shadow: none; }
+.node[data-status="running"] { border-color: var(--run); box-shadow: 0 0 0 3px var(--run-bg); }
+.node[data-status="alert"] { border-color: var(--alert); box-shadow: 0 0 0 3px var(--alert-bg); }
+.node[data-status="failed"] { border-color: var(--err); }
+.node[data-status="skipped"] { border-style: dashed; box-shadow: none; opacity: 0.55; }
+.node[data-issue] { border-color: var(--alert); }
+.node[data-selected] { border-color: var(--ink); box-shadow: 0 0 0 3px var(--active); }
+
+.start {
+  box-sizing: border-box; width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  border: 1px solid var(--line-strong); border-radius: 999px;
+  background: var(--card); color: var(--ink); font-size: 12.5px;
+}
+.start strong { font-weight: 600; }
+.start[data-status="running"] { border-color: var(--run); box-shadow: 0 0 0 3px var(--run-bg); }
+.start[data-status="alert"] { border-color: var(--alert); box-shadow: 0 0 0 3px var(--alert-bg); }
+
+/* ---- つなぐ点（編集のときだけ出す） ---- */
+.wrap :global(.react-flow__handle).handle {
+  width: 10px; height: 10px; min-width: 0; min-height: 0;
+  border: 2px solid var(--card); background: var(--muted);
+  opacity: 0; transition: opacity 0.12s var(--ease), transform 0.12s var(--ease);
+}
+.wrap :global(.react-flow__handle-bottom).loopOut { left: 64%; }
+.wrap :global(.react-flow__handle-bottom).loopIn { left: 36%; }
+.wrap :global(.react-flow__handle-right).loopOut { top: 64%; }
+.wrap :global(.react-flow__handle-right).loopIn { top: 36%; }
+.wrap :global(.react-flow__handle).loopOut { background: var(--alert); }
+.wrap[data-mode="edit"] :global(.react-flow__node:hover) .handle:not(.loopIn),
+.wrap[data-mode="edit"] :global(.react-flow__node.selected) .handle:not(.loopIn),
+.wrap[data-mode="edit"] :global(.react-flow__handle.connectingto) { opacity: 1; }
+.wrap[data-mode="edit"] :global(.react-flow__handle):hover { transform: translate(-50%, -50%) scale(1.3); }
+.wrap[data-mode="edit"] :global(.react-flow__handle-bottom):hover { transform: translate(-50%, 50%) scale(1.3); }
+.wrap[data-mode="edit"] :global(.react-flow__handle-right):hover { transform: translate(50%, -50%) scale(1.3); }
+.wrap[data-mode="edit"] :global(.react-flow__handle-left):hover { transform: translate(-50%, -50%) scale(1.3); }
+@media (pointer: coarse) {
+  .wrap[data-mode="edit"] .handle:not(.loopIn) { opacity: 1; }
+}
+.wrap :global(.react-flow__connection-path) { stroke: var(--run); stroke-width: 1.75; }
+
+/* ---- 矢印 ---- */
+.wrap :global(.react-flow__edge) .edge { stroke-width: 1.5; transition: stroke 0.15s var(--ease); }
+.wrap :global(.react-flow__edge) .edge[data-tone="idle"] { stroke: var(--faint); }
+.wrap :global(.react-flow__edge) .edge[data-tone="taken"] { stroke: var(--ink); stroke-width: 1.75; }
+.wrap :global(.react-flow__edge) .edge[data-tone="skipped"] { stroke: var(--line-strong); stroke-dasharray: 4 4; }
+.wrap :global(.react-flow__edge) .edge[data-tone="loop"] { stroke: var(--muted); stroke-dasharray: 5 4; }
+.wrap :global(.react-flow__edge) .edge[data-tone="loop-taken"] { stroke: var(--alert); stroke-dasharray: 5 4; }
+.wrap :global(.react-flow__edge) .edge[data-tone="selected"] { stroke: var(--run); stroke-width: 2; }
+.wrap :global(.react-flow__edge.selectable):hover .edge:not([data-tone="selected"]) { stroke: var(--text); }
+.marker[data-tone="idle"] { color: var(--faint); }
+.marker[data-tone="taken"] { color: var(--ink); }
+.marker[data-tone="skipped"] { color: var(--line-strong); }
+.marker[data-tone="loop"] { color: var(--muted); }
+.marker[data-tone="loop-taken"] { color: var(--alert); }
+.marker[data-tone="selected"] { color: var(--run); }
+
+.edgeLabel {
+  position: absolute; pointer-events: none;
+  padding: 1px 7px; border-radius: 999px;
+  border: 1px solid var(--line-strong); background: var(--card);
+  color: var(--text); font-size: 11px; line-height: 16px; white-space: nowrap;
+}
+.edgeLabel[data-kind="case"] { font-family: var(--mono); color: var(--ink); }
+.edgeLabel[data-kind="loop"] { border-style: dashed; color: var(--muted); }
+.edgeLabel[data-selected] { border-color: var(--run); color: var(--run); }
+
+/* ---- 拡大・縮小 ---- */
+.controls {
+  position: absolute; top: 8px; right: 8px; z-index: 5;
+  display: flex; gap: 2px; padding: 2px;
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--card); box-shadow: var(--shadow-sm);
+}
+.control {
+  display: grid; place-items: center; width: max(28px, var(--tap-min)); height: max(28px, var(--tap-min));
+  border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer;
+}
+.control:hover { background: var(--hover); color: var(--ink); }
+.control:focus-visible { outline: 2px solid var(--run); outline-offset: 1px; }
+.control :global(.icon) { width: 15px; height: 15px; }

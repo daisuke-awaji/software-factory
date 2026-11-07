@@ -9,25 +9,36 @@
   border: 1.5px solid var(--line-strong); background: var(--card); color: var(--card);
 }
 .node :global(.icon) { width: 10px; height: 10px; stroke-width: 3; }
-.item[data-status="done"] .node { background: var(--ink); border-color: var(--ink); }
-.item[data-status="running"] .node { border-color: var(--run); box-shadow: 0 0 0 3px var(--run-bg); }
-.item[data-status="running"] .node::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--run); animation: pulse 1.6s ease-in-out infinite; }
-.item[data-status="alert"] .node { border-color: var(--alert); background: var(--alert); box-shadow: 0 0 0 3px var(--alert-bg); }
-.item[data-status="failed"] .node { border-color: var(--err); background: var(--err); }
+.node[data-status="done"] { background: var(--ink); border-color: var(--ink); }
+.node[data-status="running"] { border-color: var(--run); box-shadow: 0 0 0 3px var(--run-bg); }
+.node[data-status="running"]::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--run); animation: pulse 1.6s ease-in-out infinite; }
+.node[data-status="alert"] { border-color: var(--alert); background: var(--alert); box-shadow: 0 0 0 3px var(--alert-bg); }
+.node[data-status="failed"] { border-color: var(--err); background: var(--err); }
+.node[data-status="skipped"] { border-style: dashed; }
+/* 並列の枝・分岐の行き先: 小さな点を縦に重ねる */
+.stack { display: inline-flex; flex-direction: column; gap: 2px; flex: none; }
+.stack .node { width: 10px; height: 10px; border-width: 1.5px; box-shadow: none; }
+.stack .node :global(.icon) { display: none; }
+.stack .node[data-status="running"]::after { width: 4px; height: 4px; }
 .text { display: grid; line-height: 1.25; }
 .label { font-size: 13px; color: var(--muted); white-space: nowrap; }
 .item[data-status="running"] .label, .item[data-status="alert"] .label, .item[data-status="failed"] .label { color: var(--ink); font-weight: 500; }
 .item[data-status="done"] .label { color: var(--text); }
+.item[data-status="skipped"] .label { color: var(--faint); }
 .sub { font-family: var(--mono); font-size: 11px; color: var(--faint); white-space: nowrap; }
 
 .line[data-size="sm"] .item + .item { padding-left: 26px; }
 .line[data-size="sm"] .bar { width: 16px; left: 5px; }
 .line[data-size="sm"] .label { font-size: 12.5px; }
+.line[data-size="sm"] .stack .node { width: 8px; height: 8px; }
 
 .line[data-size="xs"] { align-items: center; }
 .line[data-size="xs"] .item + .item { padding-left: 12px; }
 .line[data-size="xs"] .bar { width: 8px; left: 2px; }
 .line[data-size="xs"] .node { width: 10px; height: 10px; border-width: 1.5px; }
 .line[data-size="xs"] .node :global(.icon) { display: none; }
-.line[data-size="xs"] .item[data-status="running"] .node::after { width: 4px; height: 4px; }
-.line[data-size="xs"] .item[data-status="running"] .node, .line[data-size="xs"] .item[data-status="alert"] .node { box-shadow: none; }
+.line[data-size="xs"] .node[data-status="running"]::after { width: 4px; height: 4px; }
+.line[data-size="xs"] .node[data-status="running"], .line[data-size="xs"] .node[data-status="alert"] { box-shadow: none; }
+.line[data-size="xs"] .stack { gap: 1px; }
+.line[data-size="xs"] .stack .node { width: 6px; height: 6px; border-width: 1px; }
+.line[data-size="xs"] .stack .node[data-status="running"]::after { width: 2px; height: 2px; }

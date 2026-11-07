@@ -1,11 +1,9 @@
-// ワークフロー（閲覧）: ステップの並びと、それぞれの VM のイメージ・通信・戻り方
-import { Fragment } from 'react';
+// ワークフロー（閲覧）: ステップのつながり（並列・分岐・戻り）を図で見る。ステップごとに VM のイメージと通信が分かる
 import { Link } from 'react-router';
 import { Page } from '../../app/AppShell';
 import { Card, ErrorBanner, PageHeader } from '../../components/kit';
 import { CardStackSkeleton, Skeleton } from '../../components/skeletons';
-import { IconChevron, IconShield } from '../../components/icons';
-import { stepLabel } from '../../lib/format';
+import { WorkflowGraph } from '../../components/workflow';
 import { useApi } from '../../lib/services';
 import { useResource } from '../../lib/useResource';
 import { isAdmin, useMe } from '../../stores/me';
@@ -19,24 +17,12 @@ export function WorkflowsPage() {
     <Page>
       <PageHeader
         title="ワークフロー"
-        description="タスクを進めるステップの並びです。ステップごとに別の VM（別のイメージ）で動きます（D15）。"
+        description="タスクを進めるステップのつながりです。ステップごとに別の VM（別のイメージ）で動きます（D15）。"
         actions={isAdmin(me) ? <Link to="/admin?tab=workflows" className={p.link}>管理で編集する</Link> : undefined}
       />
       <ErrorBanner error={workflows.error} onRetry={() => void workflows.reload()} />
       {!workflows.data ? (
-        workflows.error ? null : (
-          <CardStackSkeleton
-            count={2}
-            lines={1}
-            body={
-              <div className={p.flow}>
-                {Array.from({ length: 4 }, (_, i) => (
-                  <Skeleton key={i} width={120} height={58} radius={12} />
-                ))}
-              </div>
-            }
-          />
-        )
+        workflows.error ? null : <CardStackSkeleton count={2} lines={1} body={<Skeleton width="100%" height={160} radius={16} />} />
       ) : (
         <div className={p.stack}>
           {workflows.data.map((l) => (
@@ -46,23 +32,7 @@ export function WorkflowsPage() {
                   {l.title ?? l.name} <span className="mono">{l.name}@{l.version}</span>
                 </h2>
                 {l.description && <p className={p.desc}>{l.description}</p>}
-                <div className={p.flow} role="list" aria-label={`${l.title ?? l.name} のステップ`}>
-                  <div className={p.flowStep} role="listitem">
-                    <strong>計画</strong>
-                    <span>人が承認する</span>
-                  </div>
-                  {l.steps.map((st) => (
-                    <Fragment key={st.id}>
-                      <span className={p.flowArrow} aria-hidden="true"><IconChevron /></span>
-                      <div className={p.flowStep} role="listitem">
-                        <strong>{stepLabel(st.id)}</strong>
-                        <span>{st.type === 'system' ? (st.action === 'create-pull-request' ? 'PR を作る（VM なし）' : '公開を提案（VM なし）') : st.image}</span>
-                        {st.network && <span><IconShield /> 通信: {st.network}</span>}
-                        {st.on?.fail && <span className={p.loop}>失敗 → {stepLabel(st.on.fail.goto)}（最大 {st.on.fail.maxLoops} 回）</span>}
-                      </div>
-                    </Fragment>
-                  ))}
-                </div>
+                <WorkflowGraph workflow={l} mode="view" label={`${l.title ?? l.name} のステップ`} />
               </div>
             </Card>
           ))}

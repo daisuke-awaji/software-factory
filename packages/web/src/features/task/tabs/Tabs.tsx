@@ -1,10 +1,11 @@
 // 右の列のタブの中身
 import type { Diff, Workflow, Task } from '@factory/contracts';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { ToolCallCard, ToolCallGroup } from '../../../components/ui/tool-call-card';
 import { Banner, Dot, ErrorBanner, IconButton, Tag } from '../../../components/kit';
 import { Busy, CodeSkeleton, Skeleton, SkeletonText } from '../../../components/skeletons';
+import { WorkflowGraph } from '../../../components/workflow';
 import { ShimmerText } from '../../../components/ui/shimmer-loader';
 import { IconBlock, IconChevron, IconChevronDown, IconDownload, IconExternal, IconEye, IconFile, IconFolder, IconList, IconRefresh, toolIcon } from '../../../components/icons';
 import { errorMessage } from '../../../lib/api';
@@ -13,6 +14,7 @@ import { bytes, duration, stepLabel, time, tokens, usd } from '../../../lib/form
 import { useApi } from '../../../lib/services';
 import type { Session } from '../../../lib/session';
 import { useResource } from '../../../lib/useResource';
+import { planStatusOf, stepStatusesFromSession } from '../../../lib/workflow';
 import { useUi } from '../../../stores/ui';
 import { PlanCard, type PlanActions } from '../Cards';
 import t from './tabs.module.css';
@@ -304,7 +306,7 @@ export function FilesTab({ item, version, onPublish }: { item: Task; version: nu
 }
 
 // ---------------------------------------------------------------- 計画とステップの構成
-export function PlanTab({ session, workflow, actions }: { session: Session; workflow: Workflow | undefined; actions: PlanActions }) {
+export function PlanTab({ session, workflow, actions, onOpenStep }: { session: Session; workflow: Workflow | undefined; actions: PlanActions; onOpenStep?: (stepId: string) => void }) {
   const latest = session.latestPlan ? session.plans[session.latestPlan] : undefined;
   const older = Object.values(session.plans).filter((p) => p.version !== session.latestPlan).sort((a, b) => b.version - a.version);
   return (
@@ -322,27 +324,15 @@ export function PlanTab({ session, workflow, actions }: { session: Session; work
         {workflow && (
           <>
             <h3 className={t.h}>ワークフロー「{workflow.title ?? workflow.name}」のステップ（{workflow.name}@{workflow.version}）</h3>
-            <table className={t.stepTable}>
-              <thead>
-                <tr><th>ステップ</th><th>VM のイメージ</th><th>通信</th><th>進み方</th></tr>
-              </thead>
-              <tbody>
-                {workflow.steps.map((st) => (
-                  <tr key={st.id}>
-                    <td><strong>{stepLabel(st.id)}</strong> <span className="faint mono">{st.id}</span></td>
-                    <td className="mono">{st.image ?? (st.type === 'system' ? '（VM なし）' : '—')}</td>
-                    <td>{st.network ? <span className="mono">{st.network}</span> : '—'}</td>
-                    <td className="muted">
-                      {st.gates.includes('plan-approval') && '計画の承認のあと / '}
-                      {st.action === 'create-pull-request' && 'プルリクエストを作る'}
-                      {st.action === 'propose-publish' && '公開を提案する'}
-                      {st.on?.fail && `失敗したら ${stepLabel(st.on.fail.goto)} に戻る（最大 ${st.on.fail.maxLoops} 回）`}
-                      {!st.action && !st.on?.fail && (st.on?.pass ?? st.next ? `次は ${stepLabel(st.on?.pass ?? st.next!)}` : '最後のステップ')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <WorkflowGraph
+              workflow={workflow}
+              mode="run"
+              label={`${workflow.title ?? workflow.name} の進み具合`}
+              statuses={stepStatusesFromSession(workflow, session)}
+              planStatus={planStatusOf(session)}
+              onSelect={(sel) => sel?.kind === 'step' && onOpenStep?.(sel.id)}
+            />
+            <p className={t.hint}>ステップを押すと、その実行ログを開きます。</p>
           </>
         )}
         {older.length > 0 && (
@@ -361,11 +351,22 @@ export function PlanTab({ session, workflow, actions }: { session: Session; work
 }
 
 // ---------------------------------------------------------------- 実行ログ（FR-UI-04）
-export function LogTab({ item, session, workflow, onRetry }: { item: Task; session: Session; workflow: Workflow | undefined; onRetry: (runId: string) => Promise<void> }) {
+export function LogTab({ item, session, workflow, onRetry, focusStep }: { item: Task; session: Session; workflow: Workflow | undefined; onRetry: (runId: string) => Promise<void>; focusStep?: { id: string; at: number } | null }) {
   const runs = [...session.runs].reverse();
+  const list = useRef<HTMLDivElement>(null);
+  // 図からステップを選んだら、その最後の実行まで動かして、少しのあいだ目立たせる
+  useEffect(() => {
+    if (!focusStep) return;
+    const el = list.current?.querySelector<HTMLElement>(`[data-step="${CSS.escape(focusStep.id)}"]`);
+    if (!el) return;
+    el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    el.dataset['focus'] = 'true';
+    const timer = setTimeout(() => delete el.dataset['focus'], 1600);
+    return () => clearTimeout(timer);
+  }, [focusStep]);
   return (
     <div className={t.pad}>
-      <div className={t.narrow}>
+      <div className={t.narrow} ref={list}>
         <dl className={t.usage} aria-label="使用量">
           <div><dt>入力トークン</dt><dd>{tokens(session.usage.inputTokens)}</dd></div>
           <div><dt>出力トークン</dt><dd>{tokens(session.usage.outputTokens)}</dd></div>
@@ -393,7 +394,7 @@ export function LogTab({ item, session, workflow, onRetry }: { item: Task; sessi
           const st = workflow?.steps.find((x) => x.id === r.stepId);
           const tools = r.tools.map((tid) => session.tools[tid]).filter((x): x is NonNullable<typeof x> => !!x);
           return (
-            <section key={r.runId} className={t.run} aria-label={`${stepLabel(r.stepId)} ${r.runId}`}>
+            <section key={r.runId} className={t.run} data-step={r.stepId} aria-label={`${stepLabel(r.stepId)} ${r.runId}`}>
               <div className={t.runHead}>
                 <Dot tone={r.state === 'running' ? 'run' : r.state === 'failed' ? 'err' : 'ok'} />
                 <span className={t.runLabel}>{stepLabel(r.stepId)}</span>

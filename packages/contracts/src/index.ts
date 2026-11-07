@@ -46,18 +46,18 @@ export const StepDef = z.object({
 });
 export type StepDef = z.infer<typeof StepDef>;
 
-export const Workflow = z
-  .object({
-    name: z.string().regex(/^[a-z0-9-]+$/),
-    version: z.number().int().positive(),
-    title: z.string().optional(), // 提案: 画面に出す名前
-    description: z.string().optional(), // 提案: 画面に出す説明
-    steps: z.array(StepDef).min(1),
-  })
-  .superRefine((wf, ctx) => {
-    // 分岐・並列・戻りの形を確かめる（workflow-graph.ts。エンジンと画面も同じ解釈を使う）
-    for (const issue of analyzeWorkflow(wf).issues) ctx.addIssue({ code: 'custom', path: issue.path, message: issue.message });
-  });
+/** 項目の形だけを確かめる（エディタで、つながりに誤りがあっても図に出すため） */
+export const WorkflowShape = z.object({
+  name: z.string().regex(/^[a-z0-9-]+$/),
+  version: z.number().int().positive(),
+  title: z.string().optional(), // 提案: 画面に出す名前
+  description: z.string().optional(), // 提案: 画面に出す説明
+  steps: z.array(StepDef).min(1),
+});
+export const Workflow = WorkflowShape.superRefine((wf, ctx) => {
+  // 分岐・並列・戻りの形を確かめる（workflow-graph.ts。エンジンと画面も同じ解釈を使う）
+  for (const issue of analyzeWorkflow(wf).issues) ctx.addIssue({ code: 'custom', path: issue.path, message: issue.message });
+});
 export type Workflow = z.infer<typeof Workflow>;
 
 /** 管理者が登録する YAML と、それを検証した結果 */

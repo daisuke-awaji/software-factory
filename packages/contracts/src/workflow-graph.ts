@@ -271,6 +271,8 @@ export function inferNeeds<T extends GraphWorkflow>(wf: T): T {
     if (!join) continue;
     const inside = new Set(sets.flatMap((r) => [...r]).filter((n) => !common.includes(n)));
     const tails = wf.steps.filter((s) => inside.has(s.id) && forwardTargets(s).includes(join)).map((s) => s.id);
+    // 枝の始まりがそのまま合流になっている（枝が空）なら、needs は付けない（検証で知らせる）
+    if (tails.length < 2 || nextTargets(f).includes(join)) continue;
     needs.set(join, new Set([...(needs.get(join) ?? []), ...tails]));
   }
   return {
