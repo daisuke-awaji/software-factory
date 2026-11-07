@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate, useParams } from 'react-router';
 import { ProfileMenu } from '../components/ui/profile-menu';
 import { Avatar, Dot, FactoryMark } from '../components/kit';
+import { Busy, ListRowSkeleton, Skeleton, SkeletonText } from '../components/skeletons';
 import { IconClose, IconCompose, IconGlobe, IconImage, IconWorkflow, IconList, IconMoon, IconSearch, IconSettings, IconShield, IconSidebar, IconSun } from '../components/icons';
 import type { ConnectionState } from '../lib/events';
 import { relative, stateLabel, stateTone } from '../lib/format';
@@ -13,6 +14,15 @@ import type { TaskFeed } from './useTaskFeed';
 import s from './Sidebar.module.css';
 
 const RUNNING = new Set(['queued', 'planning', 'running', 'suspended']);
+/** 前に開いたとき管理者だったか。ユーザーを読み込む間、「管理」の行の場所を空けておき、下の一覧がずれないようにする */
+const ADMIN_HINT = 'sf.admin';
+const wasAdmin = () => {
+  try {
+    return localStorage.getItem(ADMIN_HINT) === '1';
+  } catch {
+    return false;
+  }
+};
 const DAY = 86_400_000;
 
 /** 終わったタスクを、更新した日で分ける（今日・昨日・過去7日間・それより前） */
@@ -55,6 +65,16 @@ export function Sidebar({ expanded, floating = false, feed, conn, mock, onToggle
     ...(isAdmin(me) ? [{ to: '/admin', label: '管理', icon: <IconShield /> }] : []),
   ];
   const navClass = ({ isActive }: { isActive: boolean }) => (isActive ? s.active : undefined);
+  const [adminHint] = useState(wasAdmin);
+  useEffect(() => {
+    if (!me) return;
+    try {
+      if (isAdmin(me)) localStorage.setItem(ADMIN_HINT, '1');
+      else localStorage.removeItem(ADMIN_HINT);
+    } catch {
+      // 保存できなくても困らない
+    }
+  }, [me]);
 
   return (
     <div className={s.panel} data-expanded={expanded || undefined} data-floating={floating || undefined}>
@@ -86,6 +106,12 @@ export function Sidebar({ expanded, floating = false, feed, conn, mock, onToggle
             {l.badge ? <span className={s.badge} aria-label={`対応が必要 ${l.badge} 件`}>{l.badge}</span> : null}
           </NavLink>
         ))}
+        {!me && adminHint && (
+          <span className={s.navSkeleton} aria-hidden="true">
+            <Skeleton width={17} height={17} radius={5} />
+            {expanded && <SkeletonText size={13.5} width={40} />}
+          </span>
+        )}
       </nav>
 
       {expanded ? <Sessions feed={feed} /> : <div className={s.spacer} />}
@@ -97,7 +123,7 @@ export function Sidebar({ expanded, floating = false, feed, conn, mock, onToggle
             {mock && <span className={s.mock} title="MSW がすべての API と WebSocket に応答しています">モック</span>}
           </div>
         )}
-        {me && <Profile expanded={expanded} />}
+        {me ? <Profile expanded={expanded} /> : <ProfileSkeleton expanded={expanded} />}
       </div>
     </div>
   );
@@ -149,7 +175,7 @@ function Sessions({ feed }: { feed: TaskFeed }) {
           error ? (
             <p className={s.empty}>読み込めませんでした。<button type="button" className={s.retry} onClick={() => void reload()}>もう一度</button></p>
           ) : (
-            <p className={s.empty}>読み込んでいます…</p>
+            <SessionsSkeleton />
           )
         ) : groups.length === 0 && !hasMore ? (
           <p className={s.empty}>{query ? '見つかりませんでした' : 'まだタスクはありません'}</p>
@@ -177,6 +203,33 @@ function Sessions({ feed }: { feed: TaskFeed }) {
           </div>
         )}
       </nav>
+    </div>
+  );
+}
+
+/** 一覧を読み込んでいる間の枠。行の高さは本物の行と同じ */
+function SessionsSkeleton() {
+  return (
+    <Busy label="タスクを読み込んでいます">
+      {[3, 6].map((n, g) => (
+        <div key={g} className={s.group}>
+          <div className={s.groupTitle}><SkeletonText size={11.5} width={g ? 40 : 56} /></div>
+          <div className={s.list}>
+            {Array.from({ length: n }, (_, i) => (
+              <ListRowSkeleton key={i} seed={g * 3 + i} className={s.item} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </Busy>
+  );
+}
+
+function ProfileSkeleton({ expanded }: { expanded: boolean }) {
+  return (
+    <div className={s.account} aria-hidden="true">
+      <Skeleton width={28} circle />
+      {expanded && <span className={s.accountName} style={{ flex: 1 }}><SkeletonText size={13.5} width="55%" /></span>}
     </div>
   );
 }

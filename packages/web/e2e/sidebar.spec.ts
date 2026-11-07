@@ -44,6 +44,35 @@ test('過去のタスクを日付で分けて出し、下までスクロール�
   await expect(oldest).toHaveAttribute('aria-current', 'page');
 });
 
+test('長いタイトルは … で切り、一覧は横にスクロールしない', async ({ page }) => {
+  await fresh(page);
+  const list = page.getByRole('complementary', { name: 'サイドパネル' }).getByRole('navigation', { name: 'タスク' });
+  await expect(list.getByRole('region', { name: 'それより前' })).toBeVisible();
+  const overflow = await list.evaluate((el) => {
+    el.scrollLeft = 200;
+    return { left: el.scrollLeft, over: el.scrollWidth - el.clientWidth };
+  });
+  expect(overflow).toEqual({ left: 0, over: 0 });
+});
+
+test('読み込んでいる間は、一覧の形だけを先に出す', async ({ page }) => {
+  await fresh(page);
+  // API の応答を遅らせて、読み込み中の枠を見る（MSW の前で止める）
+  await page.addInitScript(() => {
+    const original = window.fetch.bind(window);
+    window.fetch = async (...args: Parameters<typeof fetch>) => {
+      if (String(args[0] instanceof Request ? args[0].url : args[0]).includes('/api/v1/tasks')) await new Promise((r) => setTimeout(r, 1500));
+      return original(...args);
+    };
+  });
+  await page.reload();
+  const list = page.getByRole('complementary', { name: 'サイドパネル' }).getByRole('navigation', { name: 'タスク' });
+  await expect(list.locator('[aria-busy="true"]')).toBeVisible();
+  await expect(list.getByRole('status')).toHaveText('タスクを読み込んでいます');
+  await expect(list.getByRole('region', { name: '対応が必要' })).toBeVisible();
+  await expect(list.locator('[aria-busy="true"]')).toHaveCount(0);
+});
+
 test('畳むとアイコンの列になり、読み込み直しても畳んだまま', async ({ page }) => {
   await fresh(page);
   const side = page.getByRole('complementary', { name: 'サイドパネル' });

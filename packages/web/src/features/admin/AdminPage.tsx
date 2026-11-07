@@ -5,7 +5,8 @@ import { Link, useSearchParams } from 'react-router';
 import { Page } from '../../app/AppShell';
 import { Button } from '../../components/ui/button';
 import { SegmentedControl } from '../../components/ui/segmented-control';
-import { Banner, Card, Empty, ErrorBanner, Field, Loading, Meter, PageHeader, Select, Table, Tag, TextArea, TextInput } from '../../components/kit';
+import { Banner, Card, Empty, ErrorBanner, Field, Meter, PageHeader, Select, Table, Tag, TextArea, TextInput } from '../../components/kit';
+import { CardGridSkeleton, CardSkeleton, MeterSkeleton, Skeleton, SkeletonText, TableSkeleton } from '../../components/skeletons';
 import { IconImage, IconShield } from '../../components/icons';
 import { errorMessage } from '../../lib/api';
 import { mib, relative, usd } from '../../lib/format';
@@ -66,7 +67,13 @@ function NetworkProfiles() {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   if (list.error) return <ErrorBanner error={list.error} onRetry={() => void list.reload()} />;
-  if (!list.data) return <Loading />;
+  if (!list.data)
+    return (
+      <div className={p.stack}>
+        <SkeletonText size={13} width="min(640px, 100%)" />
+        <CardGridSkeleton count={4} lines={1} body={<Skeleton height={128} radius={10} />} />
+      </div>
+    );
   const save = async (name: string, description: string | undefined) => {
     const allow = (drafts[name] ?? '').split('\n').map((x) => x.trim()).filter(Boolean);
     const check = NetworkProfile.omit({ updatedAt: true }).safeParse({ name, allow, ...(description ? { description } : {}) });
@@ -125,7 +132,12 @@ function PackageSources() {
     if (cur && !draft) setDraft({ name: cur.name, kind: cur.kind, ...(cur.npmRegistry ? { npmRegistry: cur.npmRegistry } : {}), ...(cur.pypiIndex ? { pypiIndex: cur.pypiIndex } : {}) });
   }, [list.data, draft]);
   if (list.error) return <ErrorBanner error={list.error} />;
-  if (!draft) return <Loading />;
+  if (!draft)
+    return (
+      <div style={{ maxWidth: 640 }}>
+        <CardSkeleton lines={2} body={<><Skeleton height={36} radius={10} /><Skeleton height={36} radius={10} /></>} />
+      </div>
+    );
   return (
     <Card>
       <div className={p.cardBody} style={{ maxWidth: 640 }}>
@@ -209,6 +221,8 @@ function Workflows() {
   );
 }
 
+const VM_HEAD = ['VM', 'タスク', '利用者', 'イメージ', '状態', '起動', ''];
+
 function Vms() {
   const api = useApi();
   const toast = useUi((u) => u.toast);
@@ -225,15 +239,21 @@ function Vms() {
             <Meter label="Bedrock の TPM" used={cap.data.tpm.used} limit={cap.data.tpm.limit} format={(n) => `${Math.round(n / 1000)}k`} />
           </div>
         ) : (
-          <Loading />
+          <div className={p.meters} aria-busy="true">
+            <MeterSkeleton />
+            <MeterSkeleton />
+            <MeterSkeleton />
+          </div>
         )}
       </Card>
-      {cap.data && <p className={p.sectionDesc} style={{ margin: 0 }}>順番待ちのタスク: {cap.data.queueLength} 件</p>}
-      {vms.data?.length === 0 ? (
+      {cap.data ? <p className={p.sectionDesc} style={{ margin: 0 }}>順番待ちのタスク: {cap.data.queueLength} 件</p> : <SkeletonText size={13} width={150} />}
+      {!vms.data ? (
+        <TableSkeleton head={VM_HEAD} rows={3} label="VM の一覧" />
+      ) : vms.data.length === 0 ? (
         <Empty title="動いている VM はありません" />
       ) : (
-        <Table head={['VM', 'タスク', '利用者', 'イメージ', '状態', '起動', '']} label="VM の一覧">
-          {vms.data?.map((v) => (
+        <Table head={VM_HEAD} label="VM の一覧">
+          {vms.data.map((v) => (
             <tr key={v.id}>
               <td className="mono">{v.id}<span className={p.sub}>{v.stepRunId}</span></td>
               <td><Link to={`/t/${v.taskId}`} className={p.link}>開く</Link></td>
@@ -287,9 +307,9 @@ function Users() {
     }
   };
   if (users.error) return <ErrorBanner error={users.error} />;
-  if (!users.data) return <Loading />;
+  if (!users.data) return <TableSkeleton head={USER_HEAD} label="ユーザーの一覧" />;
   return (
-    <Table head={['ユーザー', '管理者', '同時に進めるタスク', '月の上限', '今月の費用', '']} label="ユーザーの一覧">
+    <Table head={USER_HEAD} label="ユーザーの一覧">
       {users.data.map((orig) => {
         const u = drafts[orig.id] ?? orig;
         const set = (patch: Partial<AdminUser>) => setDrafts((d) => ({ ...d, [u.id]: { ...u, ...patch } }));
@@ -314,15 +334,19 @@ function Users() {
   );
 }
 
+const USER_HEAD = ['ユーザー', '管理者', '同時に進めるタスク', '月の上限', '今月の費用', ''];
+const REQUEST_HEAD = ['イメージ', '申請した人', 'メモリ', ''];
+
 function ImageRequests() {
   const api = useApi();
   const toast = useUi((u) => u.toast);
   const images = useResource(() => api.images(), []);
   const pending = images.data?.filter((i) => i.orgRequest === 'pending') ?? [];
-  if (!images.data) return <Loading />;
+  if (images.error) return <ErrorBanner error={images.error} onRetry={() => void images.reload()} />;
+  if (!images.data) return <TableSkeleton head={REQUEST_HEAD} rows={3} label="組織への公開の申請" />;
   if (!pending.length) return <Empty title="承認を待っている申請はありません" icon={<IconImage />} />;
   return (
-    <Table head={['イメージ', '申請した人', 'メモリ', '']} label="組織への公開の申請">
+    <Table head={REQUEST_HEAD} label="組織への公開の申請">
       {pending.map((i) => (
         <tr key={i.name}>
           <td><strong>{i.name}@{i.latestVersion}</strong><span className={p.sub}>{i.description}</span></td>

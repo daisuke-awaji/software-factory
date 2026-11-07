@@ -76,14 +76,6 @@ export function Spinner({ label = '読み込んでいます' }: { label?: string
   );
 }
 
-export function Loading({ label = '読み込んでいます…' }: { label?: string }) {
-  return (
-    <div className={s.loading}>
-      <span className={s.spinner} aria-hidden="true" /> <span className="muted" role="status">{label}</span>
-    </div>
-  );
-}
-
 export function Banner({ tone = 'info', children, action }: { tone?: 'info' | 'warn' | 'err' | 'ok'; children: ReactNode; action?: ReactNode }) {
   return (
     <div className={s.banner} data-tone={tone} role={tone === 'err' ? 'alert' : 'status'}>

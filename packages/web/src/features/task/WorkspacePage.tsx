@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { Button } from '../../components/ui/button';
 import { SegmentedControl } from '../../components/ui/segmented-control';
-import { Banner, Dot, ErrorBanner, Loading, Menu, Tag } from '../../components/kit';
-import { IconBranch, IconChevron, IconExternal, IconMore, IconPR, IconRepo } from '../../components/icons';
+import { Avatar, Banner, Dot, ErrorBanner, Menu, Tag } from '../../components/kit';
+import { Busy, Skeleton, SkeletonLines, SkeletonText } from '../../components/skeletons';
+import { IconBranch, IconChevron, IconExternal, IconMore, IconPR, IconRepo, IconSend } from '../../components/icons';
 import { StepProgress } from '../../components/StepProgress';
 import { errorMessage } from '../../lib/api';
 import { saveFromUrl } from '../../lib/download';
 import type { ConnectionState } from '../../lib/events';
-import { duration, isTerminal, reasonLabel, stepLabel, stateLabel, stateTone, tokens, usd } from '../../lib/format';
+import { isTerminal, reasonLabel, stepLabel, stateLabel, stateTone, tokens, usd } from '../../lib/format';
 import { progressFromSession } from '../../lib/workflow';
 import { useServices } from '../../lib/services';
 import { currentRun, type Pending, type Session } from '../../lib/session';
@@ -53,7 +54,7 @@ export function WorkspacePage() {
       </div>
     );
   }
-  if (!item.data || !session) return <Loading />;
+  if (!item.data || !session) return <WorkspaceSkeleton id={id} />;
   const current = item.data;
   const tab: Tab = tabState?.tab ?? 'plan';
   const openTab = (t: Tab) => {
@@ -91,7 +92,7 @@ export function WorkspacePage() {
   };
 
   const hint = tabState?.hint ?? null;
-  const tabOptions: { value: Tab; label: string; count?: number; badge?: React.ReactNode }[] = [
+  const tabOptions: TabOption[] = [
     { value: 'preview', label: 'プレビュー', ...(hint === 'preview' ? { badge: <Dot tone="run" label="新しい内容" /> } : {}) },
     { value: 'changes', label: '変更', ...(diff.data?.files.length ? { count: diff.data.files.length } : {}), ...(hint === 'changes' ? { badge: <Dot tone="run" label="新しい内容" /> } : {}) },
     { value: 'files', label: 'ファイル' },
@@ -189,6 +190,110 @@ export function WorkspacePage() {
   );
 }
 
+type TabOption = { value: Tab; label: string; count?: number; badge?: React.ReactNode };
+const TAB_LABELS: TabOption[] = [
+  { value: 'preview', label: 'プレビュー' },
+  { value: 'changes', label: '変更' },
+  { value: 'files', label: 'ファイル' },
+  { value: 'plan', label: '計画' },
+  { value: 'log', label: '実行ログ' },
+];
+
+/**
+ * 読み込み中のワークスペース。ヘッダー・会話・入力欄・タブ・ステータスバーを本物と同じ部品と大きさで先に出し、
+ * 中身だけを枠にする（届いたときに位置がずれないように）
+ */
+export function WorkspaceSkeleton({ id }: { id?: string }) {
+  const compact = useMediaQuery(narrow.tablet);
+  const phone = useMediaQuery(narrow.phone);
+  const openSidebar = useUi((u) => u.setSidebarOverlay);
+  const tabState = useUi((u) => (id ? u.tabs[id] : undefined));
+  const pickTab = useUi((u) => u.pickTab);
+  const [view, setView] = useState<'chat' | 'work'>('chat');
+  const tab: Tab = tabState?.tab ?? 'plan';
+  return (
+    <Busy className={s.page} label="タスクを読み込んでいます">
+      <header className={s.head}>
+        {phone && (
+          <span className={s.back}><LogoToggle label="サイドパネルを開く" expanded={false} onClick={() => openSidebar(true)} /></span>
+        )}
+        <span className={s.crumbs}>
+          {!compact && <><SkeletonText size={13} width={44} /><IconChevron /></>}
+          <span className={s.title}><SkeletonText width={phone ? 140 : 220} /></span>
+        </span>
+        <span className={s.headTag}><Skeleton width={72} height={22} radius={999} /></span>
+        <div className={s.headRight}>
+          {!phone && <Skeleton width={128} height={32} radius={10} />}
+          <Skeleton width={30} height={30} radius={9} />
+        </div>
+      </header>
+      {compact && (
+        <div className={s.views}>
+          <SegmentedControl<'chat' | 'work'> size="sm" kind="tabs" fullWidth aria-label="表示の切り替え" value={view} onChange={setView} options={[{ value: 'chat', label: '会話' }, { value: 'work', label: '成果物' }]} />
+        </div>
+      )}
+      <div className={s.body} data-view={compact ? view : undefined}>
+        <section className={s.chat} aria-label="会話">
+          <div className={s.chatScroll}>
+            <div className={s.convo} aria-hidden="true">
+              <MessageSkeleton lines={2} />
+              <MessageSkeleton agent lines={3} />
+              <div className={s.tray}>
+                <div className={s.trayHead}><SkeletonText size={13} width={96} /></div>
+                <div className={s.card}>
+                  <SkeletonLines lines={2} size={14.5} last="70%" />
+                  <SkeletonLines lines={3} size={13.5} last="45%" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={s.chatComposer} aria-hidden="true">
+            <div className={s.composer}>
+              <div className={s.composerCard}>
+                <textarea className={s.composerInput} rows={2} disabled tabIndex={-1} placeholder="読み込んでいます…" />
+                <div className={s.composerBar}>
+                  <Skeleton width={30} height={30} radius={9} />
+                  <span className={s.spacer} />
+                  <span className={s.kbd}>⌘ / Ctrl + Enter</span>
+                  <Button size="sm" icon={<IconSend />} disabled tabIndex={-1}>送信</Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section className={s.work} aria-label="成果物">
+          <div className={s.tabs}>
+            <SegmentedControl<Tab> variant="underline" kind="tabs" size="sm" aria-label="成果物の表示" value={tab} onChange={(v) => id && pickTab(id, v)} options={TAB_LABELS} />
+          </div>
+          <div className={s.panel} aria-hidden="true">
+            <div className={s.skeletonPad}>
+              <SkeletonText size={15} width="40%" />
+              <SkeletonLines lines={4} size={13.5} />
+              <SkeletonLines lines={3} size={13.5} last="35%" />
+            </div>
+          </div>
+        </section>
+      </div>
+      <footer className={s.status} aria-hidden="true">
+        <span><SkeletonText size={12} width={140} /></span>
+        <span><SkeletonText size={12} width={120} /></span>
+      </footer>
+    </Busy>
+  );
+}
+
+function MessageSkeleton({ agent = false, lines }: { agent?: boolean; lines: number }) {
+  return (
+    <div className={s.msg} style={{ animation: 'none' }}>
+      {agent ? <Avatar kind="agent" size={28} /> : <Skeleton width={28} circle />}
+      <div className={s.msgBody}>
+        <span className={s.msgName}><SkeletonText size={12.5} width={agent ? 88 : 56} /></span>
+        <SkeletonLines lines={lines} size={14} last={agent ? '55%' : '40%'} />
+      </div>
+    </div>
+  );
+}
+
 function Header({ item, session, workflow, pending, onRename, onCancel, onArchive, onInterrupt }: {
   item: Task; session: Session; workflow: Workflow | undefined; pending: Pending | null;
   onRename: () => void; onCancel: () => void; onArchive: () => void; onInterrupt: () => void;
@@ -246,40 +351,30 @@ function Header({ item, session, workflow, pending, onRename, onCancel, onArchiv
   );
 }
 
+/** 下のステータスバー: 動いている VM・通信・トークンと費用。VM が止まった後の合計や経過時間は出さない */
 function StatusBar({ item, session, workflow }: { item: Task; session: Session; workflow: Workflow | undefined }) {
   const { events } = useServices();
   const [conn, setConn] = useState<ConnectionState>(events.state);
-  const [now, setNow] = useState(Date.now());
   useEffect(() => events.onState(setConn), [events]);
   const state = session.state ?? item.state;
   const terminal = isTerminal(state);
-  useEffect(() => {
-    if (terminal) return;
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, [terminal]);
   const run = currentRun(session);
   const step = workflow?.steps.find((st) => st.id === run?.stepId);
-  const vmCount = session.runs.filter((r) => workflow?.steps.find((st) => st.id === r.stepId)?.image).length;
   const vm =
     run?.state === 'running' && !terminal
       ? state === 'awaiting_approval' || state === 'suspended'
         ? <><Dot tone="alert" /> VM 待機中: {stepLabel(run.stepId)} · <span className="mono">{step?.image}</span></>
         : <><Dot tone="run" /> VM 実行中: {stepLabel(run.stepId)} · <span className="mono">{step?.image}</span></>
-      : vmCount
-        ? <><Dot tone="ok" /> VM はすべて停止しました（{vmCount} 台 · 合計 {duration(session.usage.vmSeconds * 1000)}）</>
-        : <><Dot /> VM は起動していません</>;
-  const end = terminal ? Date.parse(item.updatedAt) : now;
+      : null;
   return (
     <footer className={s.status}>
-      <span>{vm}</span>
+      {vm && <span className={s.statusKeep}>{vm}</span>}
       <span>通信: {step?.network && !terminal ? <><span className="mono">{step.network}</span>（許可リストのみ）</> : '許可リストのみ'}</span>
       {session.blocked.length > 0 && <span data-tone="alert">止めた通信 {session.blocked.length} 件</span>}
       <span>トークン {tokens(session.usage.inputTokens + session.usage.outputTokens)} · {usd(item.costUsd)}</span>
-      <span className={s.statusRight}>
-        {conn !== 'open' && <span data-tone="alert">{conn === 'reconnecting' ? '再接続しています… ' : '接続しています… '}</span>}
-        経過 {duration(end - Date.parse(item.createdAt))}
-      </span>
+      {conn !== 'open' && (
+        <span className={`${s.statusRight} ${s.statusKeep}`} data-tone="alert">{conn === 'reconnecting' ? '再接続しています…' : '接続しています…'}</span>
+      )}
     </footer>
   );
 }

@@ -1,11 +1,11 @@
 import { lazy, Suspense, useState, type ReactNode } from 'react';
 import { createBrowserRouter, RouterProvider, type RouteObject } from 'react-router';
-import { Loading } from '../components/kit';
+import { PageSkeleton } from '../components/skeletons';
 import { HomePage } from '../features/home/HomePage';
 import { TasksPage } from '../features/tasks/TasksPage';
 import { WorkspacePage } from '../features/task/WorkspacePage';
 import { ServicesProvider, type Services } from '../lib/services';
-import { AppShell, NotFound } from './AppShell';
+import { AppShell, NotFound, Page } from './AppShell';
 
 // よく使うホーム・すべてのタスク・ワークスペース以外は、開いたときに読み込む
 const AdminPage = lazy(() => import('../features/admin/AdminPage').then((m) => ({ default: m.AdminPage })));
@@ -13,7 +13,7 @@ const ImagesPage = lazy(() => import('../features/images/ImagesPage').then((m) =
 const WorkflowsPage = lazy(() => import('../features/workflows/WorkflowsPage').then((m) => ({ default: m.WorkflowsPage })));
 const PublicationsPage = lazy(() => import('../features/publications/PublicationsPage').then((m) => ({ default: m.PublicationsPage })));
 const SettingsPage = lazy(() => import('../features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })));
-const later = (node: ReactNode) => <Suspense fallback={<Loading />}>{node}</Suspense>;
+const later = (node: ReactNode) => <Suspense fallback={<Page><PageSkeleton /></Page>}>{node}</Suspense>;
 
 // 画面の一覧は docs/06_ui_spec.md §1。データの読み込みは apiClient で行い、router のデータ API は使わない（実装計画 §2.2）
 export const routes: RouteObject[] = [

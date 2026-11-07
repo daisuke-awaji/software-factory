@@ -3,7 +3,9 @@ import type { Diff, Workflow, Task } from '@factory/contracts';
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { ToolCallCard, ToolCallGroup } from '../../../components/ui/tool-call-card';
-import { Banner, Dot, ErrorBanner, IconButton, Loading, Tag } from '../../../components/kit';
+import { Banner, Dot, ErrorBanner, IconButton, Tag } from '../../../components/kit';
+import { Busy, CodeSkeleton, Skeleton, SkeletonText } from '../../../components/skeletons';
+import { ShimmerText } from '../../../components/ui/shimmer-loader';
 import { IconBlock, IconChevron, IconChevronDown, IconDownload, IconExternal, IconEye, IconFile, IconFolder, IconList, IconRefresh, toolIcon } from '../../../components/icons';
 import { errorMessage } from '../../../lib/api';
 import { saveFromUrl } from '../../../lib/download';
@@ -66,7 +68,7 @@ export function PreviewTab({ item, session }: { item: Task; session: Session }) 
           <IconExternal />
         </IconButton>
       </div>
-      {error ? <ErrorBanner error={error} onRetry={() => setNonce((n) => n + 1)} /> : url ? <iframe key={url} className={t.frame} src={url} title="プレビュー" sandbox={url.startsWith('blob:') ? 'allow-scripts allow-forms' : 'allow-scripts allow-forms allow-same-origin'} /> : <Loading label="プレビューを開いています…" />}
+      {error ? <ErrorBanner error={error} onRetry={() => setNonce((n) => n + 1)} /> : url ? <iframe key={url} className={t.frame} src={url} title="プレビュー" sandbox={url.startsWith('blob:') ? 'allow-scripts allow-forms' : 'allow-scripts allow-forms allow-same-origin'} /> : <div className={t.frame} style={{ display: 'grid', placeItems: 'center' }} role="status"><ShimmerText>プレビューを開いています…</ShimmerText></div>}
       <p className={t.previewNote}>このブラウザで同時に開けるプレビューは1つだけです（D16）。別のタスクのプレビューを開くと、こちらは閉じます。</p>
     </div>
   );
@@ -103,7 +105,7 @@ export function ChangesTab({ diff }: { diff: { data: Diff | undefined; error: st
   const current = files.find((f) => f.path === sel) ?? files[0];
   const lines = useMemo(() => (current ? parsePatch(current.patch) : []), [current]);
   if (diff.error) return <div className={t.pad}><ErrorBanner error={diff.error} onRetry={() => void diff.reload()} /></div>;
-  if (!diff.data) return <Loading />;
+  if (!diff.data) return <ChangesSkeleton />;
   if (files.length === 0)
     return (
       <div className={t.empty}>
@@ -151,6 +153,52 @@ export function ChangesTab({ diff }: { diff: { data: Diff | undefined; error: st
         </div>
       )}
     </div>
+  );
+}
+
+const FILE_W = ['70%', '52%', '84%', '60%', '44%'];
+
+/** 差分を読み込んでいる間: 左のファイルの一覧と右の差分の形だけを出す */
+function ChangesSkeleton() {
+  return (
+    <Busy className={t.changes}>
+      <div className={t.fileList} aria-hidden="true">
+        <div className={t.fileHead}><SkeletonText size={12.5} width={96} /></div>
+        {FILE_W.map((w, i) => (
+          <div key={i} className={t.file}>
+            <Skeleton width={14} height={14} radius={4} />
+            <SkeletonText size={12} width={w} />
+            <Skeleton width={22} height={9} />
+            <span />
+          </div>
+        ))}
+      </div>
+      <div className={t.diff} aria-hidden="true">
+        <div className={t.diffHead}><SkeletonText size={12} width={220} /></div>
+        <span className={t.codeSkeleton}><CodeSkeleton lines={18} /></span>
+      </div>
+    </Busy>
+  );
+}
+
+/** ファイルの一覧を読み込んでいる間 */
+function FilesSkeleton() {
+  return (
+    <Busy className={t.changes}>
+      <div className={t.tree} aria-hidden="true">
+        <div className={t.treeToolbar}>
+          <span className={t.source}><SkeletonText size={11.5} width={110} /></span>
+          <Skeleton width={30} height={30} radius={9} />
+        </div>
+        {FILE_W.map((w, i) => (
+          <div key={i} className={t.treeItem} style={{ paddingLeft: 8 + (i > 1 && i < 4 ? 14 : 0) }}>
+            <Skeleton width={14} height={14} radius={4} />
+            <SkeletonText size={12} width={w} />
+          </div>
+        ))}
+      </div>
+      <div className={t.diff} aria-hidden="true" />
+    </Busy>
   );
 }
 
@@ -208,7 +256,7 @@ export function FilesTab({ item, version, onPublish }: { item: Task; version: nu
     ));
 
   if (root.error) return <div className={t.pad}><ErrorBanner error={root.error} onRetry={() => void root.reload()} /></div>;
-  if (!root.data) return <Loading />;
+  if (!root.data) return <FilesSkeleton />;
   return (
     <div className={t.changes}>
       <nav className={t.tree} aria-label="ファイルツリー">
@@ -240,7 +288,7 @@ export function FilesTab({ item, version, onPublish }: { item: Task; version: nu
                 ))}
               </pre>
             ) : (
-              <Loading />
+              <Busy><span className={t.codeSkeleton}><CodeSkeleton lines={18} /></span></Busy>
             )}
           </>
         ) : (

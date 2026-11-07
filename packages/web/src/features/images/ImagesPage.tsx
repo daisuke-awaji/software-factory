@@ -4,7 +4,8 @@ import { useEffect, useId, useMemo, useState } from 'react';
 import { stringify } from 'yaml';
 import { Page } from '../../app/AppShell';
 import { Button } from '../../components/ui/button';
-import { Banner, Card, Dialog, ErrorBanner, Field, Loading, Menu, PageHeader, Select, Tag, TextArea, TextInput } from '../../components/kit';
+import { Banner, Card, Dialog, ErrorBanner, Field, Menu, PageHeader, Select, Tag, TextArea, TextInput } from '../../components/kit';
+import { Busy, CardGridSkeleton, CodeSkeleton, Skeleton, SkeletonText } from '../../components/skeletons';
 import { IconImage, IconMore, IconPlus } from '../../components/icons';
 import { errorMessage } from '../../lib/api';
 import { mib, relative } from '../../lib/format';
@@ -42,7 +43,16 @@ export function ImagesPage() {
       />
       <ErrorBanner error={images.error} onRetry={() => void images.reload()} />
       {!images.data ? (
-        <Loading />
+        images.error ? null : (
+          <div className={p.stack}>
+            {[2, 3].map((n, i) => (
+              <section key={i} className={p.section}>
+                <SkeletonText size={15} width={i ? 96 : 72} />
+                <CardGridSkeleton count={n} lines={2} body={<SkeletonText size={12.5} width="50%" />} />
+              </section>
+            ))}
+          </div>
+        )
       ) : (
         <div className={p.stack}>
           {order.map((scope) => {
@@ -226,7 +236,13 @@ function ImageDetail({ name, onClose }: { name: string; onClose: () => void }) {
   return (
     <Dialog open onClose={onClose} title={`${name} のバージョン`} width={720}>
       {!versions.data ? (
-        <Loading />
+        <Busy className={p.stack}>
+          <div className={p.row}>
+            <Skeleton width={96} height={32} radius={10} />
+            <Skeleton width={96} height={32} radius={10} />
+          </div>
+          <div className={p.code}><CodeSkeleton lines={10} /></div>
+        </Busy>
       ) : (
         <>
           <div className={p.row} role="group" aria-label="バージョン">

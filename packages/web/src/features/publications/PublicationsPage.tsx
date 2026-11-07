@@ -4,7 +4,8 @@ import { useId, useState } from 'react';
 import { Link } from 'react-router';
 import { Page } from '../../app/AppShell';
 import { Button } from '../../components/ui/button';
-import { Dialog, Empty, ErrorBanner, Field, Loading, Menu, PageHeader, Select, Table, Tag, TextInput } from '../../components/kit';
+import { Dialog, Empty, ErrorBanner, Field, Menu, PageHeader, Select, Table, Tag, TextInput } from '../../components/kit';
+import { TableSkeleton } from '../../components/skeletons';
 import { IconGlobe, IconLock, IconMore } from '../../components/icons';
 import { errorMessage } from '../../lib/api';
 import { date, relative } from '../../lib/format';
@@ -16,6 +17,8 @@ import p from '../pages.module.css';
 
 const statusLabel = { active: '公開中', stopped: '停止', expired: '期限切れ' } as const;
 const statusTone = { active: 'ok', stopped: undefined, expired: 'alert' } as const;
+
+const HEAD = ['タイトル', '範囲', '状態', '版', '期限', '更新', ''];
 
 export function PublicationsPage() {
   const api = useApi();
@@ -38,14 +41,14 @@ export function PublicationsPage() {
     <Page>
       <PageHeader title="公開物" description="タスクの成果物を、社内向けに公開したものです。開くには社内のアカウントでのログインが必要です。" />
       <ErrorBanner error={list.error} onRetry={() => void list.reload()} />
-      {list.loading && !list.data ? (
-        <Loading />
+      {!list.data && !list.error ? (
+        <TableSkeleton head={HEAD} label="公開物の一覧" />
       ) : !list.data?.length ? (
         <Empty title="公開したものはまだありません" icon={<IconGlobe />}>
           完了したタスクの「成果物」から「公開する」を選ぶと、ここに並びます。
         </Empty>
       ) : (
-        <Table head={['タイトル', '範囲', '状態', '版', '期限', '更新', '']} label="公開物の一覧">
+        <Table head={HEAD} label="公開物の一覧">
           {list.data.map((pub) => {
             const who = [...(pub.acl.groups ?? []), ...(pub.acl.users ?? [])];
             return (

@@ -18,7 +18,7 @@
 .crumbs > :global(.icon) { color: var(--faint); width: 14px; height: 14px; }
 .crumb { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; min-width: 0; flex: 0 1000 auto; overflow: hidden; }
 .crumb :global(.icon) { width: 14px; height: 14px; }
-.title { flex: 0 1 auto; min-width: 96px; font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 360px; }
+.title { flex: 0 1 auto; min-width: 96px; margin: 0; font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 360px; }
 .headRight { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .headLine { padding: 0 6px; }
 .headTag { display: inline-flex; }
@@ -34,6 +34,7 @@
 .work { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg-subtle); }
 .tabs { flex: none; padding: 6px 14px 0; border-bottom: 1px solid var(--line); background: var(--bg); display: flex; align-items: center; gap: 8px; }
 .panel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.skeletonPad { display: grid; gap: 14px; align-content: start; max-width: 760px; width: 100%; margin: 0 auto; padding: 18px 20px; }
 
 /* ---------- 会話 ---------- */
 .convo { display: grid; gap: 18px; max-width: 760px; margin: 0 auto; }
@@ -138,6 +139,7 @@
 }
 .status > span { display: inline-flex; align-items: center; gap: 6px; }
 .statusRight { margin-left: auto; }
+.statusKeep { flex: none; }
 .status [data-tone="alert"] { color: var(--alert); }
 
 @media (pointer: coarse) {
@@ -195,7 +197,8 @@
   .composerHint { display: none; }
   .composerInput { min-height: 48px; padding: 10px 12px 2px; }
   .tabs { padding: 4px 8px 0; overflow-x: auto; scrollbar-width: none; }
-  .status > span:not(:first-child):not(.statusRight) { display: none; }
+  /* 動いている VM（なければ通信）と、接続の状態だけを出す */
+  .status > span:not(:first-child):not(.statusKeep) { display: none; }
   .msg { grid-template-columns: 24px minmax(0, 1fr); gap: 8px; }
   .event, .thinking, .workRows { margin-left: 32px; }
   .detailGrid { grid-template-columns: 1fr; gap: 2px; }
