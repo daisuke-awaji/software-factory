@@ -160,7 +160,7 @@ test('ワークスペース: スクロールするのは会話だけで、ヘッ
   await expectDocumentFixed(page);
 
   const head = page.getByRole('button', { name: 'サイドパネルを開く' });
-  const input = chat.getByLabel('メッセージ');
+  const input = chat.getByLabel('メッセージ', { exact: true });
   const before = { head: (await head.boundingBox())!.y, input: (await input.boundingBox())!.y };
 
   // 会話は内側でスクロールする
