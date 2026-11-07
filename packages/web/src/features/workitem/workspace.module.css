@@ -1,6 +1,7 @@
 /* ワークスペース（パターン B）: 会話と成果物を左右に並べる。UI モックの b.css / blocks.css を CSS Modules に移した */
 
-.page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+/* サイドパネルの開け閉めで幅が変わるので、ヘッダーは画面の幅ではなくワークスペースの幅（コンテナー クエリー）で出し分ける */
+.page { flex: 1; min-height: 0; display: flex; flex-direction: column; container: ws / inline-size; }
 
 /* ---------- ヘッダー ---------- */
 .head {
@@ -15,13 +16,13 @@
 }
 .crumbs { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 13px; color: var(--muted); }
 .crumbs > :global(.icon) { color: var(--faint); width: 14px; height: 14px; }
-.crumb { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.crumb { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; min-width: 0; flex: 0 1000 auto; overflow: hidden; }
 .crumb :global(.icon) { width: 14px; height: 14px; }
-.title { font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 360px; }
+.title { flex: 0 1 auto; min-width: 96px; font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 360px; }
 .headRight { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .headLine { padding: 0 6px; }
 .headTag { display: inline-flex; }
-.back { display: none; place-items: center; flex: none; width: max(30px, var(--tap-min)); height: max(30px, var(--tap-min)); margin-left: -6px; border-radius: 9px; color: var(--ink); }
+.back { display: none; place-items: center; flex: none; width: max(30px, var(--tap-min)); height: max(30px, var(--tap-min)); margin-left: -2px; padding: 0; border: 0; border-radius: 9px; background: none; color: var(--ink); }
 .back:hover { background: var(--hover); }
 .views { flex: none; padding: 4px max(12px, var(--safe-right)) 4px max(12px, var(--safe-left)); border-bottom: 1px solid var(--line); background: var(--bg); }
 
@@ -142,22 +143,24 @@
 @media (pointer: coarse) {
   .kbd { display: none; }
 }
-@media (max-width: 1099px) {
+@container ws (max-width: 1099px) {
   .headLine { display: none; }
 }
-/* 1024px 未満: 上部のナビゲーションを隠し、会話と成果物を「表示の切り替え」で出し分ける。
+/* 狭いときは、パンくずをタイトルだけにする */
+@container ws (max-width: 899px) {
+  .crumbs .crumb, .crumbs > :global(.icon) { display: none; }
+  .title { min-width: 0; }
+}
+/* 1024px 未満: 会話と成果物を「表示の切り替え」で出し分ける。
    どちらも同じ格子のマスに重ね、隠す側は visibility で消す（スクロールの位置とプレビューの iframe を保つため） */
 @media (max-width: 1023px) {
-  .head { padding-top: calc(8px + var(--safe-top)); padding-left: max(14px, var(--safe-left)); padding-right: max(10px, var(--safe-right)); }
-  .back { display: inline-grid; }
+  .head { padding-top: calc(8px + var(--safe-top)); padding-right: max(10px, var(--safe-right)); }
   .body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
   .chat, .work { grid-area: 1 / 1; }
   .chat { border-right: 0; }
   .body[data-view="chat"] .work, .body[data-view="work"] .chat { visibility: hidden; pointer-events: none; }
   .title { max-width: none; }
   .crumbs { flex: 1; }
-  /* 「依頼」へは戻るボタンで戻る */
-  .crumbs > a:first-child, .crumbs > a:first-child + :global(.icon) { display: none; }
 }
 /* 横向きのスマホなど、高さが足りないとき: 入力欄の説明とステータスバーを隠して会話に回す */
 @media (max-width: 1023px) and (max-height: 520px) {
@@ -168,9 +171,11 @@
   .status { display: none; }
   .head { padding-top: calc(4px + var(--safe-top)); padding-bottom: 4px; min-height: 44px; }
 }
-/* 720px 未満: ヘッダーは「戻る・タイトル・状態・その他の操作」だけにする */
+/* 720px 未満: ヘッダーは「サイドパネル・タイトル・状態・その他の操作」だけにする */
 @media (max-width: 719px) {
+  .back { display: inline-grid; }
   .head {
+    padding-left: max(8px, var(--safe-left));
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas: "back crumbs right" "back tag right";
