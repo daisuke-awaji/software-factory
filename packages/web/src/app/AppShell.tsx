@@ -1,9 +1,9 @@
 // アプリの枠: 上部のナビゲーションと、ページの中身（ADR-0007）
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { ProfileMenu } from '../components/ui/profile-menu';
 import { Avatar, Banner, ErrorBanner, FactoryMark, Loading, Toasts } from '../components/kit';
-import { IconMoon, IconSettings, IconSun } from '../components/icons';
+import { IconClose, IconMenu, IconMoon, IconSettings, IconSun } from '../components/icons';
 import { errorMessage } from '../lib/api';
 import type { ConnectionState } from '../lib/events';
 import { useServices } from '../lib/services';
@@ -28,6 +28,18 @@ export function AppShell() {
 
   const full = location.pathname.startsWith('/w/');
   const navClass = ({ isActive }: { isActive: boolean }) => (isActive ? s.active : undefined);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+  useEffect(() => setMenuOpen(false), [location.pathname]);
+  const links = (
+    <>
+      <NavLink to="/" end className={navClass}>依頼</NavLink>
+      <NavLink to="/publications" className={navClass}>公開物</NavLink>
+      <NavLink to="/images" className={navClass}>イメージ</NavLink>
+      <NavLink to="/lines" className={navClass}>ライン</NavLink>
+      {isAdmin(me) && <NavLink to="/admin" className={navClass}>管理</NavLink>}
+    </>
+  );
 
   return (
     <div className={s.app} data-full={full || undefined}>
@@ -37,18 +49,16 @@ export function AppShell() {
           <span className={s.mark}><FactoryMark size={15} /></span>
           <span className={s.brandText}>Software Factory</span>
         </Link>
-        <nav className={s.links} aria-label="メイン">
-          <NavLink to="/" end className={navClass}>依頼</NavLink>
-          <NavLink to="/publications" className={navClass}>公開物</NavLink>
-          <NavLink to="/images" className={navClass}>イメージ</NavLink>
-          <NavLink to="/lines" className={navClass}>ライン</NavLink>
-          {isAdmin(me) && <NavLink to="/admin" className={navClass}>管理</NavLink>}
-        </nav>
+        <nav className={s.links} aria-label="メイン">{links}</nav>
         <div className={s.right}>
           {conn === 'reconnecting' && <span className={s.conn} role="status">再接続しています…</span>}
           {mock && <span className={s.mock} title="MSW がすべての API と WebSocket に応答しています">モック</span>}
           {me && <Profile />}
+          <button type="button" className={s.menuButton} aria-label="メニュー" aria-expanded={menuOpen} aria-controls="nav-sheet" onClick={() => setMenuOpen((o) => !o)}>
+            {menuOpen ? <IconClose /> : <IconMenu />}
+          </button>
         </div>
+        {menuOpen && <NavSheet onClose={closeMenu}>{links}</NavSheet>}
       </header>
       <main className={s.main} id="main">
         {error ? (
@@ -61,6 +71,23 @@ export function AppShell() {
       </main>
       <Toasts />
     </div>
+  );
+}
+
+/** スマホの上部のナビゲーション（右上のメニューで開く） */
+function NavSheet({ children, onClose }: { children: ReactNode; onClose: () => void }) {
+  const root = useRef<HTMLElement>(null);
+  useEffect(() => {
+    root.current?.querySelector<HTMLElement>('a')?.focus();
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    document.addEventListener('keydown', esc);
+    return () => document.removeEventListener('keydown', esc);
+  }, [onClose]);
+  return (
+    <>
+      <div className={s.sheetBackdrop} onClick={onClose} aria-hidden="true" />
+      <nav id="nav-sheet" ref={root} className={s.sheet} aria-label="メイン（メニュー）">{children}</nav>
+    </>
   );
 }
 
