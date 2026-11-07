@@ -465,7 +465,7 @@ export const handlers = [
     if (!existing) d.images.push(ImageSummary.parse({ name: spec.name, ...(spec.description ? { description: spec.description } : {}), scope: 'personal', owner: d.me.name, memoryMiB: spec.memoryMiB, updatedAt: v.createdAt }));
     save();
     startBuild(spec.name, version, /nonexistent|typo/.test(JSON.stringify(spec.packages)));
-    return HttpResponse.json(v, { status: 202 });
+    return HttpResponse.json(v, { status: 201 });
   }),
   http.get(`${API}/images/:name/versions`, ({ params }) => {
     const v = getDb().imageVersions[String(params['name'])];

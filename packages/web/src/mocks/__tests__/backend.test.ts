@@ -1,5 +1,5 @@
 // モックのバックエンドそのもののテスト（MSW を Node で動かし、fetch と WebSocket で一連の流れを通す）
-import { FactoryEventEnvelope, PlanRecord, StageRun, WorkItem } from '@factory/contracts';
+import { FactoryEventEnvelope, ImageVersion, PlanRecord, StageRun, WorkItem } from '@factory/contracts';
 import { setupServer } from 'msw/node';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
@@ -117,6 +117,15 @@ describe('モックのバックエンド', () => {
     for (let i = 0; i < 3; i++) await post('/work-items', { title: `t${i}`, message: 'm' });
     const res = await post('/work-items', { title: 'over', message: 'm' });
     expect(res.status).toBe(429);
+  });
+
+  it('イメージを登録すると、ビルドが進んで使えるようになる', async () => {
+    const res = await post('/images', { name: 'report-tools', base: 'data@2', memoryMiB: 4096, packages: { pip: ['reportlab'] } });
+    expect(res.status).toBe(201);
+    expect(ImageVersion.parse(await res.json()).state).toBe('building');
+    await until(async () => (await get(z.array(ImageVersion), '/images/report-tools/versions'))[0]!.state === 'ready');
+    const log = z.object({ lines: z.array(z.string()), done: z.boolean() }).parse(await (await fetch(`${base}/images/report-tools/versions/1/build-log`, { headers: h })).json());
+    expect(log.done).toBe(true);
   });
 
   it('管理: ラインの YAML を検証して新しい版にする', async () => {

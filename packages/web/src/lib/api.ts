@@ -160,6 +160,6 @@ export function errorMessage(e: unknown): string {
     return e.body.message;
   }
   if (e instanceof z.ZodError) return '応答の形が想定と違いました（契約の食い違い）。';
-  if (e instanceof TypeError) return 'サーバーに接続できませんでした。';
+  if (e instanceof TypeError && /fetch|network|load failed/i.test(e.message)) return 'サーバーに接続できませんでした。';
   return e instanceof Error ? e.message : String(e);
 }
