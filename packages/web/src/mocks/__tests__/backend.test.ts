@@ -149,4 +149,12 @@ describe('モックのバックエンド', () => {
     expect(ok.status).toBe(200);
     expect(((await ok.json()) as { version: number }).version).toBe(2);
   });
+
+  it('名前を変える前に保存した DB（workItems・lines）が残っていても、シードから作り直して 500 にしない', async () => {
+    localStorage.setItem('sf.mockdb.v3', JSON.stringify({ version: 4, workItems: [], lines: [], stageRuns: {}, events: {} }));
+    initMockBackend();
+    const res = await fetch(`${base}/tasks`, { headers: h });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { items: unknown[] }).items.length).toBeGreaterThan(0);
+  });
 });
