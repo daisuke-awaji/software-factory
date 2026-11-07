@@ -31,7 +31,8 @@
 @media (max-width: 760px) {
   .nav { gap: 10px; padding: 0 10px; }
   .brandText { display: none; }
-  .links a { padding: 6px 7px; }
+  .links { min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .links a { padding: 6px 7px; white-space: nowrap; }
   .mock { display: none; }
   .page { padding: 20px 16px 48px; }
 }
