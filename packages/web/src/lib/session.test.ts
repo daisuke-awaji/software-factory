@@ -48,6 +48,20 @@ describe('reduce', () => {
     expect(s.runs.map((r) => `${r.runId}:${r.state}`)).toEqual(['verify#1:failed', 'verify#2:running']);
   });
 
+  it('並列で動いているときは、ツールを stepId のステップに入れ、終わったときのラベルを残す', () => {
+    const s = reduceAll(emptySession(wid), [
+      ev({ type: 'step.changed', stepId: 'unit-test', state: 'started' }),
+      ev({ type: 'step.changed', stepId: 'e2e', state: 'started' }),
+      ev({ type: 'tool.started', toolUseId: 't1', tool: 'run', summary: 'npm test', stepId: 'unit-test' }),
+      ev({ type: 'tool.started', toolUseId: 't2', tool: 'run', summary: 'playwright', stepId: 'e2e' }),
+      ev({ type: 'step.changed', stepId: 'unit-test', state: 'completed', label: 'small' }),
+    ]);
+    expect(s.runs.map((r) => [r.stepId, r.tools, r.state, r.label])).toEqual([
+      ['unit-test', ['t1'], 'completed', 'small'],
+      ['e2e', ['t2'], 'running', undefined],
+    ]);
+  });
+
   it('承認待ちのときに、何を待っているかが分かる', () => {
     let s = reduceAll(emptySession(wid), [ev({ type: 'plan.proposed', planVersion: 1, plan }), ev({ type: 'task.state', state: 'awaiting_approval' })]);
     expect(pendingOf(s)).toMatchObject({ kind: 'plan', version: 1 });

@@ -123,12 +123,12 @@
 | type | いつ届くか | 主な項目 |
 |---|---|---|
 | `message.delta` / `message.completed` | エージェントの応答（ストリーミング） | messageId、text |
-| `tool.started` / `tool.finished` | ツールの実行（コマンド、ファイルの編集など） | toolUseId、tool、summary、ok |
+| `tool.started` / `tool.finished` | ツールの実行（コマンド、ファイルの編集など） | toolUseId、tool、summary、stepId?、ok |
 | `plan.proposed` | 計画を提示したとき | planVersion、plan（`Plan`） |
 | `approval.required` | 再承認が必要になったとき | reason（scope / egress / budget / time）、detail |
 | `egress.blocked` | allowlist で通信が拒否されたとき | host |
 | `usage` | 使用量の増分 | inputTokens、outputTokens、vmSeconds |
-| `step.changed` | ステップが始まった・終わった | stepId、state |
+| `step.changed` | ステップが始まった・終わった | stepId、state、label?（終わったときの `StepResult.label`） |
 | `task.state` | タスクの状態が変わった | state |
 
 ---
@@ -200,6 +200,8 @@
 | `approval.resolved`（新規） | approvalId、decision、by | 回答済みのカードにするため。ほかのタブ・端末にも反映するため |
 | `preview.ready`（新規） | port、path | プレビューのタブを開けるようになったことを知るため（`POST /previews` に port が要る） |
 | `eventId`（配信の封筒） | `FactoryEventEnvelope = FactoryEvent & { eventId }` | WebSocket と `GET /events` で同じ形にし、重複を除くため |
+| `tool.started.stepId`（追加） | どのステップの作業か | 並列で動いているとき、作業を正しいステップの実行ログに入れるため（ADR-0012） |
+| `step.changed.label`（追加） | 終わったときの `StepResult.label` | 分岐でどちらに進んだかを、図に出すため（ADR-0012） |
 
 ### 7.2 REST
 | メソッド | パス | 内容 |
@@ -211,4 +213,5 @@
 ### 7.3 型
 - `Task` に `repo?`、`branch?`、`pullRequest?`、`usage?`、`costUsd?`、`archived` を足した（一覧とヘッダーに出すため）
 - `Workflow` に `title?`、`description?` を足した（画面に出す名前と説明）
+- 分岐と並列（ADR-0012）: `StepDef.next` に配列を書けるようにし、`needs`・`on.cases` を足した。`StepResult` に `label?`、`Task` に `activeStepIds?`（並列で動いているステップ）を足した。`Workflow` のスキーマは、グラフの誤り（輪・たどり着けないステップ・合流の誤りなど）を項目の場所つきで返す。つながりの誤りがあっても図で直せるように、形だけを確かめる `WorkflowShape` も出す
 - 新規: `PlanRecord`、`StepRun`、`FileTree`、`Diff`、`AttachmentTicket`、`Download`、`Preview`、`PrecheckResult`、`Publication`（と作成・更新の入力）、`Me`、`Repo`、`ImageSpec`、`ImageSummary`、`ImageVersion`、`BuildLog`、`NetworkProfile`、`PackageSource`、`WorkflowDefinition`、`VmInfo`、`Capacity`、`AdminUser`

@@ -1,8 +1,10 @@
 // @factory/contracts — フロントエンドとバックエンドで共有する Zod スキーマ。型の定義はここだけで行う（I1）
 // 元は docs/samples/src/contracts/index.ts。Web の実装で足りなかった項目は「提案」として足した（docs/05_api_spec.md §7）
 import { z } from 'zod';
+import { analyzeWorkflow } from './workflow-graph.js';
 
 export * from './ulid.js';
+export * from './workflow-graph.js';
 
 export const Ulid = z.string().regex(/^[0-9A-HJKMNP-TV-Z]{26}$/, 'ULID 形式で指定してください');
 const IsoTime = z.iso.datetime();
@@ -14,8 +16,12 @@ export const ImageRef = z.string().regex(/^[a-z0-9-]+@\d+$/, 'name@version の�
 export const WorkflowRef = z.string().regex(/^[a-z0-9-]+@\d+$/); // 例: chat@1
 
 // ---------------------------------------------------------------- ワークフロー
+export const StepId = z.string().regex(/^[a-z][a-z0-9-]{1,31}$/, '英小文字で始まる、英小文字・数字・ハイフンの 2〜32 文字にしてください');
+/** cases のラベル（エージェントが StepResult.label で返す） */
+export const CaseLabel = z.string().regex(/^[a-z][a-z0-9-]{0,31}$/, '英小文字で始まる、英小文字・数字・ハイフンの 32 文字までにしてください');
+
 export const StepDef = z.object({
-  id: z.string().regex(/^[a-z][a-z0-9-]{1,31}$/),
+  id: StepId,
   type: z.enum(['agent', 'command', 'approval', 'system']),
   image: ImageRef.optional(),
   network: z.string().optional(),
@@ -25,22 +31,32 @@ export const StepDef = z.object({
   action: z.enum(['create-pull-request', 'propose-publish']).optional(),
   timeoutHours: z.number().int().min(1).max(72).default(6),
   keepVm: z.boolean().default(false),
-  next: z.string().optional(),
+  // 成功したら進む先。配列なら並列で始める（fan-out）。書かなければ、ここで終わる
+  next: z.union([StepId, z.array(StepId)]).optional(),
+  // 並列の枝の合流（fan-in）: ここに挙げたステップがすべて終わるまで待つ
+  needs: z.array(StepId).min(2).optional(),
   on: z
     .object({
-      pass: z.string().optional(),
-      fail: z.object({ goto: z.string(), maxLoops: z.number().int().min(0).max(5) }).optional(),
+      pass: StepId.optional(),
+      // 結果のラベル（StepResult.label）で進む先を分ける。合うラベルがなければ next / on.pass に進む
+      cases: z.record(CaseLabel, StepId).optional(),
+      fail: z.object({ goto: StepId, maxLoops: z.number().int().min(0).max(5) }).optional(),
     })
     .optional(),
 });
 export type StepDef = z.infer<typeof StepDef>;
 
-export const Workflow = z.object({
+/** 項目の形だけを確かめる（エディタで、つながりに誤りがあっても図に出すため） */
+export const WorkflowShape = z.object({
   name: z.string().regex(/^[a-z0-9-]+$/),
   version: z.number().int().positive(),
   title: z.string().optional(), // 提案: 画面に出す名前
   description: z.string().optional(), // 提案: 画面に出す説明
   steps: z.array(StepDef).min(1),
+});
+export const Workflow = WorkflowShape.superRefine((wf, ctx) => {
+  // 分岐・並列・戻りの形を確かめる（workflow-graph.ts。エンジンと画面も同じ解釈を使う）
+  for (const issue of analyzeWorkflow(wf).issues) ctx.addIssue({ code: 'custom', path: issue.path, message: issue.message });
 });
 export type Workflow = z.infer<typeof Workflow>;
 
@@ -62,6 +78,7 @@ export const Task = z.object({
   workflowRef: WorkflowRef,
   state: TaskState,
   currentStepId: z.string().optional(),
+  activeStepIds: z.array(z.string()).optional(), // 提案: 並列で動いているステップ（currentStepId は最後に始まったもの）
   createdAt: IsoTime,
   updatedAt: IsoTime,
   // ---- 以下は提案（一覧とヘッダーに出すため）
@@ -103,6 +120,7 @@ export type PostMessageRequest = z.infer<typeof PostMessageRequest>;
 
 export const StepResult = z.object({
   verdict: z.enum(['pass', 'fail', 'cancelled']),
+  label: CaseLabel.optional(), // 提案: on.cases で進む先を選ぶラベル（例: small / large）
   summary: z.string().max(4_000),
   outputs: z.record(z.string(), z.string()).default({}),
 });
@@ -156,7 +174,8 @@ export const FactoryEvent = z.discriminatedUnion('type', [
   z.object({ type: z.literal('message.user'), taskId: Ulid, messageId: z.string(), text: z.string(), author: z.string(), attachments: z.array(z.string()).optional() }),
   z.object({ type: z.literal('message.delta'), taskId: Ulid, messageId: z.string(), text: z.string() }),
   z.object({ type: z.literal('message.completed'), taskId: Ulid, messageId: z.string() }),
-  z.object({ type: z.literal('tool.started'), taskId: Ulid, toolUseId: z.string(), tool: z.string(), summary: z.string().max(2_000) }),
+  // 提案: stepId（並列で動いているとき、どのステップの作業か）
+  z.object({ type: z.literal('tool.started'), taskId: Ulid, toolUseId: z.string(), tool: z.string(), summary: z.string().max(2_000), stepId: z.string().optional() }),
   // 提案: summary（結果の要約。例: 「12 件のテストが通過」）
   z.object({ type: z.literal('tool.finished'), taskId: Ulid, toolUseId: z.string(), ok: z.boolean(), summary: z.string().max(2_000).optional() }),
   z.object({ type: z.literal('plan.proposed'), taskId: Ulid, planVersion: z.number().int().positive(), plan: Plan }),
@@ -167,7 +186,8 @@ export const FactoryEvent = z.discriminatedUnion('type', [
   z.object({ type: z.literal('approval.resolved'), taskId: Ulid, approvalId: z.string(), decision: z.enum(['approve', 'deny']), by: z.string() }),
   z.object({ type: z.literal('egress.blocked'), taskId: Ulid, host: z.string() }),
   z.object({ type: z.literal('usage'), taskId: Ulid, inputTokens: z.number().int(), outputTokens: z.number().int(), vmSeconds: z.number() }),
-  z.object({ type: z.literal('step.changed'), taskId: Ulid, stepId: z.string(), state: z.enum(['started', 'completed', 'failed']) }),
+  // 提案: label（終わったときの StepResult.label。分岐でどちらに進んだかを画面に出す）
+  z.object({ type: z.literal('step.changed'), taskId: Ulid, stepId: z.string(), state: z.enum(['started', 'completed', 'failed']), label: CaseLabel.optional() }),
   z.object({ type: z.literal('task.state'), taskId: Ulid, state: TaskState }),
   // 提案: VM の中でアプリが待ち受けを始めた（プレビューのタブを開けるようになる）
   z.object({ type: z.literal('preview.ready'), taskId: Ulid, port: z.number().int().min(1).max(65535), path: z.string().default('/') }),

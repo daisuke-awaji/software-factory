@@ -45,6 +45,39 @@ describe('モックのバックエンド', () => {
     expect(runs.map((r) => `${r.runId}:${r.state}`)).toEqual(['implement#1:completed', 'verify#1:failed', 'implement#2:completed', 'verify#2:completed', 'review#1:completed', 'deliver#1:completed']);
   });
 
+  it('並列のワークフロー: 枝を同時に動かし、両方が終わってから合流し、ラベルで分かれる', async () => {
+    const page = await get(Items, '/tasks');
+    const sort = page.items.find((i) => i.workflowRef === 'build-parallel@1')!;
+    expect(sort.state).toBe('completed');
+    expect(sort.pullRequest?.number).toBe(129);
+    expect(sort.activeStepIds).toEqual([]);
+    const runs = await get(z.array(StepRun), `/tasks/${sort.id}/steps`);
+    expect(runs.map((r) => r.stepId)).toEqual(['implement', 'unit-test', 'e2e', 'triage', 'deliver']);
+    // 単体テストと E2E は重なって動き、振り分けは両方が終わってから始まる
+    const at = (id: string) => runs.find((r) => r.stepId === id)!;
+    expect(at('e2e').startedAt < at('unit-test').endedAt!).toBe(true);
+    expect(at('triage').startedAt > at('unit-test').endedAt! && at('triage').startedAt > at('e2e').endedAt!).toBe(true);
+    // 小さい変更なので、セキュリティレビューは動かない
+    const { items: events } = await get(z.object({ items: z.array(FactoryEventEnvelope) }), `/tasks/${sort.id}/events`);
+    expect(events.find((e) => e.type === 'step.changed' && e.stepId === 'triage' && e.state === 'completed')).toMatchObject({ label: 'small' });
+    // ツールは、どのステップの作業かが分かる
+    expect(events.filter((e) => e.type === 'tool.started' && e.stepId === 'e2e').length).toBeGreaterThan(0);
+  });
+
+  it('並列のワークフロー: 振り分けで失敗すると、実装に戻って枝をもう一度流す', async () => {
+    const res = await post('/tasks', { title: '問い合わせフォームの入力チェック', workflowRef: 'build-parallel@1', repo: { owner: 'acme', name: 'support-site' }, message: 'フォームの入力チェックを直して' });
+    const current = Task.parse(await res.json());
+    await until(async () => (await stateOf(current.id)) === 'awaiting_approval');
+    const plans = await get(z.array(PlanRecord), `/tasks/${current.id}/plans`);
+    expect((await post(`/tasks/${current.id}/plans/${plans.at(-1)!.version}/approve`)).status).toBe(202);
+    await until(async () => (await stateOf(current.id)) === 'completed');
+    const runs = await get(z.array(StepRun), `/tasks/${current.id}/steps`);
+    expect(runs.map((r) => `${r.runId}:${r.state}`)).toEqual([
+      'implement#1:completed', 'unit-test#1:completed', 'e2e#1:completed', 'triage#1:failed',
+      'implement#2:completed', 'unit-test#2:completed', 'e2e#2:completed', 'triage#2:completed', 'deliver#1:completed',
+    ]);
+  });
+
   it('一覧は更新の新しい順で、カーソルで続きを重ならずに取れる', async () => {
     const Page = z.object({ items: z.array(Task), nextCursor: z.string().optional() });
     const first = await get(Page, '/tasks?limit=30');
@@ -148,6 +181,13 @@ describe('モックのバックエンド', () => {
     const ok = await fetch(`${base}/admin/workflows/chat`, { method: 'PUT', headers: h, body: JSON.stringify({ yaml: 'name: chat\nversion: 1\nsteps:\n  - id: workbench\n    type: agent\n    image: base@3\n' }) });
     expect(ok.status).toBe(200);
     expect(((await ok.json()) as { version: number }).version).toBe(2);
+    // 並列の枝の合流に needs がないと、場所と直し方を返す
+    const noNeeds = 'name: chat\nsteps:\n  - { id: aa, type: agent, next: [bb, cc] }\n  - { id: bb, type: agent, next: dd }\n  - { id: cc, type: agent, next: dd }\n  - { id: dd, type: agent }\n';
+    const fork = await fetch(`${base}/admin/workflows/chat`, { method: 'PUT', headers: h, body: JSON.stringify({ yaml: noNeeds }) });
+    expect(fork.status).toBe(400);
+    expect(JSON.stringify(await fork.json())).toContain('needs');
+    const fixed = await fetch(`${base}/admin/workflows/chat`, { method: 'PUT', headers: h, body: JSON.stringify({ yaml: noNeeds.replace('{ id: dd, type: agent }', '{ id: dd, type: agent, needs: [bb, cc] }') }) });
+    expect(fixed.status).toBe(200);
   });
 
   it('名前を変える前に保存した DB（workItems・lines）が残っていても、シードから作り直して 500 にしない', async () => {

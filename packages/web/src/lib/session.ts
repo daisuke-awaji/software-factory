@@ -10,7 +10,7 @@ export type PlanState = {
 };
 export type ApprovalState = { id: string; reason: ApprovalReason; detail: string; at: number; resolved?: { decision: 'approve' | 'deny'; by: string; at: number } };
 export type ToolState = { id: string; tool: string; summary: string; result?: string; ok?: boolean; startedAt: number; endedAt?: number; runId?: string };
-export type RunState = { runId: string; stepId: string; state: 'running' | 'completed' | 'failed'; startedAt: number; endedAt?: number; tools: string[] };
+export type RunState = { runId: string; stepId: string; state: 'running' | 'completed' | 'failed'; startedAt: number; endedAt?: number; tools: string[]; label?: string };
 
 export type Entry =
   | { k: 'user'; id: string }
@@ -82,7 +82,8 @@ export function reduce(s: Session, e: FactoryEventEnvelope): Session {
       break;
     }
     case 'tool.started': {
-      const run = s.runs.findLast((r) => r.state === 'running');
+      // 並列で動いているときは、stepId でどのステップの作業かを決める
+      const run = (e.stepId ? s.runs.findLast((r) => r.state === 'running' && r.stepId === e.stepId) : undefined) ?? s.runs.findLast((r) => r.state === 'running');
       next.tools = { ...s.tools, [e.toolUseId]: { id: e.toolUseId, tool: e.tool, summary: e.summary, startedAt: at, ...(run ? { runId: run.runId } : {}) } };
       if (run) next.runs = s.runs.map((r) => (r === run ? { ...r, tools: [...r.tools, e.toolUseId] } : r));
       // 会話の中では、続けて動いたツールを1つのまとまり（work）にする
@@ -129,7 +130,7 @@ export function reduce(s: Session, e: FactoryEventEnvelope): Session {
         next.runs = [...s.runs, { runId: `${e.stepId}#${n}`, stepId: e.stepId, state: 'running', startedAt: at, tools: [] }];
       } else {
         const run = s.runs.findLast((r) => r.stepId === e.stepId && r.state === 'running');
-        if (run) next.runs = s.runs.map((r) => (r === run ? { ...r, state: e.state === 'completed' ? 'completed' : 'failed', endedAt: at } : r));
+        if (run) next.runs = s.runs.map((r) => (r === run ? { ...r, state: e.state === 'completed' ? 'completed' : 'failed', endedAt: at, ...(e.label ? { label: e.label } : {}) } : r));
       }
       break;
     case 'task.state':

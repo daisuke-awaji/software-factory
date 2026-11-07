@@ -16,6 +16,7 @@ import { isAdmin, useMe } from '../../stores/me';
 import { useUi } from '../../stores/ui';
 import { ConfirmDialog } from '../task/Dialogs';
 import p from '../pages.module.css';
+import { WorkflowEditor } from './WorkflowEditor';
 
 type Tab = 'network' | 'packages' | 'workflows' | 'vms' | 'users' | 'images';
 
@@ -52,7 +53,7 @@ export function AdminPage() {
       </div>
       {tab === 'network' && <NetworkProfiles />}
       {tab === 'packages' && <PackageSources />}
-      {tab === 'workflows' && <Workflows />}
+      {tab === 'workflows' && <WorkflowEditor />}
       {tab === 'vms' && <Vms />}
       {tab === 'users' && <Users />}
       {tab === 'images' && <ImageRequests />}
@@ -172,52 +173,6 @@ function PackageSources() {
         </div>
       </div>
     </Card>
-  );
-}
-
-function Workflows() {
-  const api = useApi();
-  const toast = useUi((u) => u.toast);
-  const workflows = useResource(() => api.workflows(), []);
-  const [name, setName] = useState('build-verify');
-  const def = useResource(() => api.admin.workflow(name), [name]);
-  const [yaml, setYaml] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const id = useId();
-  useEffect(() => {
-    if (def.data) setYaml(def.data.yaml);
-    setError(null);
-  }, [def.data]);
-  const save = async () => {
-    try {
-      const r = await api.admin.putWorkflow(name, yaml);
-      toast(`${r.name}@${r.version} を登録しました`, 'ok');
-      setError(null);
-      await def.reload();
-      await workflows.reload();
-    } catch (e) {
-      setError(errorMessage(e));
-    }
-  };
-  return (
-    <div className={p.stack}>
-      <div className={p.row}>
-        <Select aria-label="ワークフロー" value={name} onChange={(e) => setName(e.target.value)} style={{ width: 260 }}>
-          {workflows.data?.map((l) => <option key={l.name} value={l.name}>{l.title ?? l.name}（{l.name}@{l.version}）</option>)}
-        </Select>
-        <span className="muted" style={{ fontSize: 13 }}>保存すると新しいバージョンになります。動いているタスクは、始めたときのバージョンのまま進みます。</span>
-      </div>
-      {def.error && <ErrorBanner error={def.error} />}
-      <Field label="ワークフローの定義（YAML）" htmlFor={id} error={error ?? undefined}>
-        <TextArea id={id} className={p.yaml} spellCheck={false} value={yaml} onChange={(e) => setYaml(e.target.value)} aria-invalid={!!error} />
-      </Field>
-      <div className={p.row}>
-        <span className={p.right}>
-          <Button size="sm" variant="ghost" onClick={() => def.data && setYaml(def.data.yaml)}>元に戻す</Button>
-          <Button size="sm" disabled={!def.data || yaml === def.data.yaml} onClick={() => void save()}>検証して登録</Button>
-        </span>
-      </div>
-    </div>
   );
 }
 

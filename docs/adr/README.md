@@ -15,5 +15,6 @@
 | [0009](./0009-mock-backend-simulator.md) | MSW のモックに、ワークフローの実行を流すシミュレーターを持たせる | Proposed |
 | [0010](./0010-session-sidebar.md) | タスクの一覧を、折りたためる左のサイドパネルに移す | Proposed |
 | [0011](./0011-general-terms.md) | 画面とコードの言葉を、エージェントのチャットアプリで一般的な名前にそろえる | Proposed |
+| [0012](./0012-workflow-graph-editor.md) | ワークフローを分岐・並列のあるグラフにし、図は React Flow と ELK で描いて編集する | Proposed |
 
 テンプレート: [template.md](./template.md)

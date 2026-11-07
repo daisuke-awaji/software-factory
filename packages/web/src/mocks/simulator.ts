@@ -1,6 +1,6 @@
 // ワークフローの実行のシミュレーター。台本（SimStep の列）を時間をかけて流し、イベントを出す。
 // 本物と同じく「計画 → 承認 → ステップごとの VM → PR」の順に進み、承認や中断で止まる
-import { type CreateTaskRequest, type FactoryEvent, type Workflow, type Task, titleFromMessage, ulid } from '@factory/contracts';
+import { type CreateTaskRequest, type FactoryEvent, type Workflow, type Task, resolveNext, titleFromMessage, ulid } from '@factory/contracts';
 import { emit as rawEmit, getDb, save, task, type DistributiveOmit, type Sim, type SimStep } from './db';
 import { repoFiles } from './fixtures';
 import { finalSummary, pickScenario, planning, stepWork } from './scenarios';
@@ -58,7 +58,7 @@ function ev(id: string, event: DistributiveOmit<FactoryEvent, 'taskId'>) {
       if (run) {
         run.state = event.state;
         run.endedAt = new Date(at).toISOString();
-        run.result = { verdict: event.state === 'completed' ? 'pass' : 'fail', summary: event.state === 'completed' ? '完了しました' : '失敗しました', outputs: {} };
+        run.result = { verdict: event.state === 'completed' ? 'pass' : 'fail', summary: event.state === 'completed' ? '完了しました' : '失敗しました', outputs: {}, ...(event.label ? { label: event.label } : {}) };
       }
     }
   }
@@ -113,37 +113,68 @@ function applyStep(id: string, step: SimStep) {
       break;
     }
     case 'next':
-      sim.queue.push(...nextStep(id, sim, step.outcome));
+      // 並列で動いているほかの枝の残りと、交互に流す
+      sim.queue = interleave([...nextStep(id, sim, step.outcome, step.from ?? sim.step, step.label), sim.queue]);
       break;
     case 'finish':
       if (step.state === 'completed') sim.queue.unshift({ t: 'say', delay: 300, text: finalSummary(sim.scenario, item.pullRequest?.number) }, { t: 'emit', delay: 200, event: { type: 'task.state', state: 'completed' } });
-      else sim.queue.unshift({ t: 'emit', delay: 200, event: { type: 'task.state', state: 'failed' } });
+      else {
+        for (const r of d.stepRuns[id] ?? []) if (r.state === 'running') Object.assign(r, { state: 'cancelled', endedAt: new Date(now()).toISOString() });
+        sim.queue.unshift({ t: 'emit', delay: 200, event: { type: 'task.state', state: 'failed' } });
+      }
       break;
   }
 }
 
-/** ワークフローの定義に沿って、次のステップの台本を返す */
-function nextStep(id: string, sim: Sim, outcome: 'pass' | 'fail'): SimStep[] {
+/** ステップの台本に、どのステップの作業かを書き込む（並列で動くとき、ツールと「次へ」をステップに結びつけるため） */
+function work(sc: Sim['scenario'], stepId: string, attempt: number, sim: Sim, isFirstRun: boolean): SimStep[] {
+  return stepWork(sc, stepId, attempt, sim, isFirstRun).map((st): SimStep => {
+    if (st.t === 'next') return { ...st, from: stepId };
+    if (st.t === 'emit' && st.event.type === 'tool.started') return { ...st, event: { ...st.event, stepId } };
+    return st;
+  });
+}
+
+/** 枝ごとの台本を、1手ずつ交互に並べる（並列で動いているように見せる） */
+function interleave(lanes: SimStep[][]): SimStep[] {
+  const out: SimStep[] = [];
+  const rest = lanes.filter((l) => l.length).map((l) => [...l]);
+  while (rest.some((l) => l.length)) for (const l of rest) if (l.length) out.push(l.shift()!);
+  return out;
+}
+
+/** ワークフローの定義に沿って、次に動かすステップの台本を返す（並列なら枝ごと。合流は needs がそろうまで待つ） */
+function nextStep(id: string, sim: Sim, outcome: 'pass' | 'fail', from: string, label?: string): SimStep[][] {
   const workflow = workflowOf(task(id)!);
-  const idx = workflow.steps.findIndex((s) => s.id === sim.step);
-  const cur = workflow.steps[idx];
-  let target: string | undefined;
-  if (outcome === 'pass') target = cur?.on?.pass ?? cur?.next ?? workflow.steps[idx + 1]?.id;
-  else {
-    const fail = cur?.on?.fail;
-    const loops = sim.attempts[cur?.id ?? ''] ?? 1;
-    if (fail && loops <= fail.maxLoops) target = fail.goto;
-    else
-      return [
-        { t: 'say', delay: 300, text: `${cur?.id === 'verify' ? '検証' : 'ステップ'}が ${loops} 回続けて失敗したため、ワークフローを止めました。実行ログで原因を確かめて、「やり直す」で再開できます。` },
+  const cur = workflow.steps.find((s) => s.id === from);
+  if (!cur) return [[{ t: 'finish', delay: 300, state: 'failed' }]];
+  const { targets, loop } = resolveNext(cur, outcome, label);
+  if (outcome === 'fail') {
+    const loops = sim.attempts[cur.id] ?? 1;
+    if (!loop || loops > loop.maxLoops) {
+      sim.queue = [];
+      return [[
+        { t: 'say', delay: 300, text: `${cur.id === 'verify' ? '検証' : 'ステップ'}が ${loops} 回続けて失敗したため、ワークフローを止めました。実行ログで原因を確かめて、「やり直す」で再開できます。` },
         { t: 'finish', delay: 100, state: 'failed' },
-      ];
+      ]];
+    }
   }
-  if (!target) return [{ t: 'finish', delay: 300, state: 'completed' }];
-  sim.step = target;
-  const attempt = (sim.attempts[target] ?? 0) + 1;
-  sim.attempts[target] = attempt;
-  return stepWork(sim.scenario, target, attempt, sim, false);
+  if (targets.length === 0) return sim.queue.some((s) => s.t === 'next') ? [] : [[{ t: 'finish', delay: 300, state: 'completed' }]];
+  const lanes: SimStep[][] = [];
+  for (const target of targets) {
+    const def = workflow.steps.find((s) => s.id === target);
+    if (def?.needs?.length) {
+      const arrived = [...new Set([...(sim.arrived?.[target] ?? []), cur.id])];
+      sim.arrived = { ...sim.arrived, [target]: arrived };
+      if (!def.needs.every((n) => arrived.includes(n))) continue;
+      delete sim.arrived[target];
+    }
+    sim.step = target;
+    const attempt = (sim.attempts[target] ?? 0) + 1;
+    sim.attempts[target] = attempt;
+    lanes.push(work(sim.scenario, target, attempt, sim, false));
+  }
+  return lanes;
 }
 
 // ---------------------------------------------------------------- 実行（タイマー）
@@ -279,7 +310,7 @@ export function approvePlan(id: string, version: number, by: string) {
   decide(id, version, 'approved', by);
   sim.waiting = null;
   ev(id, { type: 'task.state', state: 'running' });
-  sim.queue = stepWork(sim.scenario, sim.step, 1, sim, true);
+  sim.queue = work(sim.scenario, sim.step, 1, sim, true);
   save();
   tick(id);
 }
@@ -385,7 +416,7 @@ export function retry(id: string, runId: string) {
   const attempt = (sim.attempts[run.stepId] ?? 0) + 1;
   sim.attempts[run.stepId] = attempt;
   ev(id, { type: 'task.state', state: 'running' });
-  sim.queue = [{ t: 'say', delay: 300, text: `${run.stepId === 'verify' ? '検証' : 'ステップ'}をやり直します。` }, ...stepWork(sim.scenario, run.stepId, attempt, sim, false)];
+  sim.queue = [{ t: 'say', delay: 300, text: `${run.stepId === 'verify' ? '検証' : 'ステップ'}をやり直します。` }, ...work(sim.scenario, run.stepId, attempt, sim, false)];
   save();
   tick(id);
 }
