@@ -1,11 +1,12 @@
 // イベントの畳み込み（純粋な関数）のテスト
-import { type FactoryEventEnvelope, type Plan, ulid } from '@factory/contracts';
+import { type FactoryEvent, type FactoryEventEnvelope, type Plan, ulid } from '@factory/contracts';
+import type { DistributiveOmit } from '../mocks/db';
 import { describe, expect, it } from 'vitest';
 import { emptySession, pendingOf, reduce, reduceAll } from './session';
 
 const wid = ulid();
 let t = Date.UTC(2026, 10, 7, 1, 0, 0);
-const ev = (e: Omit<FactoryEventEnvelope, 'eventId' | 'workItemId'>): FactoryEventEnvelope => ({ ...e, workItemId: wid, eventId: ulid((t += 1000)) }) as FactoryEventEnvelope;
+const ev = (e: DistributiveOmit<FactoryEvent, 'workItemId'>): FactoryEventEnvelope => ({ ...e, workItemId: wid, eventId: ulid((t += 1000)) }) as FactoryEventEnvelope;
 const plan: Plan = { summaryForHumans: 's', goal: 'g', deliverables: [], repos: [], steps: ['a'], doneCriteria: [], externalAccess: [], estimate: { minutes: 1, usd: 0.1 } };
 
 describe('reduce', () => {

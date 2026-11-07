@@ -18,7 +18,9 @@ async function main() {
   // 本番は Cognito の ID トークン（M1 で Amplify などに差し替える）
   const getToken = () => (mock ? 'mock-token' : (sessionStorage.getItem('sf.idToken') ?? ''));
   const api = createApiClient({ getToken });
-  const events = new EventStream(import.meta.env.VITE_WS_URL ?? 'wss://ws.factory.mock/ws', getToken, api);
+  // WebSocket API の URL（本番は環境ごとに VITE_WS_URL で渡す）
+  const wsUrl = import.meta.env.VITE_WS_URL ?? (mock ? 'wss://ws.factory.mock/ws' : `wss://${location.host}/ws`);
+  const events = new EventStream(wsUrl, getToken, api);
   events.start();
   const services: Services = { api, events, mock };
 
