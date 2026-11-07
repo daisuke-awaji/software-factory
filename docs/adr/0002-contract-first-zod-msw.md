@@ -8,7 +8,7 @@
 フロントエンド（React / Vite / Zustand）とバックエンド（Hono）を並行して作りたい。API の形が食い違うと、結合したときに手戻りが出る。
 
 ## 決定
-- API・イベント・ライン・イメージの型は **`packages/contracts` の Zod スキーマだけ**で定義する
+- API・イベント・ワークフロー・イメージの型は **`packages/contracts` の Zod スキーマだけ**で定義する
 - バックエンドは `@hono/zod-openapi` で同じスキーマを使い、OpenAPI を自動で生成する
 - フロントエンドは apiClient でレスポンスを Zod で検証する。MSW のハンドラーとフィクスチャも同じスキーマで検証する
 - MSW は、開発時はブラウザ（`setupWorker`）、テストでは Node（`setupServer`）で同じハンドラーを使う。WebSocket も `ws.link()` で模擬する

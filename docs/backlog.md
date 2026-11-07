@@ -20,7 +20,7 @@
 | M0-10 | PoC V8 / V14: Lambda@Edge + Cognito による公開物の認可と、CSP の sandbox の互換性 | security | P1 | 許可されていない人には 403。代表的な HTML のレポートが正しく表示される |
 | M0-11 | PoC V10: LNC を使ったときの送信元 IP の分かれ方 | proxy | P2 | 結果を記録した |
 
-## M1: 基盤と chat ラインの最小版
+## M1: 基盤と chat ワークフローの最小版
 
 | ID | タイトル | area | 優先度 | 完了条件 |
 |---|---|---|---|---|
@@ -31,9 +31,9 @@
 | M1-05 | factory-base イメージ（L1）と base イメージ | image, agentd | P0 | `CfnMicrovmImage` でビルドでき、/ready と /validate が通る |
 | M1-06 | agentd の最小版（/run、/v1/messages、Claude Agent SDK、イベントの送信） | agentd | P0 | VM の中でエージェントが応答し、イベントが Callback API に届く |
 | M1-07 | Callback API（プライベート REST API + Hono、vmToken の認証） | api | P0 | VPC エンドポイント以外からは到達できない。vmToken が失効したら 401 |
-| M1-08 | API: ワークアイテムの作成・取得・メッセージの送信（Hono + zod-openapi） | api | P0 | ルートのテストが通る。`/openapi.json` を出力できる |
+| M1-08 | API: タスクの作成・取得・メッセージの送信（Hono + zod-openapi） | api | P0 | ルートのテストが通る。`/openapi.json` を出力できる |
 | M1-09 | WebSocket API（$connect / $default / 配信）と取りこぼしの補完（events?after=） | api | P0 | 再接続しても取りこぼしがない |
-| M1-10 | エンジン: chat ライン（workbench の1ステージ）と VM マネージャー（受付制御、RunMicrovm） | engine, vm | P0 | Web からの依頼で VM が起動し、終わると終了する。二重に起動しない |
+| M1-10 | エンジン: chat ワークフロー（workbench の1ステップ）と VM マネージャー（受付制御、RunMicrovm） | engine, vm | P0 | Web からのタスクで VM が起動し、終わると終了する。二重に起動しない |
 | M1-11 | Web: 一覧とチャット（ストリーミング、ツールの実行状況）。MSW のモード | web | P0 | MSW のモードで全画面が動く。結合テストが通る |
 | M1-12 | CDK: Frontend（App のディストリビューション）と deploy-dev.yml（OIDC） | infra | P1 | main への push で dev にデプロイされる |
 
@@ -41,19 +41,19 @@
 
 | ID | タイトル | area | 優先度 | 完了条件 |
 |---|---|---|---|---|
-| M2-01 | 計画の提示と承認（plan.proposed、承認カード、ステージ内の承認） | agentd, api, web | P0 | 承認するまで実行が始まらない |
+| M2-01 | 計画の提示と承認（plan.proposed、承認カード、ステップ内の承認） | agentd, api, web | P0 | 承認するまで実行が始まらない |
 | M2-02 | 再承認（範囲の変更、egress、予算、時間）と approval.required | engine, web | P0 | 4種類のトリガーで作業が止まり、承認すると再開する |
 | M2-03 | egress プロキシの本実装（ネットワークプロファイル L0〜L2、拒否時の印、ログ） | proxy | P0 | ブロックされた通信がチャットに表示される |
 | M2-04 | パッケージソースのプロファイル（public）と起動フックでの設定の生成 | agentd | P0 | npm / pip がプロキシ経由で動く |
 | M2-05 | GitHub App（ユーザーごとの連携）と、使えるリポジトリの一覧 | api | P0 | 本人の権限と App のインストール先が重なるリポジトリだけが出る |
 | M2-06 | Git ゲートウェイ（トークンの付与、計画で許可したリポジトリの確認、ref の検査） | proxy, security | P0 | 保護ブランチへの push が拒否されることをテストで確かめた |
-| M2-07 | deliver ステージ（PR の作成、説明の自動生成、AI生成のラベル） | engine, api | P0 | PR に計画・テスト結果・依頼者が載る |
+| M2-07 | deliver ステップ（PR の作成、説明の自動生成、AI生成のラベル） | engine, api | P0 | PR に計画・テスト結果・作成者が載る |
 | M2-08 | ブランチ保護がないリポジトリへの警告と、書き込みの禁止の設定 | api | P1 | 管理者の設定で禁止できる |
 | M2-09 | ライブプレビュー（Preview のディストリビューション、プレビュープロキシ、iframe と別タブ） | proxy, web | P0 | UC2 が dev 環境で通る |
 | M2-10 | suspend / resume と keepalive、8時間の引き継ぎ（チェックポイント） | vm, agentd | P0 | 7時間30分で自動的に引き継がれ、会話が続く |
 | M2-11 | ファイルツリー・差分・添付・ダウンロード | web, api | P1 | zip でダウンロードできる |
 
-## M3: カスタムイメージと多段のライン
+## M3: カスタムイメージと多段のワークフロー
 
 | ID | タイトル | area | 優先度 | 完了条件 |
 |---|---|---|---|---|
@@ -61,9 +61,9 @@
 | M3-02 | Dockerfile の合成（L1 → L2 → L3）とビルド（Create / UpdateMicrovmImage、ビルドの監視） | image | P0 | ユーザーの定義からイメージができ、L3 の再設定が効いている |
 | M3-03 | イメージのカタログ（バージョン、公開範囲、自動の整理）と UI | image, web | P0 | 個人とプロジェクトの範囲で使える |
 | M3-04 | 既定のイメージ（web / data） | image | P0 | web で Playwright、data で pandas が動く |
-| M3-05 | build-verify ライン（多段、ステージ間の受け渡し、fail で戻る） | engine | P0 | 検証で失敗すると実装に戻り、maxLoops で止まる |
-| M3-06 | ラインの登録（管理者、YAML の検証、バージョン） | api | P1 | 不正な定義を登録時に拒否する |
-| M3-07 | ステージの UI（進捗、ステージごとのログと成果物） | web | P1 | どのステージにいるかが分かる |
+| M3-05 | build-verify ワークフロー（多段、ステップ間の受け渡し、fail で戻る） | engine | P0 | 検証で失敗すると実装に戻り、maxLoops で止まる |
+| M3-06 | ワークフローの登録（管理者、YAML の検証、バージョン） | api | P1 | 不正な定義を登録時に拒否する |
+| M3-07 | ステップの UI（進捗、ステップごとのログと成果物） | web | P1 | どのステップにいるかが分かる |
 
 ## M4: 社内公開・管理・パイロット
 

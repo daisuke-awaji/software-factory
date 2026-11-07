@@ -16,14 +16,14 @@
 | エラー | `ApiError { code, message, requestId? }` |
 | ページング | `?limit=20&cursor=<不透明な文字列>` → `{ items, nextCursor? }` |
 | 冪等性 | 作成系の POST は `Idempotency-Key` ヘッダーを受け付ける（24時間保持） |
-| 権限 | User は自分のワークアイテムだけ、Admin はすべてを操作できる。リポジトリへの権限は GitHub 側で判定する |
+| 権限 | User は自分のタスクだけ、Admin はすべてを操作できる。リポジトリへの権限は GitHub 側で判定する |
 
 ### 1.1 エラーコード
 | HTTP | code | 意味 |
 |---|---|---|
 | 400 | `VALIDATION_ERROR` | 入力が契約に合わない |
 | 401 | `UNAUTHORIZED` | 認証されていない |
-| 403 | `FORBIDDEN` | 権限がない（他人のワークアイテム、Admin 専用の操作など） |
+| 403 | `FORBIDDEN` | 権限がない（他人のタスク、Admin 専用の操作など） |
 | 404 | `NOT_FOUND` | 見つからない（他人のものも 404 にして、存在を明かさない） |
 | 409 | `CONFLICT` | 状態が合わない（承認待ちでないのに承認しようとした、など） |
 | 422 | `PRECHECK_FAILED` | 公開前のチェックや、ブランチ保護のチェックで止まった |
@@ -34,48 +34,48 @@
 
 ## 2. REST API（ユーザー向け）
 
-### 2.1 ワークアイテム（セッション）
+### 2.1 タスク（セッション）
 | メソッド | パス | 内容 | 主な要件 |
 |---|---|---|---|
-| POST | `/work-items` | 作成する（`CreateWorkItemRequest`: title?、lineRef、projectId?、repo?、message。title を省略したら本文の最初の文から作る（60字まで。`titleFromMessage`）。後から `PATCH` で変えられる）。durable execution を起動する | FR-UI-01、FR-LINE-07 |
-| GET | `/work-items` | 自分のワークアイテムの一覧（`?state=`・`?archived=`）。更新の新しい順に、ページングで返す | FR-UI-02 |
-| GET | `/work-items/{id}` | 詳細（状態、現在のステージ、使用量） | |
-| PATCH | `/work-items/{id}` | 名前の変更、アーカイブ | FR-UI-02 |
-| POST | `/work-items/{id}/messages` | 追加の指示を送る（VM の `/v1/messages` に転送する） | FR-UI-07 |
-| POST | `/work-items/{id}/interrupt` | 実行中のエージェントを中断する | FR-UI-07 |
-| POST | `/work-items/{id}/cancel` | ライン全体を中断する | FR-LINE-08 |
-| GET | `/work-items/{id}/events` | イベントの履歴（`?after=<ulid>`。WebSocket を再接続したときの取りこぼしを埋める） | |
+| POST | `/tasks` | 作成する（`CreateTaskRequest`: title?、workflowRef、projectId?、repo?、message。title を省略したら本文の最初の文から作る（60字まで。`titleFromMessage`）。後から `PATCH` で変えられる）。durable execution を起動する | FR-UI-01、FR-LINE-07 |
+| GET | `/tasks` | 自分のタスクの一覧（`?state=`・`?archived=`）。更新の新しい順に、ページングで返す | FR-UI-02 |
+| GET | `/tasks/{id}` | 詳細（状態、現在のステップ、使用量） | |
+| PATCH | `/tasks/{id}` | 名前の変更、アーカイブ | FR-UI-02 |
+| POST | `/tasks/{id}/messages` | 追加の指示を送る（VM の `/v1/messages` に転送する） | FR-UI-07 |
+| POST | `/tasks/{id}/interrupt` | 実行中のエージェントを中断する | FR-UI-07 |
+| POST | `/tasks/{id}/cancel` | ワークフロー全体を中断する | FR-LINE-08 |
+| GET | `/tasks/{id}/events` | イベントの履歴（`?after=<ulid>`。WebSocket を再接続したときの取りこぼしを埋める） | |
 
 ### 2.2 計画と承認
 | メソッド | パス | 内容 |
 |---|---|---|
-| GET | `/work-items/{id}/plans` | 計画の版の一覧 |
-| POST | `/work-items/{id}/plans/{version}/approve` | 計画を承認する。承認しないまま新しい版が出ていたら 409 |
-| POST | `/work-items/{id}/plans/{version}/request-changes` | 修正を依頼する（`{ comment }`） |
-| POST | `/work-items/{id}/plans/{version}/reject` | 却下する |
-| POST | `/work-items/{id}/approvals/{approvalId}` | 再承認に回答する（`{ decision: 'approve' \| 'deny', comment? }`。範囲の変更、egress、予算、時間） |
+| GET | `/tasks/{id}/plans` | 計画の版の一覧 |
+| POST | `/tasks/{id}/plans/{version}/approve` | 計画を承認する。承認しないまま新しい版が出ていたら 409 |
+| POST | `/tasks/{id}/plans/{version}/request-changes` | 修正を依頼する（`{ comment }`） |
+| POST | `/tasks/{id}/plans/{version}/reject` | 却下する |
+| POST | `/tasks/{id}/approvals/{approvalId}` | 再承認に回答する（`{ decision: 'approve' \| 'deny', comment? }`。範囲の変更、egress、予算、時間） |
 
-### 2.3 ステージ・ファイル・成果物
+### 2.3 ステップ・ファイル・成果物
 | メソッド | パス | 内容 |
 |---|---|---|
-| GET | `/work-items/{id}/stages` | ステージの実行の一覧（状態、結果、ログへのリンク） |
-| POST | `/work-items/{id}/stages/{runId}/retry` | ステージをやり直す（Admin、または本人） |
-| GET | `/work-items/{id}/files?path=` | ファイルツリー（実行中は VM から、終了後はスナップショットから） |
-| GET | `/work-items/{id}/files/content?path=` | ファイルの中身（presigned URL へのリダイレクト） |
-| GET | `/work-items/{id}/diff` | 作業ブランチの差分 |
-| POST | `/work-items/{id}/attachments` | 添付ファイルのアップロード用の presigned URL を発行する |
-| POST | `/work-items/{id}/downloads` | ダウンロード（ファイル単位、または zip）を作る |
+| GET | `/tasks/{id}/steps` | ステップの実行の一覧（状態、結果、ログへのリンク） |
+| POST | `/tasks/{id}/steps/{runId}/retry` | ステップをやり直す（Admin、または本人） |
+| GET | `/tasks/{id}/files?path=` | ファイルツリー（実行中は VM から、終了後はスナップショットから） |
+| GET | `/tasks/{id}/files/content?path=` | ファイルの中身（presigned URL へのリダイレクト） |
+| GET | `/tasks/{id}/diff` | 作業ブランチの差分 |
+| POST | `/tasks/{id}/attachments` | 添付ファイルのアップロード用の presigned URL を発行する |
+| POST | `/tasks/{id}/downloads` | ダウンロード（ファイル単位、または zip）を作る |
 
 ### 2.4 プレビュー
 | メソッド | パス | 内容 |
 |---|---|---|
-| POST | `/work-items/{id}/previews` | `{ port }` → `{ url }`（`https://<Preview>/__open?t=<一回限りのチケット>`。60秒で無効） |
+| POST | `/tasks/{id}/previews` | `{ port }` → `{ url }`（`https://<Preview>/__open?t=<一回限りのチケット>`。60秒で無効） |
 
 ### 2.5 社内公開
 | メソッド | パス | 内容 |
 |---|---|---|
-| POST | `/work-items/{id}/publications/precheck` | 公開前のチェック（secret、サイズ、絶対パス、外部の参照）→ 結果 |
-| POST | `/publications` | 公開する（`{ workItemId, path, acl: { scope: 'org' \| 'restricted', users?, groups? }, expiresAt? }`）。**Cognito の JWT が必須で、VM のトークンでは呼べない** |
+| POST | `/tasks/{id}/publications/precheck` | 公開前のチェック（secret、サイズ、絶対パス、外部の参照）→ 結果 |
+| POST | `/publications` | 公開する（`{ taskId, path, acl: { scope: 'org' \| 'restricted', users?, groups? }, expiresAt? }`）。**Cognito の JWT が必須で、VM のトークンでは呼べない** |
 | GET | `/publications` | 自分の公開物の一覧 |
 | PATCH | `/publications/{id}` | 公開範囲・有効期限の変更、再公開（バージョンを上げる） |
 | DELETE | `/publications/{id}` | 公開を停止する |
@@ -87,7 +87,7 @@
 | GET | `/github/callback` | 認可の callback（トークンを Secrets Manager に保存する） |
 | GET | `/github/repos` | 使えるリポジトリの一覧（本人の権限と App のインストール先が重なるもの） |
 
-### 2.7 イメージとライン
+### 2.7 イメージとワークフロー
 | メソッド | パス | 内容 |
 |---|---|---|
 | GET | `/images` | 使えるイメージの一覧（既定、自分、プロジェクト、組織） |
@@ -95,7 +95,7 @@
 | GET | `/images/{name}/versions` | バージョンとビルドの状態 |
 | GET | `/images/{name}/versions/{v}/build-log` | ビルドログ |
 | POST | `/images/{name}/visibility` | 公開範囲の変更（org は管理者の承認待ちになる） |
-| GET | `/lines` | ラインの一覧（閲覧） |
+| GET | `/workflows` | ワークフローの一覧（閲覧） |
 
 ---
 
@@ -104,7 +104,7 @@
 |---|---|---|
 | GET / PUT | `/admin/network-profiles/{name}` | allowlist のプロファイル |
 | GET / PUT | `/admin/package-sources/{name}` | パッケージソースのプロファイル（`public` / `codeartifact`） |
-| GET / PUT | `/admin/lines/{name}` | ラインの登録（YAML。新しいバージョンになる） |
+| GET / PUT | `/admin/workflows/{name}` | ワークフローの登録（YAML。新しいバージョンになる） |
 | POST | `/admin/images/{name}/approve-org` | イメージを組織全体に公開することを承認する |
 | GET | `/admin/vms` | 実行中・suspend 中の VM の一覧 |
 | POST | `/admin/vms/{id}/terminate` | VM を強制的に停止する |
@@ -116,9 +116,9 @@
 ## 4. WebSocket（ユーザー向けのイベント配信）
 
 - 接続先: `wss://<WebSocket API>/ws?token=<Cognito の ID トークン>`（`$connect` で検証する）
-- クライアントからの送信: `{ "action": "subscribe", "workItemId": "<ulid>" }` / `{ "action": "unsubscribe", ... }`
+- クライアントからの送信: `{ "action": "subscribe", "taskId": "<ulid>" }` / `{ "action": "unsubscribe", ... }`
 - サーバーからの配信: `FactoryEvent`（contracts の判別共用体）に `eventId`（ULID）を付けたもの
-- 再接続したら `GET /work-items/{id}/events?after=<最後に受け取った eventId>` で取りこぼしを埋める
+- 再接続したら `GET /tasks/{id}/events?after=<最後に受け取った eventId>` で取りこぼしを埋める
 
 | type | いつ届くか | 主な項目 |
 |---|---|---|
@@ -128,23 +128,23 @@
 | `approval.required` | 再承認が必要になったとき | reason（scope / egress / budget / time）、detail |
 | `egress.blocked` | allowlist で通信が拒否されたとき | host |
 | `usage` | 使用量の増分 | inputTokens、outputTokens、vmSeconds |
-| `stage.changed` | ステージが始まった・終わった | stageId、state |
-| `workitem.state` | ワークアイテムの状態が変わった | state |
+| `step.changed` | ステップが始まった・終わった | stepId、state |
+| `task.state` | タスクの状態が変わった | state |
 
 ---
 
 ## 5. Agent Callback API（VM → コントロールプレーン。プライベート）
 
 - 到達経路: VM → LNC → `execute-api` の VPC エンドポイント → プライベート REST API（リソースポリシーでその VPC エンドポイントに限る）
-- 認証: `Authorization: Bearer <vmToken>`（`/run` のときに受け取る。ワークアイテムとステージに紐づき、ステージが終わると失効する）
+- 認証: `Authorization: Bearer <vmToken>`（`/run` のときに受け取る。タスクとステップに紐づき、ステップが終わると失効する）
 
 | メソッド | パス | 内容 |
 |---|---|---|
 | POST | `/cb/v1/events` | イベントをまとめて送る（`{ events: FactoryEvent[] }`。`eventId` で重複を除く） |
 | POST | `/cb/v1/heartbeat` | heartbeat（5分ごと）→ `SendDurableExecutionCallbackHeartbeat` |
-| POST | `/cb/v1/stage-complete` | ステージの完了（`StageResult`）→ `SendDurableExecutionCallbackSuccess` |
-| POST | `/cb/v1/stage-failed` | ステージの失敗（`{ error, retryable }`）→ `SendDurableExecutionCallbackFailure` |
-| POST | `/cb/v1/artifacts/presign` | 出力をアップロードする presigned URL の発行（そのワークアイテムとステージのプレフィックスに限る） |
+| POST | `/cb/v1/step-complete` | ステップの完了（`StepResult`）→ `SendDurableExecutionCallbackSuccess` |
+| POST | `/cb/v1/step-failed` | ステップの失敗（`{ error, retryable }`）→ `SendDurableExecutionCallbackFailure` |
+| POST | `/cb/v1/artifacts/presign` | 出力をアップロードする presigned URL の発行（そのタスクとステップのプレフィックスに限る） |
 | POST | `/cb/v1/checkpoint` | チェックポイントの完了の通知（保存先のキー） |
 
 ---
@@ -160,7 +160,7 @@
 | `/aws/lambda-microvms/runtime/v1/run` | Lambda（起動時） | `runHookPayload`（`RunPayload`）を受け取り、すぐに 200 を返す |
 | `/aws/lambda-microvms/runtime/v1/suspend` / `resume` / `terminate` | Lambda | flush、接続の張り直し、最後の送信 |
 | `POST /v1/messages` | VM マネージャー | ユーザーのメッセージ |
-| `POST /v1/plan/approve` | VM マネージャー | 計画の承認（ステージ内の承認） |
+| `POST /v1/plan/approve` | VM マネージャー | 計画の承認（ステップ内の承認） |
 | `POST /v1/interrupt` | VM マネージャー | 中断 |
 | `POST /v1/checkpoint` | VM マネージャー | チェックポイントを作る（設計 §3.8） |
 | `GET /v1/files` / `GET /v1/diff` | API | ファイルツリーと差分 |
@@ -169,20 +169,20 @@
 ### 6.1 `RunPayload`（`runHookPayload` に JSON で入れる）
 ```jsonc
 {
-  "workItemId": "01JC...",
-  "stageRunId": "verify#2",
+  "taskId": "01JC...",
+  "stepRunId": "verify#2",
   "vmToken": "<VPC の中でだけ使えるトークン>",
   "callbackBaseUrl": "https://<private-api-id>.execute-api.ap-northeast-1.amazonaws.com/prod",
-  "stage": { "id": "verify", "type": "agent", "instructions": "skills/verify.md" },
+  "step": { "id": "verify", "type": "agent", "instructions": "skills/verify.md" },
   "harness": { "type": "claude-code", "model": "<JP の推論プロファイルの ID>" },
-  "inputs": { "branch": { "repo": "org/repo", "ref": "factory/01JC.../implement" }, "request": "<依頼の本文>" },
+  "inputs": { "branch": { "repo": "org/repo", "ref": "factory/01JC.../implement" }, "request": "<タスクの本文>" },
   "network": { "proxy": "http://egress-proxy.internal:3128", "gitGateway": "https://git-gw.internal" },
   "packageSource": "public",
   "restore": null
 }
 ```
 - この中身は snapshot には入らない（`/run` のときに渡るだけ）。秘密情報は vmToken だけにする
-- **durable execution の callbackId は VM に渡さない**。Callback API が vmToken → `StageRuns` の順に引いて、`SendDurableExecutionCallback*` を呼ぶ（VM が別のステージを完了させることを防ぐ）
+- **durable execution の callbackId は VM に渡さない**。Callback API が vmToken → `StepRuns` の順に引いて、`SendDurableExecutionCallback*` を呼ぶ（VM が別のステップを完了させることを防ぐ）
 
 ---
 
@@ -205,10 +205,10 @@
 | メソッド | パス | 内容 |
 |---|---|---|
 | GET | `/me` | ログインしているユーザー（名前、ロール、GitHub の連携状態） |
-| POST | `/attachments` | 作成する前の添付の presigned URL（新しい依頼の入力欄から上げるため）。作成時に `CreateWorkItemRequest.attachments` で渡す |
+| POST | `/attachments` | 作成する前の添付の presigned URL（新しいタスクの入力欄から上げるため）。作成時に `CreateTaskRequest.attachments` で渡す |
 | GET | `/admin/network-profiles`、`/admin/package-sources` | 一覧（§3 は名前ごとの GET / PUT だけだった） |
 
 ### 7.3 型
-- `WorkItem` に `repo?`、`branch?`、`pullRequest?`、`usage?`、`costUsd?`、`archived` を足した（一覧とヘッダーに出すため）
-- `Line` に `title?`、`description?` を足した（画面に出す名前と説明）
-- 新規: `PlanRecord`、`StageRun`、`FileTree`、`Diff`、`AttachmentTicket`、`Download`、`Preview`、`PrecheckResult`、`Publication`（と作成・更新の入力）、`Me`、`Repo`、`ImageSpec`、`ImageSummary`、`ImageVersion`、`BuildLog`、`NetworkProfile`、`PackageSource`、`LineDefinition`、`VmInfo`、`Capacity`、`AdminUser`
+- `Task` に `repo?`、`branch?`、`pullRequest?`、`usage?`、`costUsd?`、`archived` を足した（一覧とヘッダーに出すため）
+- `Workflow` に `title?`、`description?` を足した（画面に出す名前と説明）
+- 新規: `PlanRecord`、`StepRun`、`FileTree`、`Diff`、`AttachmentTicket`、`Download`、`Preview`、`PrecheckResult`、`Publication`（と作成・更新の入力）、`Me`、`Repo`、`ImageSpec`、`ImageSummary`、`ImageVersion`、`BuildLog`、`NetworkProfile`、`PackageSource`、`WorkflowDefinition`、`VmInfo`、`Capacity`、`AdminUser`

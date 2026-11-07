@@ -45,7 +45,7 @@ flowchart LR
 |---|---|---|
 | Web UI / CLI / IDE からのタスク投入 | ◎ | Codex, Cursor, Claude Code |
 | Issue のアサインで起動（GitHub / Jira / Linear） | ◎ | Copilot, Devin, Linear |
-| チャットから依頼（Slack / Teams） | ○ | Devin, Cursor |
+| チャットから指示（Slack / Teams） | ○ | Devin, Cursor |
 | API / Webhook での起動 | ○ | Devin API, 各種ファクトリー |
 | スケジュール実行、自動で再開して作業を続ける | △ | Codex automations, Factory.ai |
 | トリアージ段階（実装する / 仕様化する / 保留 の判断、曖昧なIssueは却下） | △ | Warp, MindStudio 事例 |
