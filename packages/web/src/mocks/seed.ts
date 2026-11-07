@@ -45,7 +45,7 @@ const PAST: [days: number, title: string, repo?: PastRepo | undefined, end?: 'ca
 
 export function seed(): MockDb {
   const db: MockDb = {
-    version: 4,
+    version: 5,
     settings: { speed: 1 },
     me: structuredClone(fx.me),
     users: structuredClone(fx.users),
