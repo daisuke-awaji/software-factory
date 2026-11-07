@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 const fresh = async (page: Page, path = '/') => {
   await page.goto(`${path}?mock-reset&mock-speed=8`);
-  await expect(page.getByRole('table', { name: '依頼の一覧' }).or(page.getByRole('region', { name: '会話' }))).toBeVisible();
+  await expect(page.getByRole('navigation', { name: '依頼' }).getByRole('link').first()).toBeVisible();
 };
 
 test('依頼を出して、計画を承認すると、検証のやり直しを経て PR とプレビューが届く', async ({ page }) => {
