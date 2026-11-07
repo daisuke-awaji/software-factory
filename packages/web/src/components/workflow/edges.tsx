@@ -1,17 +1,19 @@
 // 図の矢印: 前へ進む（実線。分岐はラベル付き）と、失敗したときに戻る（破線。ノードの下を回る）
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, type Edge, type EdgeProps } from '@xyflow/react';
+import { roundedPath, type EdgeRoute } from './layout';
 import type { GraphEdgeData } from './model';
 import s from './WorkflowGraph.module.css';
 
-export type FlowEdgeData = GraphEdgeData & { markers: string; dip?: number; direction: 'RIGHT' | 'DOWN' };
+export type FlowEdgeData = GraphEdgeData & { markers: string; dip?: number; direction: 'RIGHT' | 'DOWN'; route?: EdgeRoute };
 export type FlowEdge = Edge<FlowEdgeData, 'flow' | 'loop'>;
 
 const tone = (d: FlowEdgeData, selected?: boolean) => (selected ? 'selected' : d.kind === 'fail' ? (d.state === 'taken' ? 'loop-taken' : 'loop') : d.state === 'taken' ? 'taken' : d.state === 'skipped' ? 'skipped' : 'idle');
 
-function Label({ x, y, children, kind, selected }: { x: number; y: number; children: string; kind: string; selected?: boolean | undefined }) {
+function Label({ x, y, children, kind, selected, start }: { x: number; y: number; children: string; kind: string; selected?: boolean | undefined; start?: boolean }) {
+  // start: 左端をその位置に合わせる（縦に並べたときの戻る矢印。ラベルがノードに重ならないように、曲線の外側に置く）
   return (
     <EdgeLabelRenderer>
-      <span className={s.edgeLabel} data-kind={kind} data-selected={selected || undefined} style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)` }}>
+      <span className={s.edgeLabel} data-kind={kind} data-selected={selected || undefined} style={{ transform: `translate(${start ? '-6px' : '-50%'}, -50%) translate(${x}px, ${y}px)` }}>
         {children}
       </span>
     </EdgeLabelRenderer>
@@ -19,7 +21,12 @@ function Label({ x, y, children, kind, selected }: { x: number; y: number; child
 }
 
 export function FlowEdgeView({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, selected }: EdgeProps<FlowEdge>) {
-  const [path, lx, ly] = getBezierPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, curvature: 0.35 });
+  // ELK が引いた道すじ（ほかのノードを避ける）を使う。まだなければ、ベジェ曲線で仮に引く
+  const route = data!.route;
+  const [bezier, bx, by] = getBezierPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, curvature: 0.35 });
+  const path = route ? roundedPath(route.points) : bezier;
+  const lx = route?.label?.x ?? bx;
+  const ly = route?.label?.y ?? by;
   const t = tone(data!, selected);
   return (
     <>
@@ -50,10 +57,16 @@ export function LoopEdgeView({ id, sourceX, sourceY, targetX, targetY, data, sel
   return (
     <>
       <BaseEdge id={id} path={path} className={s.edge} data-tone={t} markerEnd={`url(#${d.markers}-${t})`} interactionWidth={18} />
-      <Label x={lx} y={ly} kind="loop" selected={selected}>{`失敗したら戻る（${d.maxLoops ?? 0} 回まで）`}</Label>
+      <Label x={lx} y={ly} kind="loop" selected={selected} start={d.direction === 'DOWN'}>{loopText(d.maxLoops ?? 0, d.direction)}</Label>
     </>
   );
 }
+
+/** 戻る矢印のラベル（縦に並べたときは右に出るので短くする） */
+export const loopText = (n: number, direction: 'RIGHT' | 'DOWN') => (direction === 'RIGHT' ? `失敗したら戻る（${n} 回まで）` : `失敗 · ${n} 回まで`);
+
+/** 文字の幅の見積もり（11px。全角は 1 文字 11px、半角は 6.5px） */
+export const textWidth = (t: string) => [...t].reduce((w, c) => w + (/[\u3000-\uffff]/.test(c) ? 11 : 6.5), 0);
 
 const TONES = ['idle', 'taken', 'skipped', 'loop', 'loop-taken', 'selected'] as const;
 

@@ -7,7 +7,10 @@
   background-size: 18px 18px;
   overflow: hidden;
   font-family: var(--font);
+  /* 矢印（まだ通っていない）の色。ダークモードでは背景に沈まないよう、1段明るくする */
+  --wf-edge: var(--faint);
 }
+:global([data-theme="dark"]) .wrap { --wf-edge: var(--muted); }
 .wrap :global(.react-flow) { --xy-background-color: transparent; background: transparent; }
 .wrap :global(.react-flow__attribution) { background: transparent; font-size: 9px; opacity: 0.45; }
 .wrap :global(.react-flow__attribution a) { color: var(--faint); }
@@ -16,6 +19,8 @@
 .wrap[data-mode="edit"] :global(.react-flow__node-step) { cursor: pointer; }
 .wrap :global(.react-flow__node:focus-visible) { outline: 2px solid var(--run); outline-offset: 3px; border-radius: 12px; }
 .markers { position: absolute; width: 0; height: 0; overflow: hidden; }
+.scroller { position: absolute; inset: 0; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; }
+.inner { position: relative; width: 100%; height: 100%; }
 
 /* ---- ノード ---- */
 .node {
@@ -91,14 +96,14 @@
 
 /* ---- 矢印 ---- */
 .wrap :global(.react-flow__edge) .edge { stroke-width: 1.5; transition: stroke 0.15s var(--ease); }
-.wrap :global(.react-flow__edge) .edge[data-tone="idle"] { stroke: var(--faint); }
+.wrap :global(.react-flow__edge) .edge[data-tone="idle"] { stroke: var(--wf-edge); }
 .wrap :global(.react-flow__edge) .edge[data-tone="taken"] { stroke: var(--ink); stroke-width: 1.75; }
 .wrap :global(.react-flow__edge) .edge[data-tone="skipped"] { stroke: var(--line-strong); stroke-dasharray: 4 4; }
 .wrap :global(.react-flow__edge) .edge[data-tone="loop"] { stroke: var(--muted); stroke-dasharray: 5 4; }
 .wrap :global(.react-flow__edge) .edge[data-tone="loop-taken"] { stroke: var(--alert); stroke-dasharray: 5 4; }
 .wrap :global(.react-flow__edge) .edge[data-tone="selected"] { stroke: var(--run); stroke-width: 2; }
 .wrap :global(.react-flow__edge.selectable):hover .edge:not([data-tone="selected"]) { stroke: var(--text); }
-.marker[data-tone="idle"] { color: var(--faint); }
+.marker[data-tone="idle"] { color: var(--wf-edge); }
 .marker[data-tone="taken"] { color: var(--ink); }
 .marker[data-tone="skipped"] { color: var(--line-strong); }
 .marker[data-tone="loop"] { color: var(--muted); }

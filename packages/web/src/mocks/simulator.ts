@@ -58,7 +58,7 @@ function ev(id: string, event: DistributiveOmit<FactoryEvent, 'taskId'>) {
       if (run) {
         run.state = event.state;
         run.endedAt = new Date(at).toISOString();
-        run.result = { verdict: event.state === 'completed' ? 'pass' : 'fail', summary: event.state === 'completed' ? '完了しました' : '失敗しました', outputs: {} };
+        run.result = { verdict: event.state === 'completed' ? 'pass' : 'fail', summary: event.state === 'completed' ? '完了しました' : '失敗しました', outputs: {}, ...(event.label ? { label: event.label } : {}) };
       }
     }
   }

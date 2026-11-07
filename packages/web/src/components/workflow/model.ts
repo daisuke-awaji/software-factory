@@ -37,6 +37,8 @@ export type ModelEdge = { id: string; source: string; target: string; data: Grap
 export type Model = { nodes: ModelNode[]; edges: ModelEdge[]; issues: GraphIssue[] };
 
 export const NODE = { width: 168, height: 72 };
+/** 縦に並べるとき（狭い画面）は、横に2つ並んでも入るように細くする */
+export const NODE_NARROW = { width: 150, height: 72 };
 export const START_NODE = { width: 72, height: 40 };
 
 const actionText: Record<NonNullable<StepDef['action']>, string> = { 'create-pull-request': 'PR を作る（VM なし）', 'propose-publish': '公開を提案（VM なし）' };
@@ -47,7 +49,8 @@ export function subOf(st: StepDef): string | undefined {
   return st.image;
 }
 
-export function buildModel(workflow: Pick<Workflow, 'steps'>, statuses?: Record<string, StepStatus>, planStatus?: ProgressStatus): Model {
+export function buildModel(workflow: Pick<Workflow, 'steps'>, statuses?: Record<string, StepStatus>, planStatus?: ProgressStatus, narrow = false): Model {
+  const size = narrow ? NODE_NARROW : NODE;
   const { issues } = analyzeWorkflow(workflow);
   const issueOf = new Map<string, string>();
   for (const i of issues) {
@@ -63,7 +66,7 @@ export function buildModel(workflow: Pick<Workflow, 'steps'>, statuses?: Record<
     const sub = subOf(st);
     const fork = Array.isArray(st.next) && st.next.length > 1 ? st.next.length : 0;
     nodes.push({
-      id: st.id, ...NODE,
+      id: st.id, ...size,
       data: {
         kind: 'step', stepId: st.id, label: stepLabel(st.id), type: st.type,
         ...(sub ? { sub } : {}),
