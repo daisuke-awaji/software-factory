@@ -1,0 +1,100 @@
+/* 左のサイドパネル（ADR-0010）。広げた幅は --sidebar-w、畳んだ列は --sidebar-rail（AppShell.module.css） */
+
+.panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  width: var(--sidebar-rail);
+  padding: calc(8px + var(--safe-top)) 8px calc(8px + var(--safe-bottom)) max(8px, var(--safe-left));
+  border-right: 1px solid var(--line);
+  background: var(--bg-subtle);
+}
+.panel[data-expanded] { width: var(--sidebar-w); padding-right: 10px; padding-left: max(10px, var(--safe-left)); }
+.panel[data-floating] { box-shadow: var(--shadow-md); border-right-color: var(--line-strong); }
+
+.head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 40px; margin-bottom: 6px; }
+.panel:not([data-expanded]) .head { justify-content: center; }
+.brand { display: inline-flex; align-items: center; gap: 9px; min-width: 0; padding-left: 4px; text-decoration: none; font-weight: 600; font-size: 14px; letter-spacing: -0.01em; color: var(--ink); white-space: nowrap; }
+.mark { display: inline-grid; place-items: center; flex: none; width: 24px; height: 24px; border-radius: 7px; background: var(--ink); color: var(--bg); }
+.iconButton {
+  display: inline-grid; place-items: center; flex: none;
+  width: max(36px, var(--tap-min)); height: max(36px, var(--tap-min));
+  padding: 0; border: 0; border-radius: 10px; background: none; color: var(--muted);
+}
+.iconButton:hover { background: var(--hover); color: var(--ink); }
+
+/* ---------- 画面の移動 ---------- */
+.nav { flex: none; display: grid; gap: 1px; }
+.nav a {
+  display: flex; align-items: center; gap: 10px;
+  min-height: max(34px, var(--tap-min)); padding: 0 10px; border-radius: 10px;
+  text-decoration: none; color: var(--text); font-size: 13.5px; white-space: nowrap;
+}
+.nav a:hover { background: var(--hover); color: var(--ink); }
+.nav a.active { background: var(--active); color: var(--ink); font-weight: 500; }
+.nav a :global(.icon) { flex: none; width: 17px; height: 17px; color: var(--muted); }
+.nav a.active :global(.icon), .nav a:hover :global(.icon) { color: var(--ink); }
+.panel:not([data-expanded]) .nav a { justify-content: center; padding: 0; position: relative; }
+.newRequest { margin-bottom: 6px; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow-sm); font-weight: 500; color: var(--ink) !important; }
+.label { flex: 1; min-width: 0; }
+.badge {
+  display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px;
+  background: var(--alert); color: #fff; font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.panel:not([data-expanded]) .badge { position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 4px; font-size: 10px; }
+
+/* ---------- 依頼の一覧 ---------- */
+.sessions { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-top: 14px; }
+.search { flex: none; position: relative; display: block; margin: 0 0 6px; }
+.search :global(.icon) { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--faint); pointer-events: none; }
+.search input {
+  width: 100%; min-height: max(32px, var(--tap-min)); padding: 4px 10px 4px 30px;
+  border: 1px solid transparent; border-radius: 10px; background: var(--hover); color: var(--ink);
+  font-size: max(13px, var(--fs-input-min));
+}
+.search input:focus { outline: none; border-color: var(--line-strong); background: var(--card); }
+.scroll { flex: 1; min-height: 0; overflow-y: auto; margin: 0 -6px; padding: 0 6px 8px; scrollbar-width: thin; overscroll-behavior: contain; }
+.group { margin-top: 12px; }
+.groupTitle { margin: 0 0 3px; padding: 0 10px; font-size: 11.5px; font-weight: 500; color: var(--faint); }
+.list { margin: 0; padding: 0; list-style: none; display: grid; gap: 1px; }
+.item {
+  display: flex; align-items: center; gap: 9px;
+  min-height: max(32px, var(--tap-min)); padding: 0 10px; border-radius: 9px;
+  text-decoration: none; color: var(--text); font-size: 13px;
+}
+.item:hover { background: var(--hover); color: var(--ink); }
+.item[aria-current='page'] { background: var(--active); color: var(--ink); font-weight: 500; }
+.itemTitle { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.itemTime { flex: none; font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.empty { margin: 14px 10px; font-size: 12.5px; color: var(--faint); }
+.loadMore { display: flex; justify-content: center; min-height: 36px; align-items: center; margin-top: 6px; font-size: 12px; color: var(--faint); }
+.retry { padding: 4px 10px; border: 0; border-radius: 8px; background: none; color: var(--muted); font-size: 12.5px; text-decoration: underline; text-underline-offset: 2px; }
+.retry:hover { background: var(--hover); color: var(--ink); }
+.spacer { flex: 1; }
+
+/* ---------- アカウント ---------- */
+.foot { flex: none; display: grid; gap: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
+.badges { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 6px; }
+.mock { font-size: 11px; padding: 1px 8px; border-radius: 99px; border: 1px dashed var(--line-strong); color: var(--muted); }
+.conn { font-size: 12px; color: var(--alert); }
+.profile { position: relative; }
+.account {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  min-height: max(40px, var(--tap-min)); padding: 4px 6px; border: 0; border-radius: 10px; background: none;
+  color: var(--ink); font-size: 13.5px; text-align: left;
+}
+.account:hover { background: var(--hover); }
+.panel:not([data-expanded]) .account { justify-content: center; padding: 4px 0; }
+.accountName { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.popover { position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 60; width: 300px; max-width: calc(100vw - 24px); animation: rise 180ms var(--ease) both; }
+
+/* 横向きのスマホなど、高さが足りないとき: アイコンの列は詰め、広げたパネルは全体をスクロールさせる */
+@media (max-height: 520px) {
+  .head { height: 36px; margin-bottom: 2px; }
+  .nav a { min-height: 34px; }
+  .newRequest { margin-bottom: 2px; }
+  .panel[data-expanded] { overflow-y: auto; }
+  .panel[data-expanded] .sessions { flex: none; }
+  .panel[data-expanded] .scroll { overflow: visible; }
+  .popover { position: fixed; left: max(8px, var(--safe-left)); bottom: 8px; }
+}

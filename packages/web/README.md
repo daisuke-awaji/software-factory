@@ -37,6 +37,7 @@ pnpm --filter @factory/web typecheck
 pnpm --filter @factory/web test    # Vitest: モックのバックエンド・畳み込み・EventStream・画面の結合（MSW を Node で動かす）
 pnpm --filter @factory/web e2e     # Playwright: ブラウザの MSW で、作成 → 承認 → 検証のやり直し → PR → プレビュー → 公開
                                    #   スマホの幅（iphone / android のプロジェクト）: e2e/mobile.spec.ts
+                                   #   サイドパネル（1440px / 1100px）: e2e/sidebar.spec.ts
 ```
 
 E2E を初めて動かすときは `pnpm --filter @factory/web exec playwright install --with-deps chromium` を実行します。

@@ -1,11 +1,11 @@
 // ワークアイテムの画面（パターン B: ADR-0007）。左に会話、右に成果物のタブ、下にステータスバー
 import type { Line, WorkItem } from '@factory/contracts';
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 import { Button } from '../../components/ui/button';
 import { SegmentedControl } from '../../components/ui/segmented-control';
 import { Banner, Dot, ErrorBanner, Loading, Menu, Tag } from '../../components/kit';
-import { IconBack, IconBranch, IconChevron, IconExternal, IconMore, IconPR, IconRepo } from '../../components/icons';
+import { IconBranch, IconChevron, IconExternal, IconMore, IconPR, IconRepo } from '../../components/icons';
 import { StageLine } from '../../components/StageLine';
 import { errorMessage } from '../../lib/api';
 import { saveFromUrl } from '../../lib/download';
@@ -16,6 +16,7 @@ import { useServices } from '../../lib/services';
 import { currentRun, type Pending, type Session } from '../../lib/session';
 import { narrow, useMediaQuery } from '../../lib/useMediaQuery';
 import { useResource } from '../../lib/useResource';
+import { LogoToggle } from '../../app/LogoToggle';
 import { useMe } from '../../stores/me';
 import { useUi, type Tab } from '../../stores/ui';
 import type { PlanActions } from './Cards';
@@ -48,7 +49,7 @@ export function WorkspacePage() {
     return (
       <div style={{ padding: 28, maxWidth: 720, margin: '0 auto', display: 'grid', gap: 12 }}>
         <ErrorBanner error={item.error} onRetry={() => void item.reload()} />
-        <Link to="/">依頼の一覧に戻る</Link>
+        <Link to="/requests">依頼の一覧に戻る</Link>
       </div>
     );
   }
@@ -192,18 +193,18 @@ function Header({ item, session, line, pending, onRename, onCancel, onArchive, o
   item: WorkItem; session: Session; line: Line | undefined; pending: Pending | null;
   onRename: () => void; onCancel: () => void; onArchive: () => void; onInterrupt: () => void;
 }) {
-  const { api } = useServices();
-  const navigate = useNavigate();
   const phone = useMediaQuery(narrow.phone);
+  const openSidebar = useUi((u) => u.setSidebarOverlay);
   const pr = item.pullRequest;
-  const recent = useResource(() => api.listWorkItems({ limit: 8 }), []);
   const state = session.state ?? item.state;
   const label = pending?.kind === 'approval' ? `${reasonLabel[pending.approval.reason]}の承認待ち` : stateLabel[state];
   return (
     <header className={s.head}>
-      <Link to="/" className={s.back} aria-label="依頼の一覧に戻る" title="依頼の一覧に戻る"><IconBack /></Link>
+      {phone && (
+        <span className={s.back}><LogoToggle label="サイドパネルを開く" expanded={false} onClick={() => openSidebar(true)} /></span>
+      )}
       <nav className={s.crumbs} aria-label="場所">
-        <Link to="/" className={s.crumb}>依頼</Link>
+        <Link to="/requests" className={s.crumb}>依頼</Link>
         <IconChevron />
         {item.repo && (
           <>
@@ -218,12 +219,6 @@ function Header({ item, session, line, pending, onRename, onCancel, onArchive, o
           </>
         )}
         <h1 className={s.title} title={item.title}>{item.title}</h1>
-        <Menu
-          label="ほかの依頼に切り替える"
-          align="start"
-          trigger={<IconChevron />}
-          items={(recent.data?.items ?? []).filter((w) => w.id !== item.id).map((w) => ({ label: `${w.title}（${stateLabel[w.state]}）`, onSelect: () => void navigate(`/w/${w.id}`) }))}
-        />
       </nav>
       <span className={s.headTag}><Tag tone={stateTone[state]}>{label}</Tag></span>
       <div className={s.headRight}>

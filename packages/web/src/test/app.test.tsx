@@ -5,12 +5,14 @@ import { setupServer } from 'msw/node';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { routes } from '../app/App';
+import { dayBucket } from '../app/Sidebar';
 import { createApiClient } from '../lib/api';
 import { EventStream } from '../lib/events';
 import { ServicesProvider, type Services } from '../lib/services';
 import { getDb } from '../mocks/db';
 import { handlers, initMockBackend } from '../mocks/index';
 import { useMe } from '../stores/me';
+import { useUi } from '../stores/ui';
 
 const server = setupServer(...handlers);
 let services: Services;
@@ -24,6 +26,8 @@ beforeEach(() => {
   events.start();
   services = { api, events, mock: true };
   useMe.setState({ me: null });
+  localStorage.removeItem('sf.sidebar');
+  useUi.setState({ sidebarPinned: true, sidebarOverlay: false });
 });
 afterEach(() => services.events.stop());
 
@@ -38,11 +42,63 @@ function renderAt(path: string) {
 }
 
 describe('ホーム', () => {
-  it('依頼の一覧と、対応が必要な項目を出す', async () => {
+  it('サイドパネルに依頼の一覧を、ホームに対応が必要な項目を出す', async () => {
     renderAt('/');
+    const side = await screen.findByRole('navigation', { name: '依頼' });
+    const action = await within(side).findByRole('region', { name: '対応が必要' });
+    expect(within(action).getByRole('link', { name: /週次売上ダッシュボードを追加/ })).toBeInTheDocument();
+    expect(within(side).getByRole('link', { name: /問い合わせフォームの入力チェックを直す/ })).toBeInTheDocument();
+    expect(await screen.findByText('計画の承認: 週次売上ダッシュボードを追加')).toBeInTheDocument();
+    expect(screen.queryByRole('table', { name: '依頼の一覧' })).not.toBeInTheDocument();
+  });
+
+  it('サイドパネルに過去の依頼を日付で分けて出し、続きを読み込める', async () => {
+    const user = userEvent.setup();
+    renderAt('/');
+    const side = await screen.findByRole('navigation', { name: '依頼' });
+    // 1日前の依頼は、時刻によって「昨日」か「過去7日間」に入る
+    expect(await within(side).findAllByRole('region', { name: /^(昨日|過去7日間)$/ })).not.toHaveLength(0);
+    expect(within(side).getByRole('region', { name: 'それより前' })).toBeInTheDocument();
+    expect(within(side).queryByRole('link', { name: /セッションの有効期限を延ばす/ })).not.toBeInTheDocument();
+    // jsdom ではスクロールで読めないので、ボタンで読む
+    await user.click(within(side).getByRole('button', { name: '続きを読み込む' }));
+    expect(await within(side).findByRole('link', { name: /セッションの有効期限を延ばす/ })).toBeInTheDocument();
+    expect(within(side).queryByRole('button', { name: '続きを読み込む' })).not.toBeInTheDocument();
+  });
+
+  it('サイドパネルは畳むとアイコンの列になり、畳んだことを覚えておく', async () => {
+    const user = userEvent.setup();
+    renderAt('/');
+    await screen.findByRole('navigation', { name: '依頼' });
+    await user.click(screen.getByRole('button', { name: 'サイドパネルを畳む' }));
+    expect(screen.queryByRole('navigation', { name: '依頼' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'すべての依頼' })).toBeInTheDocument();
+    expect(localStorage.getItem('sf.sidebar')).toBe('collapsed');
+    await user.keyboard('{Control>}b{/Control}');
+    expect(await screen.findByRole('navigation', { name: '依頼' })).toBeInTheDocument();
+    expect(localStorage.getItem('sf.sidebar')).toBeNull();
+  });
+});
+
+describe('dayBucket', () => {
+  it('今日・昨日・過去7日間・それより前に分ける（暦の日で数える）', () => {
+    const now = new Date(2026, 10, 7, 9, 0);
+    expect(dayBucket(new Date(2026, 10, 7, 0, 5).toISOString(), now)).toBe('today');
+    expect(dayBucket(new Date(2026, 10, 6, 23, 50).toISOString(), now)).toBe('yesterday');
+    expect(dayBucket(new Date(2026, 10, 1, 0, 0).toISOString(), now)).toBe('week');
+    expect(dayBucket(new Date(2026, 9, 31, 23, 59).toISOString(), now)).toBe('older');
+  });
+});
+
+describe('すべての依頼', () => {
+  it('表で絞り込み・検索できる', async () => {
+    const user = userEvent.setup();
+    renderAt('/requests');
     const table = await screen.findByRole('table', { name: '依頼の一覧' });
     expect(within(table).getByText('問い合わせフォームの入力チェックを直す')).toBeInTheDocument();
-    expect(await screen.findByText('計画の承認: 週次売上ダッシュボードを追加')).toBeInTheDocument();
+    await user.type(screen.getByRole('searchbox', { name: '依頼を検索' }), '週次');
+    await waitFor(() => expect(within(table).queryByText('問い合わせフォームの入力チェックを直す')).not.toBeInTheDocument());
+    expect(within(table).getByText('週次売上ダッシュボードを追加')).toBeInTheDocument();
   });
 
   it('新しい依頼を出すと、ワークスペースに移って計画が出る → 承認すると完了まで進む', async () => {

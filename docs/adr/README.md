@@ -13,5 +13,6 @@
 | [0007](./0007-workspace-layout.md) | 画面はホームの一覧とワークスペース（パターン B）の2層にする | Proposed |
 | [0008](./0008-ui-components-and-styling.md) | UI の部品は AffectUI の無料の部品を取り込んで持ち、スタイルは CSS Modules とデザイントークンにする | Proposed |
 | [0009](./0009-mock-backend-simulator.md) | MSW のモックに、ラインの実行を流すシミュレーターを持たせる | Proposed |
+| [0010](./0010-session-sidebar.md) | 依頼の一覧を、折りたためる左のサイドパネルに移す | Proposed |
 
 テンプレート: [template.md](./template.md)

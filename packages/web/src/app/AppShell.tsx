@@ -1,14 +1,17 @@
-// アプリの枠: 上部のナビゲーションと、ページの中身（ADR-0007）
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
-import { ProfileMenu } from '../components/ui/profile-menu';
-import { Avatar, Banner, ErrorBanner, FactoryMark, Loading, Toasts } from '../components/kit';
-import { IconClose, IconMenu, IconMoon, IconSettings, IconSun } from '../components/icons';
+// アプリの枠: 左のサイドパネルと、ページの中身（ADR-0010）。1280px 未満では、左上のロゴで左からサイドパネルを出す
+import { useCallback, useEffect, useRef, useState, type ReactNode, type TouchEvent } from 'react';
+import { Link, Outlet, useLocation } from 'react-router';
+import { Banner, ErrorBanner, Loading, Toasts } from '../components/kit';
+import { useLiveReload } from '../features/home/useLive';
 import { errorMessage } from '../lib/api';
 import type { ConnectionState } from '../lib/events';
 import { useServices } from '../lib/services';
-import { isAdmin, useMe } from '../stores/me';
+import { narrow, useMediaQuery } from '../lib/useMediaQuery';
+import { useMe } from '../stores/me';
 import { useUi } from '../stores/ui';
+import { LogoToggle } from './LogoToggle';
+import { Sidebar } from './Sidebar';
+import { useWorkItemFeed } from './useWorkItemFeed';
 import s from './AppShell.module.css';
 
 export function AppShell() {
@@ -26,124 +29,134 @@ export function AppShell() {
   useEffect(loadMe, [api, setMe]);
   useEffect(() => events.onState(setConn), [events]);
 
+  // サイドパネルの依頼の一覧。画面を移ったとき（新しい依頼を出したときなど）と、状態が変わったときに読み直す
+  const feed = useWorkItemFeed([location.pathname], { pollMs: 20_000, enabled: !!me });
+  useLiveReload(feed.items, () => void feed.reload());
+
   const full = location.pathname.startsWith('/w/');
-  const navClass = ({ isActive }: { isActive: boolean }) => (isActive ? s.active : undefined);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const closeMenu = useCallback(() => setMenuOpen(false), []);
-  useEffect(() => setMenuOpen(false), [location.pathname]);
-  const links = (
-    <>
-      <NavLink to="/" end className={navClass}>依頼</NavLink>
-      <NavLink to="/publications" className={navClass}>公開物</NavLink>
-      <NavLink to="/images" className={navClass}>イメージ</NavLink>
-      <NavLink to="/lines" className={navClass}>ライン</NavLink>
-      {isAdmin(me) && <NavLink to="/admin" className={navClass}>管理</NavLink>}
-    </>
-  );
+  const overlayMode = useMediaQuery(narrow.sidebar);
+  const phone = useMediaQuery(narrow.phone);
+  const pinned = useUi((u) => u.sidebarPinned);
+  const setPinned = useUi((u) => u.setSidebarPinned);
+  const overlay = useUi((u) => u.sidebarOverlay);
+  const setOverlay = useUi((u) => u.setSidebarOverlay);
+  const toggle = useCallback(() => {
+    if (overlayMode) setOverlay(!useUi.getState().sidebarOverlay);
+    else setPinned(!useUi.getState().sidebarPinned);
+  }, [overlayMode, setOverlay, setPinned]);
+  const closeOverlay = useCallback(() => setOverlay(false), [setOverlay]);
+
+  useEffect(() => setOverlay(false), [location.pathname, overlayMode, setOverlay]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'b' && (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey) {
+        e.preventDefault();
+        toggle();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [toggle]);
+
+  const floating = overlayMode && overlay;
 
   return (
     <div className={s.app} data-full={full || undefined}>
       <a href="#main" className={s.skip}>本文へ移動</a>
-      <header className={s.nav}>
-        <Link to="/" className={s.brand} aria-label="Software Factory（ホーム）">
-          <span className={s.mark}><FactoryMark size={15} /></span>
-          <span className={s.brandText}>Software Factory</span>
-        </Link>
-        <nav className={s.links} aria-label="メイン">{links}</nav>
-        <div className={s.right}>
-          {conn === 'reconnecting' && <span className={s.conn} role="status">再接続しています…</span>}
-          {mock && <span className={s.mock} title="MSW がすべての API と WebSocket に応答しています">モック</span>}
-          {me && <Profile />}
-          <button type="button" className={s.menuButton} aria-label="メニュー" aria-expanded={menuOpen} aria-controls="nav-sheet" onClick={() => setMenuOpen((o) => !o)}>
-            {menuOpen ? <IconClose /> : <IconMenu />}
-          </button>
-        </div>
-        {menuOpen && <NavSheet onClose={closeMenu}>{links}</NavSheet>}
-      </header>
-      <main className={s.main} id="main">
-        {error ? (
-          <div className={s.page}><ErrorBanner error={error} onRetry={loadMe} /></div>
-        ) : !me ? (
-          <Loading />
-        ) : (
-          <Outlet />
+      {!phone && (
+        <aside className={s.side} aria-label="サイドパネル" inert={floating || undefined}>
+          <Sidebar expanded={!overlayMode && pinned} feed={feed} conn={conn} mock={mock} onToggle={toggle} />
+        </aside>
+      )}
+      {overlayMode && (
+        <Drawer open={overlay} onClose={closeOverlay}>
+          <Sidebar expanded floating feed={feed} conn={conn} mock={mock} onToggle={closeOverlay} />
+        </Drawer>
+      )}
+      <div className={s.content} inert={floating || undefined}>
+        {phone && !full && (
+          <header className={s.bar}>
+            <LogoToggle label="サイドパネルを開く" expanded={overlay} onClick={toggle} />
+            <Link to="/" className={s.brand}>Software Factory</Link>
+            {conn === 'reconnecting' && <span className={s.conn} role="status">再接続しています…</span>}
+            {mock && <span className={s.mock}>モック</span>}
+          </header>
         )}
-      </main>
+        <main className={s.main} id="main">
+          {error ? (
+            <div className={s.page}><ErrorBanner error={error} onRetry={loadMe} /></div>
+          ) : !me ? (
+            <Loading />
+          ) : (
+            <Outlet />
+          )}
+        </main>
+      </div>
       <Toasts />
     </div>
   );
 }
 
-/** スマホの上部のナビゲーション（右上のメニューで開く） */
-function NavSheet({ children, onClose }: { children: ReactNode; onClose: () => void }) {
-  const root = useRef<HTMLElement>(null);
-  useEffect(() => {
-    root.current?.querySelector<HTMLElement>('a')?.focus();
-    const esc = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    document.addEventListener('keydown', esc);
-    return () => document.removeEventListener('keydown', esc);
-  }, [onClose]);
-  return (
-    <>
-      <div className={s.sheetBackdrop} onClick={onClose} aria-hidden="true" />
-      <nav id="nav-sheet" ref={root} className={s.sheet} aria-label="メイン（メニュー）">{children}</nav>
-    </>
-  );
-}
-
-function Profile() {
-  const me = useMe((m) => m.me)!;
-  const theme = useUi((u) => u.theme);
-  const setTheme = useUi((u) => u.setTheme);
-  const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
+/** 1280px 未満で、サイドパネルを左から滑り込ませて重ねる。Esc・外側を押す・左へスワイプで閉じる */
+function Drawer({ open, children, onClose }: { open: boolean; children: ReactNode; onClose: () => void }) {
   const root = useRef<HTMLDivElement>(null);
-  const dark = document.documentElement.dataset['theme'] === 'dark';
+  const touch = useRef<{ x: number; y: number; dx: number; horizontal: boolean | null } | null>(null);
   useEffect(() => {
     if (!open) return;
-    const close = (e: MouseEvent) => {
-      if (!root.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
-    document.addEventListener('mousedown', close);
+    const prev = document.activeElement as HTMLElement | null;
+    root.current?.querySelector<HTMLElement>('nav a')?.focus({ preventScroll: true });
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', esc);
     return () => {
-      document.removeEventListener('mousedown', close);
       document.removeEventListener('keydown', esc);
+      prev?.focus?.({ preventScroll: true });
     };
-  }, [open]);
+  }, [open, onClose]);
+
+  // 左へのスワイプ: 指に付いてきて、離したときに 1/4 以上動いていれば閉じる
+  const onTouchStart = (e: TouchEvent) => {
+    const t = e.touches[0];
+    if (t) touch.current = { x: t.clientX, y: t.clientY, dx: 0, horizontal: null };
+  };
+  const onTouchMove = (e: TouchEvent) => {
+    const t = e.touches[0];
+    const st = touch.current;
+    if (!t || !st || !root.current) return;
+    const dx = t.clientX - st.x;
+    st.horizontal ??= Math.abs(dx) > 8 || Math.abs(t.clientY - st.y) > 8 ? Math.abs(dx) > Math.abs(t.clientY - st.y) : null;
+    if (!st.horizontal) return;
+    st.dx = Math.min(0, dx);
+    root.current.style.transition = 'none';
+    root.current.style.transform = `translateX(${st.dx}px)`;
+  };
+  const onTouchEnd = () => {
+    const st = touch.current;
+    touch.current = null;
+    const el = root.current;
+    if (!st || !el) return;
+    el.style.transition = '';
+    el.style.transform = '';
+    if (st.horizontal && st.dx < -Math.min(80, el.offsetWidth / 4)) onClose();
+  };
+
   return (
-    <div className={s.profile} ref={root}>
-      <button type="button" className={s.avatarButton} aria-label="アカウント" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        <Avatar name={me.name} size={28} />
-      </button>
-      {open && (
-        <div className={s.popover}>
-          <ProfileMenu
-            name={me.name}
-            email={me.email}
-            avatar={<Avatar name={me.name} size={40} />}
-            items={[
-              {
-                id: 'theme',
-                label: dark ? 'ライトモードにする' : 'ダークモードにする',
-                icon: dark ? <IconSun /> : <IconMoon />,
-                ...(theme === 'system' ? { badge: '自動' } : {}),
-                onSelect: () => setTheme(dark ? 'light' : 'dark'),
-              },
-              {
-                id: 'settings',
-                label: '設定',
-                icon: <IconSettings />,
-                onSelect: () => {
-                  setOpen(false);
-                  void navigate('/settings');
-                },
-              },
-            ]}
-          />
-        </div>
-      )}
+    <div className={s.drawerRoot} data-open={open || undefined}>
+      <div className={s.backdrop} onClick={onClose} aria-hidden="true" />
+      <div
+        ref={root}
+        className={s.drawer}
+        role="dialog"
+        aria-modal={open}
+        aria-label="サイドパネル"
+        aria-hidden={!open || undefined}
+        inert={!open || undefined}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={onTouchEnd}
+      >
+        {children}
+      </div>
     </div>
   );
 }

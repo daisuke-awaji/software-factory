@@ -3,6 +3,8 @@ import { useSyncExternalStore } from 'react';
 
 /** 06_ui_spec.md §6 の幅。CSS の @media の値と合わせる */
 export const narrow = {
+  /** 1280px 未満: サイドパネルはアイコンの列にし、広げるときは重ねて出す */
+  sidebar: '(max-width: 1279px)',
   /** 1024px 未満: 会話と成果物を切り替えて出す */
   tablet: '(max-width: 1023px)',
   /** 720px 未満: スマホ */

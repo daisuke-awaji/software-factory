@@ -36,6 +36,8 @@ export const IconSearch = () => <Svg><circle cx="11" cy="11" r="6.5" /><path d="
 export const IconRefresh = () => <Svg><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.6 4.5L20 16M20 20v-4h-4" /></Svg>;
 export const IconTerminal = () => <Svg><rect x="3" y="4.5" width="18" height="15" rx="2" /><path d="M7 9.5l3 2.5-3 2.5M12.5 15H17" /></Svg>;
 export const IconFactory = () => <Svg><path d="M3 20V10l5 3V10l5 3V10l5 3V5h3v15H3zM7 17h2M12 17h2M17 17h1" /></Svg>;
+export const IconSidebar = () => <Svg><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" /></Svg>;
+export const IconCompose = () => <Svg><path d="M12 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6" /><path d="M17.5 3.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 8.5-8.5z" /></Svg>;
 export const IconPanel = () => <Svg><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M15 4v16" /></Svg>;
 export const IconClose = () => <Svg><path d="M6 6l12 12M18 6L6 18" /></Svg>;
 export const IconFilter = () => <Svg><path d="M4 6h16M7 12h10M10 18h4" /></Svg>;
