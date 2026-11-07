@@ -20,13 +20,10 @@ const expectNoHorizontalScroll = async (page: Page) => {
   expect(scroll).toBeLessThanOrEqual(width);
 };
 
-test('ホーム: 対応が必要な項目が入力欄より先に出る。すべての依頼はカードになる', async ({ page }) => {
+test('ホーム: 入力欄だけを出し、横にはみ出さない', async ({ page }) => {
   await fresh(page);
-  const inbox = page.getByRole('region', { name: '対応が必要な項目' });
-  const input = page.getByLabel('依頼の内容');
-  await expect(inbox).toBeVisible();
-  const [inboxBox, inputBox] = [await inbox.boundingBox(), await input.boundingBox()];
-  expect(inboxBox!.y).toBeLessThan(inputBox!.y);
+  await expect(page.getByLabel('依頼の内容')).toBeVisible();
+  await expect(page.getByRole('region', { name: '対応が必要な項目' })).toHaveCount(0);
   await expect(page.getByRole('complementary', { name: 'サイドパネル' })).toHaveCount(0);
   await expectNoHorizontalScroll(page);
 

@@ -37,7 +37,7 @@
 ### 2.1 ワークアイテム（セッション）
 | メソッド | パス | 内容 | 主な要件 |
 |---|---|---|---|
-| POST | `/work-items` | 作成する（`CreateWorkItemRequest`: title、lineRef、projectId?、repo?、message）。durable execution を起動する | FR-UI-01、FR-LINE-07 |
+| POST | `/work-items` | 作成する（`CreateWorkItemRequest`: title?、lineRef、projectId?、repo?、message。title を省略したら本文の最初の文から作る（60字まで。`titleFromMessage`）。後から `PATCH` で変えられる）。durable execution を起動する | FR-UI-01、FR-LINE-07 |
 | GET | `/work-items` | 自分のワークアイテムの一覧（`?state=`・`?archived=`）。更新の新しい順に、ページングで返す | FR-UI-02 |
 | GET | `/work-items/{id}` | 詳細（状態、現在のステージ、使用量） | |
 | PATCH | `/work-items/{id}` | 名前の変更、アーカイブ | FR-UI-02 |

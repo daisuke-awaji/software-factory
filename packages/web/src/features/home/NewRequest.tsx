@@ -1,20 +1,14 @@
-// 新しい依頼の入力欄（FR-UI-01・03・08）。作ったらワークスペースに移る
-import type { Line, Repo } from '@factory/contracts';
+// 新しい依頼の入力欄（FR-UI-01・03）。本文・添付・リポジトリだけを受け取る。タイトルはサーバーが本文から作り、ワークスペースの「名前を変更」で直せる
+import type { Line } from '@factory/contracts';
 import { useId, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import { Button } from '../../components/ui/button';
-import { Banner, TextInput } from '../../components/kit';
+import { Banner } from '../../components/kit';
 import { IconClip, IconClose, IconRepo, IconSend } from '../../components/icons';
 import { errorMessage } from '../../lib/api';
 import { useApi } from '../../lib/services';
 import { useResource } from '../../lib/useResource';
 import s from './home.module.css';
-
-const templates = [
-  { label: 'レポートを作る', line: 'report-publish', repo: '', text: '添付した CSV を部署ごとに集計して、グラフ付きのレポートにしてください。部内に公開したいです。' },
-  { label: 'Web フォームを直す', line: 'build-verify', repo: 'acme/support-site', text: '問い合わせフォームの入力チェックを直してください。誤りは送信する前に、その場で知らせたいです。' },
-  { label: 'README を書き足す', line: 'build-verify', repo: 'acme/platform', text: 'README に、ローカルで開発を始めるための手順（準備、テストの実行、よくあるエラー）を追記してください。' },
-];
 
 type Attached = { key: string; name: string; path?: string; error?: string };
 
@@ -23,26 +17,18 @@ export function NewRequest({ lines }: { lines: Line[] | undefined }) {
   const navigate = useNavigate();
   const repos = useResource(() => api.repos(), []);
   const [text, setText] = useState('');
-  const [title, setTitle] = useState('');
   const [repo, setRepo] = useState('');
-  const [line, setLine] = useState('chat');
-  const [lineTouched, setLineTouched] = useState(false);
   const [files, setFiles] = useState<Attached[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
-  const ids = { text: useId(), title: useId(), repo: useId(), line: useId() };
+  const ids = { text: useId(), repo: useId() };
 
-  const selectedRepo: Repo | undefined = repos.data?.find((r) => `${r.owner}/${r.name}` === repo);
-  const derivedTitle = (title.trim() || text.trim().split(/\n|。/)[0]?.slice(0, 60) || '').trim();
+  const selectedRepo = repos.data?.find((r) => `${r.owner}/${r.name}` === repo);
+  /** ラインは選ばせない: リポジトリを使うなら「作って確かめる」、使わないなら会話 */
+  const line = repo ? 'build-verify' : 'chat';
   const uploading = files.some((f) => !f.path && !f.error);
-  const canSubmit = text.trim().length > 0 && derivedTitle.length > 0 && !busy && !uploading;
-  const notConnected = !!repos.error && /GitHub/.test(repos.error);
-
-  const chooseRepo = (v: string) => {
-    setRepo(v);
-    if (!lineTouched) setLine(v ? 'build-verify' : 'chat');
-  };
+  const canSubmit = text.trim().length > 0 && !busy && !uploading;
 
   const attach = async (list: FileList | null) => {
     for (const f of Array.from(list ?? [])) {
@@ -66,7 +52,6 @@ export function NewRequest({ lines }: { lines: Line[] | undefined }) {
       const [owner, name] = repo.split('/');
       const attachments = files.flatMap((f) => (f.path ? [f.path] : []));
       const wi = await api.createWorkItem({
-        title: derivedTitle,
         message: text.trim(),
         lineRef: `${line}@${l?.version ?? 1}`,
         ...(owner && name ? { repo: { owner, name, baseBranch: selectedRepo?.defaultBranch ?? 'main' } } : {}),
@@ -116,56 +101,24 @@ export function NewRequest({ lines }: { lines: Line[] | undefined }) {
             <IconClip /> 添付
           </button>
           <input ref={fileInput} type="file" multiple hidden aria-label="添付するファイル" onChange={(e) => void attach(e.target.files).then(() => (e.target.value = ''))} />
-          <span className={s.chipSelect}>
-            <IconRepo />
-            <label htmlFor={ids.repo} className="sr-only">リポジトリ</label>
-            <select id={ids.repo} value={repo} onChange={(e) => chooseRepo(e.target.value)} disabled={!repos.data}>
-              <option value="">リポジトリを使わない</option>
-              {repos.data?.map((r) => (
-                <option key={`${r.owner}/${r.name}`} value={`${r.owner}/${r.name}`}>{r.owner}/{r.name}</option>
-              ))}
-            </select>
-          </span>
-          <span className={s.chipSelect}>
-            <label htmlFor={ids.line}>ライン</label>
-            <select id={ids.line} value={line} onChange={(e) => { setLine(e.target.value); setLineTouched(true); }}>
-              {lines?.map((l) => (
-                <option key={l.name} value={l.name}>{l.title ?? l.name}</option>
-              ))}
-            </select>
-          </span>
+          {repos.data && (
+            <span className={s.chipSelect}>
+              <IconRepo />
+              <label htmlFor={ids.repo} className="sr-only">リポジトリ</label>
+              <select id={ids.repo} value={repo} onChange={(e) => setRepo(e.target.value)}>
+                <option value="">リポジトリを使わない</option>
+                {repos.data.map((r) => (
+                  <option key={`${r.owner}/${r.name}`} value={`${r.owner}/${r.name}`}>{r.owner}/{r.name}</option>
+                ))}
+              </select>
+            </span>
+          )}
           <span className={s.spacer} />
-          <span className={s.kbdHint}>⌘ / Ctrl + Enter</span>
           <Button size="sm" icon={<IconSend />} onClick={() => void submit()} disabled={!canSubmit} loading={busy}>
             依頼する
           </Button>
         </div>
       </div>
-      <div className={s.newMeta}>
-        <label htmlFor={ids.title} className={s.titleLabel}>タイトル</label>
-        <TextInput id={ids.title} className={s.titleInput} value={title} placeholder={derivedTitle || '本文の最初の文を使います'} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
-        <span className={s.templates} role="group" aria-label="ひな形から始める">
-          {templates.map((t) => (
-            <button
-              key={t.label}
-              type="button"
-              className={s.template}
-              onClick={() => {
-                setText(t.text);
-                setLine(t.line);
-                setLineTouched(true);
-                if (!t.repo || repos.data?.some((r) => `${r.owner}/${r.name}` === t.repo)) setRepo(t.repo);
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
-        </span>
-      </div>
-      {lines && <p className={s.lineDesc}>{lines.find((l) => l.name === line)?.description}</p>}
-      {notConnected && (
-        <Banner action={<Link to="/settings">連携する</Link>}>GitHub と連携すると、リポジトリを選べるようになります。</Banner>
-      )}
       {selectedRepo && !selectedRepo.protected && (
         <Banner tone="warn">
           {repo} の {selectedRepo.defaultBranch} ブランチには保護がありません。変更はプルリクエストで届きますが、レビューを必須にする設定をおすすめします。

@@ -79,7 +79,7 @@ export const WorkItemPage = Page(WorkItem);
 export type WorkItemPage = z.infer<typeof WorkItemPage>;
 
 export const CreateWorkItemRequest = z.object({
-  title: z.string().min(1).max(200),
+  title: z.string().min(1).max(200).optional(), // 省略したらサーバーが本文から作る（titleFromMessage）。後から PATCH で変えられる
   lineRef: LineRef.default('chat@1'),
   projectId: z.string().optional(),
   repo: RepoRef.optional(),
@@ -87,6 +87,13 @@ export const CreateWorkItemRequest = z.object({
   attachments: z.array(z.string()).max(20).optional(), // 提案: 作成前に上げた添付（POST /attachments の path）
 });
 export type CreateWorkItemRequest = z.infer<typeof CreateWorkItemRequest>;
+
+/** 依頼の本文からタイトルを作る: 最初の行の最初の文を、60字までにする */
+export function titleFromMessage(message: string): string {
+  const first = message.trim().split(/\n|。/).find((x) => x.trim())?.trim() ?? '';
+  const chars = Array.from(first || message.trim());
+  return chars.length > 60 ? `${chars.slice(0, 59).join('')}…` : chars.join('');
+}
 
 export const UpdateWorkItemRequest = z.object({ title: z.string().min(1).max(200).optional(), archived: z.boolean().optional() });
 export type UpdateWorkItemRequest = z.infer<typeof UpdateWorkItemRequest>;

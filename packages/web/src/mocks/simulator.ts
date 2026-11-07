@@ -1,6 +1,6 @@
 // ラインの実行のシミュレーター。台本（SimStep の列）を時間をかけて流し、イベントを出す。
 // 本物と同じく「計画 → 承認 → ステージごとの VM → PR」の順に進み、承認や中断で止まる
-import { type CreateWorkItemRequest, type FactoryEvent, type Line, type WorkItem, ulid } from '@factory/contracts';
+import { type CreateWorkItemRequest, type FactoryEvent, type Line, type WorkItem, titleFromMessage, ulid } from '@factory/contracts';
 import { emit as rawEmit, getDb, save, workItem, type DistributiveOmit, type Sim, type SimStep } from './db';
 import { repoFiles } from './fixtures';
 import { finalSummary, pickScenario, planning, stageWork } from './scenarios';
@@ -228,8 +228,9 @@ export function createWorkItem(req: CreateWorkItemRequest, ownerId: string, auth
   const d = getDb();
   const id = ulid(at);
   const iso = new Date(at).toISOString();
+  const title = req.title ?? titleFromMessage(req.message);
   const item: WorkItem = {
-    id, ownerId, title: req.title, lineRef: req.lineRef, state: 'queued', createdAt: iso, updatedAt: iso, archived: false,
+    id, ownerId, title, lineRef: req.lineRef, state: 'queued', createdAt: iso, updatedAt: iso, archived: false,
     ...(req.projectId ? { projectId: req.projectId } : {}),
     ...(req.repo ? { repo: req.repo, branch: `factory/${id.slice(-6).toLowerCase()}` } : {}),
     usage: { inputTokens: 0, outputTokens: 0, vmSeconds: 0 },
@@ -246,7 +247,7 @@ export function createWorkItem(req: CreateWorkItemRequest, ownerId: string, auth
   const line = lineOf(item);
   const first = line.stages[0]!.id;
   d.sim[id] = {
-    scenario: pickScenario(req.title, req.message), queue: [], waiting: null, attempts: { [first]: 1 }, stage: first,
+    scenario: pickScenario(title, req.message), queue: [], waiting: null, attempts: { [first]: 1 }, stage: first,
     planVersion: 1, comments: [], flags: {}, interrupted: false,
   };
   d.events[id] = [];

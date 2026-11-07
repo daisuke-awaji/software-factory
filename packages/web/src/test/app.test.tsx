@@ -42,13 +42,19 @@ function renderAt(path: string) {
 }
 
 describe('ホーム', () => {
-  it('サイドパネルに依頼の一覧を、ホームに対応が必要な項目を出す', async () => {
+  it('サイドパネルに依頼の一覧と対応が必要な項目を、ホームに入力欄だけを出す', async () => {
     renderAt('/');
     const side = await screen.findByRole('navigation', { name: '依頼' });
     const action = await within(side).findByRole('region', { name: '対応が必要' });
     expect(within(action).getByRole('link', { name: /週次売上ダッシュボードを追加/ })).toBeInTheDocument();
     expect(within(side).getByRole('link', { name: /問い合わせフォームの入力チェックを直す/ })).toBeInTheDocument();
-    expect(await screen.findByText('計画の承認: 週次売上ダッシュボードを追加')).toBeInTheDocument();
+    const form = screen.getByRole('region', { name: '新しい依頼' });
+    expect(within(form).getByLabelText('依頼の内容')).toBeInTheDocument();
+    expect(within(form).queryByLabelText('タイトル')).not.toBeInTheDocument();
+    expect(within(form).queryByLabelText('ライン')).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'ひな形から始める' })).not.toBeInTheDocument();
+    expect(screen.queryByText('計画の承認: 週次売上ダッシュボードを追加')).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'この7日間' })).not.toBeInTheDocument();
     expect(screen.queryByRole('table', { name: '依頼の一覧' })).not.toBeInTheDocument();
   });
 
@@ -105,10 +111,11 @@ describe('すべての依頼', () => {
     const user = userEvent.setup();
     const router = renderAt('/');
     await user.type(await screen.findByLabelText('依頼の内容'), 'README にテストの実行手順を追記してください');
-    await waitFor(() => expect(screen.getByLabelText('リポジトリ')).not.toBeDisabled());
-    await user.selectOptions(screen.getByLabelText('リポジトリ'), 'acme/platform');
+    await user.selectOptions(await screen.findByLabelText('リポジトリ'), 'acme/platform');
     await user.click(screen.getByRole('button', { name: '依頼する' }));
     await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/w\//));
+    // タイトルは本文から作られる（後から「名前を変更」で直せる）
+    expect(await screen.findByRole('heading', { level: 1, name: 'README にテストの実行手順を追記してください' })).toBeInTheDocument();
 
     // 計画のカード（会話と計画タブの両方に出る）
     const approve = await screen.findAllByRole('button', { name: '承認して開始' }, { timeout: 8000 });

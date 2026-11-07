@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CreateWorkItemRequest, FactoryEventEnvelope, ImageSpec, NetworkProfile, ulid, ulidTime } from './index.js';
+import { CreateWorkItemRequest, FactoryEventEnvelope, titleFromMessage, ImageSpec, NetworkProfile, ulid, ulidTime } from './index.js';
 
 describe('ULID', () => {
   it('時刻を取り出せて、同じミリ秒でも増えていく', () => {
@@ -27,6 +27,12 @@ describe('入力の検証', () => {
     const r = CreateWorkItemRequest.parse({ title: 't', message: 'm', repo: { owner: 'a', name: 'b' } });
     expect(r.lineRef).toBe('chat@1');
     expect(r.repo?.baseBranch).toBe('main');
+  });
+
+  it('タイトルは省略でき、本文の最初の文から作れる', () => {
+    expect(CreateWorkItemRequest.parse({ message: 'm' }).title).toBeUndefined();
+    expect(titleFromMessage('\n  問い合わせフォームを直してください。誤りはその場で知らせたいです。')).toBe('問い合わせフォームを直してください');
+    expect(titleFromMessage('あ'.repeat(80))).toBe(`${'あ'.repeat(59)}…`);
   });
   it('イメージの名前とメモリを検証する', () => {
     expect(ImageSpec.safeParse({ name: 'Web', base: 'web@5', memoryMiB: 4096, packages: {} }).success).toBe(false);
