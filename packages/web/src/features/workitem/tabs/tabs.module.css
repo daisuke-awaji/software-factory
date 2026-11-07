@@ -93,8 +93,15 @@
   .changes { grid-template-columns: 200px minmax(0, 1fr); }
   .usage { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-@media (max-width: 720px) {
+@media (max-width: 719px) {
   .changes { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
   .fileList, .tree { border-right: 0; border-bottom: 1px solid var(--line); max-height: 180px; }
   .twoCols { grid-template-columns: 1fr; }
+  .pad { padding: 14px max(14px, var(--safe-right)) 24px max(14px, var(--safe-left)); }
+  .preview { padding: 8px; }
+  .previewNote { margin: 6px 4px 0; }
+  .ln { grid-template-columns: 34px 34px 16px 1fr; }
+  .stageTable { display: block; overflow-x: auto; }
+  .copyRow { flex-wrap: wrap; }
+  .copyRow .url { flex-basis: 100%; }
 }
