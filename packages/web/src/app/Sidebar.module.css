@@ -24,7 +24,7 @@
 .iconButton:hover { background: var(--hover); color: var(--ink); }
 
 /* ---------- 画面の移動 ---------- */
-.nav { flex: none; display: grid; gap: 1px; }
+.nav { flex: none; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; }
 .nav a {
   display: flex; align-items: center; gap: 10px;
   min-height: max(34px, var(--tap-min)); padding: 0 10px; border-radius: 10px;
@@ -44,7 +44,7 @@
 .panel:not([data-expanded]) .badge { position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 4px; font-size: 10px; }
 
 /* ---------- タスクの一覧 ---------- */
-.sessions { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-top: 14px; }
+.sessions { flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; margin-top: 14px; }
 .search { flex: none; position: relative; display: block; margin: 0 0 6px; }
 .search :global(.icon) { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--faint); pointer-events: none; }
 .search input {
@@ -53,10 +53,12 @@
   font-size: max(13px, var(--fs-input-min));
 }
 .search input:focus { outline: none; border-color: var(--line-strong); background: var(--card); }
-.scroll { flex: 1; min-height: 0; overflow-y: auto; margin: 0 -6px; padding: 0 6px 8px; scrollbar-width: thin; overscroll-behavior: contain; }
+/* 横には動かさない（長いタイトルは … で切る） */
+.scroll { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; margin: 0 -6px; padding: 0 6px 8px; scrollbar-width: thin; overscroll-behavior: contain; }
 .group { margin-top: 12px; }
 .groupTitle { margin: 0 0 3px; padding: 0 10px; font-size: 11.5px; font-weight: 500; color: var(--faint); }
-.list { margin: 0; padding: 0; list-style: none; display: grid; gap: 1px; }
+/* 列を minmax(0, 1fr) にしないと、いちばん長いタイトルの幅まで列が広がって横にはみ出す */
+.list { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; }
 .item {
   display: flex; align-items: center; gap: 9px;
   min-height: max(32px, var(--tap-min)); padding: 0 10px; border-radius: 9px;
@@ -93,7 +95,7 @@
   .head { height: 36px; margin-bottom: 2px; }
   .nav a { min-height: 34px; }
   .newTask { margin-bottom: 2px; }
-  .panel[data-expanded] { overflow-y: auto; }
+  .panel[data-expanded] { overflow-x: hidden; overflow-y: auto; }
   .panel[data-expanded] .sessions { flex: none; }
   .panel[data-expanded] .scroll { overflow: visible; }
   .popover { position: fixed; left: max(8px, var(--safe-left)); bottom: 8px; }
