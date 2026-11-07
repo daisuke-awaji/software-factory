@@ -204,7 +204,7 @@ export const handlers = [
 
   http.get(`${API}/me`, () => HttpResponse.json(getDb().me)),
 
-  // ---- ワークアイテム ----
+  // ---- タスク ----
   http.get(`${API}/tasks`, ({ request }) => {
     const u = new URL(request.url);
     const state = u.searchParams.get('state');
@@ -224,8 +224,8 @@ export const handlers = [
     const d = getDb();
     const limit = d.users.find((u) => u.id === d.me.id)?.limits.concurrentTasks ?? 3;
     const active = d.tasks.filter((w) => w.ownerId === d.me.id && !['completed', 'failed', 'cancelled'].includes(w.state)).length;
-    if (active >= limit) return err(429, 'QUOTA_EXCEEDED', `同時に進められる依頼は ${limit} 件までです。終わった依頼があれば、それを待ってから出してください。`);
-    if (!d.workflows.some((l) => l.name === input.workflowRef.split('@')[0])) return err(400, 'VALIDATION_ERROR', `ライン ${input.workflowRef} はありません`);
+    if (active >= limit) return err(429, 'QUOTA_EXCEEDED', `同時に進められるタスクは ${limit} 件までです。終わったタスクがあれば、それを待ってから出してください。`);
+    if (!d.workflows.some((l) => l.name === input.workflowRef.split('@')[0])) return err(400, 'VALIDATION_ERROR', `ワークフロー ${input.workflowRef} はありません`);
     if (input.repo) {
       if (!d.me.github.connected) return err(403, 'GITHUB_NOT_CONNECTED', 'GitHub と連携していません');
       if (!d.repos.some((r) => r.owner === input.repo!.owner && r.name === input.repo!.name)) return err(403, 'FORBIDDEN', 'このリポジトリを使う権限がありません');
@@ -299,7 +299,7 @@ export const handlers = [
     return act(() => sim.answerApproval(w.id, String(params['aid']), b.decision, getDb().me.name));
   }),
 
-  // ---- ステージ・ファイル・成果物 ----
+  // ---- ステップ・ファイル・成果物 ----
   http.get(`${API}/tasks/:id/steps`, ({ params }) => {
     const w = mine(params['id']);
     return w ? HttpResponse.json(getDb().stepRuns[w.id] ?? []) : notFound();
@@ -452,7 +452,7 @@ export const handlers = [
     return HttpResponse.json(d.repos);
   }),
 
-  // ---- イメージとライン ----
+  // ---- イメージとワークフロー ----
   http.get(`${API}/images`, () => HttpResponse.json(getDb().images)),
   http.post(`${API}/images`, async ({ request }) => {
     const spec = await body(ImageSpec, request);
@@ -545,7 +545,7 @@ export const handlers = [
     if (parsed.data.name !== params['name']) return err(400, 'VALIDATION_ERROR', 'name がパスと違います');
     const ids = new Set(parsed.data.steps.map((s) => s.id));
     const bad = parsed.data.steps.flatMap((s) => [s.next, s.on?.pass, s.on?.fail?.goto].filter((x): x is string => !!x && !ids.has(x)));
-    if (bad.length) return err(400, 'VALIDATION_ERROR', `存在しないステージを参照しています: ${bad.join(', ')}`);
+    if (bad.length) return err(400, 'VALIDATION_ERROR', `存在しないステップを参照しています: ${bad.join(', ')}`);
     const raws = raw as Record<string, unknown>;
     const def = WorkflowDefinition.parse({ name: parsed.data.name, version: parsed.data.version, yaml: stringify({ ...raws, version: parsed.data.version }), workflow: parsed.data, updatedAt: new Date().toISOString() });
     d.workflows = [...d.workflows.filter((x) => x.name !== def.name), def];

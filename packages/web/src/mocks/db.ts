@@ -10,7 +10,7 @@ export type SimStep =
   | { t: 'say'; delay: number; text: string } // エージェントの発言（delta に分けて流す）
   | { t: 'write'; delay: number; path: string; content: string | null } // null は削除
   | { t: 'gate'; delay: number; gate: 'plan' | 'approval' | 'message'; approvalId?: string }
-  | { t: 'next'; delay: number; outcome: 'pass' | 'fail' } // ステージが終わった。ラインの次へ進む
+  | { t: 'next'; delay: number; outcome: 'pass' | 'fail' } // ステップが終わった。ワークフローの次へ進む
   | { t: 'pr'; delay: number }
   | { t: 'finish'; delay: number; state: 'completed' | 'failed' };
 
@@ -23,9 +23,9 @@ export type Sim = {
   queue: SimStep[];
   waiting: null | 'plan' | 'approval' | 'message';
   approvalId?: string;
-  /** いまのステージ */
+  /** いまのステップ */
   step: string;
-  /** ステージごとの実行回数（verify#2 など） */
+  /** ステップごとの実行回数（verify#2 など） */
   attempts: Record<string, number>;
   /** 計画を出した回数と、修正の依頼の内容 */
   planVersion: number;
@@ -47,7 +47,7 @@ export type MockDb = {
   events: Record<string, FactoryEventEnvelope[]>;
   plans: Record<string, PlanRecord[]>;
   stepRuns: Record<string, StepRun[]>;
-  files: Record<string, Record<string, string>>; // ワークアイテム → パス → 中身
+  files: Record<string, Record<string, string>>; // タスク → パス → 中身
   baseFiles: Record<string, Record<string, string>>; // 差分の基準（作業を始めたときのリポジトリ）
   attachments: Record<string, { fileName: string; content: string; contentType: string }>; // 添付（path → 中身）
   sim: Record<string, Sim>;

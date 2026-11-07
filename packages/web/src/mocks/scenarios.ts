@@ -1,4 +1,4 @@
-// シミュレーターの台本。依頼の内容からシナリオを選び、ステージごとの手順（SimStep）を組み立てる
+// シミュレーターの台本。タスクの内容からシナリオを選び、ステップごとの手順（SimStep）を組み立てる
 import type { Plan, Task } from '@factory/contracts';
 import type { Scenario, Sim, SimStep } from './db';
 
@@ -85,11 +85,11 @@ export function planFor(sc: Scenario, item: Task, comments: string[]): Plan {
       estimate: { minutes: 10, usd: 0.8 },
     },
     generic: {
-      summaryForHumans: `ご依頼の内容（${item.title}）に沿って作業し、結果をまとめてお渡しします。`,
+      summaryForHumans: `タスクの内容（${item.title}）に沿って作業し、結果をまとめてお渡しします。`,
       goal: item.title,
       deliverables: ['作業の結果（notes.md）'],
-      steps: ['依頼の内容と関係するファイルを確認する', '作業する', '結果を確かめて、まとめる'],
-      doneCriteria: ['依頼の内容を満たしている'],
+      steps: ['タスクの内容と関係するファイルを確認する', '作業する', '結果を確かめて、まとめる'],
+      doneCriteria: ['タスクの内容を満たしている'],
       externalAccess: [],
       estimate: { minutes: 5, usd: 0.3 },
     },
@@ -108,7 +108,7 @@ export function planFor(sc: Scenario, item: Task, comments: string[]): Plan {
 export function planning(sc: Scenario, item: Task, firstStep: string, version: number, comments: string[]): SimStep[] {
   const files = item.repo ? 'リポジトリ' : 'ワークスペース';
   return [
-    ...(version === 1 ? [state('planning', 300), stepChanged(firstStep, 'started', 500), say(`依頼を確認しました。${files}の中身を見てから、計画を立てます。`)] : [state('planning'), say('ご指摘を反映して、計画を見直します。')]),
+    ...(version === 1 ? [state('planning', 300), stepChanged(firstStep, 'started', 500), say(`内容を確認しました。${files}の中身を見てから、計画を立てます。`)] : [state('planning'), say('ご指摘を反映して、計画を見直します。')]),
     ...(version === 1 ? [...tool('list_files', `${files}のファイルを一覧する`, item.repo ? '6 件のファイル' : '添付ファイルを確認'), ...tool('read_file', item.repo ? 'README.md を読む' : '添付ファイルを読む', '読み込みました', true, 600)] : []),
     usage(5200, 900, 25),
     { t: 'emit', delay: 700, event: { type: 'plan.proposed', planVersion: version, plan: planFor(sc, item, comments) } },
@@ -118,7 +118,7 @@ export function planning(sc: Scenario, item: Task, firstStep: string, version: n
   ];
 }
 
-// ---------------------------------------------------------------- ステージごとの作業
+// ---------------------------------------------------------------- ステップごとの作業
 const formTs = (fixed: boolean) => `export type ContactInput = { name: string; email: string; body: string };
 export type FieldError = { field: keyof ContactInput; message: string };
 
@@ -237,7 +237,7 @@ export const reportHtml = `<!doctype html>
 </body></html>
 `;
 
-/** ステージの作業。最後は { t: 'next' } でラインの次へ進む */
+/** ステップの作業。最後は { t: 'next' } でワークフローの次へ進む */
 export function stepWork(sc: Scenario, stepId: string, attempt: number, sim: Sim, isFirstRun: boolean): SimStep[] {
   const start = isFirstRun ? [] : [stepChanged(stepId, 'started')];
   if (stepId === 'implement' || stepId === 'workbench') {
@@ -305,7 +305,7 @@ export function stepWork(sc: Scenario, stepId: string, attempt: number, sim: Sim
         );
         break;
       default:
-        steps.push(...edit('notes.md', `# 作業のまとめ\n\n- 依頼の内容を確認しました\n- 必要な作業を行いました\n`, 'notes.md: 作業のまとめ'));
+        steps.push(...edit('notes.md', `# 作業のまとめ\n\n- タスクの内容を確認しました\n- 必要な作業を行いました\n`, 'notes.md: 作業のまとめ'));
     }
     steps.push(usage(18000, 4200, 140), stepChanged(stepId, 'completed'), { t: 'next', delay: 200, outcome: 'pass' });
     return steps;

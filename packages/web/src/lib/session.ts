@@ -166,7 +166,7 @@ export function pendingOf(s: Session): Pending | null {
   return null;
 }
 
-/** いま動いている（または最後に動いた）ステージの実行 */
+/** いま動いている（または最後に動いた）ステップの実行 */
 export function currentRun(s: Session): RunState | undefined {
   return s.runs.findLast((r) => r.state === 'running') ?? s.runs.at(-1);
 }

@@ -7,7 +7,7 @@ import { WorkspacePage } from '../features/task/WorkspacePage';
 import { ServicesProvider, type Services } from '../lib/services';
 import { AppShell, NotFound } from './AppShell';
 
-// よく使うホーム・すべての依頼・ワークスペース以外は、開いたときに読み込む
+// よく使うホーム・すべてのタスク・ワークスペース以外は、開いたときに読み込む
 const AdminPage = lazy(() => import('../features/admin/AdminPage').then((m) => ({ default: m.AdminPage })));
 const ImagesPage = lazy(() => import('../features/images/ImagesPage').then((m) => ({ default: m.ImagesPage })));
 const WorkflowsPage = lazy(() => import('../features/workflows/WorkflowsPage').then((m) => ({ default: m.WorkflowsPage })));
@@ -21,7 +21,7 @@ export const routes: RouteObject[] = [
     element: <AppShell />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'requests', element: <TasksPage /> },
+      { path: 'tasks', element: <TasksPage /> },
       { path: 't/:id', element: <WorkspacePage /> },
       { path: 'publications', element: later(<PublicationsPage />) },
       { path: 'images', element: later(<ImagesPage />) },

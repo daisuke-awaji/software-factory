@@ -13,7 +13,7 @@ export type TaskState = z.infer<typeof TaskState>;
 export const ImageRef = z.string().regex(/^[a-z0-9-]+@\d+$/, 'name@version の形式で指定してください'); // 例: web@5
 export const WorkflowRef = z.string().regex(/^[a-z0-9-]+@\d+$/); // 例: chat@1
 
-// ---------------------------------------------------------------- ライン
+// ---------------------------------------------------------------- ワークフロー
 export const StepDef = z.object({
   id: z.string().regex(/^[a-z][a-z0-9-]{1,31}$/),
   type: z.enum(['agent', 'command', 'approval', 'system']),
@@ -48,7 +48,7 @@ export type Workflow = z.infer<typeof Workflow>;
 export const WorkflowDefinition = z.object({ name: z.string(), version: z.number().int().positive(), yaml: z.string(), workflow: Workflow, updatedAt: IsoTime });
 export type WorkflowDefinition = z.infer<typeof WorkflowDefinition>;
 
-// ---------------------------------------------------------------- ワークアイテム
+// ---------------------------------------------------------------- タスク
 export const RepoRef = z.object({ owner: z.string().min(1), name: z.string().min(1), baseBranch: z.string().default('main') });
 
 export const Usage = z.object({ inputTokens: z.number().int().nonnegative(), outputTokens: z.number().int().nonnegative(), vmSeconds: z.number().nonnegative() });
@@ -88,7 +88,7 @@ export const CreateTaskRequest = z.object({
 });
 export type CreateTaskRequest = z.infer<typeof CreateTaskRequest>;
 
-/** 依頼の本文からタイトルを作る: 最初の行の最初の文を、60字までにする */
+/** タスクの本文からタイトルを作る: 最初の行の最初の文を、60字までにする */
 export function titleFromMessage(message: string): string {
   const first = message.trim().split(/\n|。/).find((x) => x.trim())?.trim() ?? '';
   const chars = Array.from(first || message.trim());

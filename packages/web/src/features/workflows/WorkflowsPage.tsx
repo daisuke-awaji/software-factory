@@ -1,4 +1,4 @@
-// ライン（閲覧）: ステージの並びと、それぞれの VM のイメージ・通信・戻り方
+// ワークフロー（閲覧）: ステップの並びと、それぞれの VM のイメージ・通信・戻り方
 import { Fragment } from 'react';
 import { Link } from 'react-router';
 import { Page } from '../../app/AppShell';
@@ -17,8 +17,8 @@ export function WorkflowsPage() {
   return (
     <Page>
       <PageHeader
-        title="ライン"
-        description="依頼を進める工程の並びです。ステージごとに別の VM（別のイメージ）で動きます（D15）。"
+        title="ワークフロー"
+        description="タスクを進めるステップの並びです。ステップごとに別の VM（別のイメージ）で動きます（D15）。"
         actions={isAdmin(me) ? <Link to="/admin?tab=workflows" className={p.link}>管理で編集する</Link> : undefined}
       />
       <ErrorBanner error={workflows.error} onRetry={() => void workflows.reload()} />
@@ -33,7 +33,7 @@ export function WorkflowsPage() {
                   {l.title ?? l.name} <span className="mono">{l.name}@{l.version}</span>
                 </h2>
                 {l.description && <p className={p.desc}>{l.description}</p>}
-                <div className={p.flow} role="list" aria-label={`${l.title ?? l.name} のステージ`}>
+                <div className={p.flow} role="list" aria-label={`${l.title ?? l.name} のステップ`}>
                   <div className={p.flowStep} role="listitem">
                     <strong>計画</strong>
                     <span>人が承認する</span>

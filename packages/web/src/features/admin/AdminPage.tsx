@@ -1,4 +1,4 @@
-// 管理（FR-ADM）: 許可リスト、パッケージソース、ラインの登録、VM と容量、ユーザー、イメージの申請
+// 管理（FR-ADM）: 許可リスト、パッケージソース、ワークフローの登録、VM と容量、ユーザー、イメージの申請
 import { NetworkProfile, type AdminUser, type PackageSource } from '@factory/contracts';
 import { useEffect, useId, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
@@ -42,7 +42,7 @@ export function AdminPage() {
           options={[
             { value: 'network', label: '通信の許可リスト' },
             { value: 'packages', label: 'パッケージソース' },
-            { value: 'workflows', label: 'ライン' },
+            { value: 'workflows', label: 'ワークフロー' },
             { value: 'vms', label: 'VM と容量' },
             { value: 'users', label: 'ユーザー' },
             { value: 'images', label: 'イメージの申請' },
@@ -87,7 +87,7 @@ function NetworkProfiles() {
   };
   return (
     <div className={p.stack}>
-      <p className={p.sectionDesc} style={{ margin: 0 }}>VM からの通信は、ここに書いたホストにだけ通します（D4）。ステージごとに、ラインの定義でプロファイルを選びます。</p>
+      <p className={p.sectionDesc} style={{ margin: 0 }}>VM からの通信は、ここに書いたホストにだけ通します（D4）。ステップごとに、ワークフローの定義でプロファイルを選びます。</p>
       <div className={p.grid}>
         {list.data.map((prof) => {
           const value = drafts[prof.name] ?? prof.allow.join('\n');
@@ -130,7 +130,7 @@ function PackageSources() {
     <Card>
       <div className={p.cardBody} style={{ maxWidth: 640 }}>
         <h3 className={p.cardTitle}>パッケージの取得元 <span className="mono">{draft.name}</span></h3>
-        <p className={p.desc}>いまは公開レジストリから取得します。CodeArtifact に切り替えても、イメージやラインの定義は変えずに済みます（D9）。</p>
+        <p className={p.desc}>いまは公開レジストリから取得します。CodeArtifact に切り替えても、イメージやワークフローの定義は変えずに済みます（D9）。</p>
         <Field label="種類" htmlFor={ids.kind}>
           <Select id={ids.kind} value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value as PackageSource['kind'] })}>
             <option value="public">公開レジストリ（npm / PyPI）</option>
@@ -190,13 +190,13 @@ function Workflows() {
   return (
     <div className={p.stack}>
       <div className={p.row}>
-        <Select aria-label="ライン" value={name} onChange={(e) => setName(e.target.value)} style={{ width: 260 }}>
+        <Select aria-label="ワークフロー" value={name} onChange={(e) => setName(e.target.value)} style={{ width: 260 }}>
           {workflows.data?.map((l) => <option key={l.name} value={l.name}>{l.title ?? l.name}（{l.name}@{l.version}）</option>)}
         </Select>
-        <span className="muted" style={{ fontSize: 13 }}>保存すると新しいバージョンになります。動いている依頼は、始めたときのバージョンのまま進みます。</span>
+        <span className="muted" style={{ fontSize: 13 }}>保存すると新しいバージョンになります。動いているタスクは、始めたときのバージョンのまま進みます。</span>
       </div>
       {def.error && <ErrorBanner error={def.error} />}
-      <Field label="ラインの定義（YAML）" htmlFor={id} error={error ?? undefined}>
+      <Field label="ワークフローの定義（YAML）" htmlFor={id} error={error ?? undefined}>
         <TextArea id={id} className={p.yaml} spellCheck={false} value={yaml} onChange={(e) => setYaml(e.target.value)} aria-invalid={!!error} />
       </Field>
       <div className={p.row}>
@@ -228,11 +228,11 @@ function Vms() {
           <Loading />
         )}
       </Card>
-      {cap.data && <p className={p.sectionDesc} style={{ margin: 0 }}>順番待ちの依頼: {cap.data.queueLength} 件</p>}
+      {cap.data && <p className={p.sectionDesc} style={{ margin: 0 }}>順番待ちのタスク: {cap.data.queueLength} 件</p>}
       {vms.data?.length === 0 ? (
         <Empty title="動いている VM はありません" />
       ) : (
-        <Table head={['VM', '依頼', '利用者', 'イメージ', '状態', '起動', '']} label="VM の一覧">
+        <Table head={['VM', 'タスク', '利用者', 'イメージ', '状態', '起動', '']} label="VM の一覧">
           {vms.data?.map((v) => (
             <tr key={v.id}>
               <td className="mono">{v.id}<span className={p.sub}>{v.stepRunId}</span></td>
@@ -249,7 +249,7 @@ function Vms() {
       <ConfirmDialog
         open={!!target}
         title="VM を強制停止しますか？"
-        body="エージェントの作業は止まり、依頼は失敗になります。利用者には会話の中で知らせます。"
+        body="エージェントの作業は止まり、タスクは失敗になります。利用者には会話の中で知らせます。"
         confirm="強制停止"
         danger
         onConfirm={async () => {
@@ -289,7 +289,7 @@ function Users() {
   if (users.error) return <ErrorBanner error={users.error} />;
   if (!users.data) return <Loading />;
   return (
-    <Table head={['ユーザー', '管理者', '同時に進める依頼', '月の上限', '今月の費用', '']} label="ユーザーの一覧">
+    <Table head={['ユーザー', '管理者', '同時に進めるタスク', '月の上限', '今月の費用', '']} label="ユーザーの一覧">
       {users.data.map((orig) => {
         const u = drafts[orig.id] ?? orig;
         const set = (patch: Partial<AdminUser>) => setDrafts((d) => ({ ...d, [u.id]: { ...u, ...patch } }));
@@ -300,7 +300,7 @@ function Users() {
               <input type="checkbox" aria-label={`${u.name} を管理者にする`} checked={u.roles.includes('admin')} onChange={(e) => set({ roles: e.target.checked ? ['user', 'admin'] : ['user'] })} />
             </td>
             <td>
-              <TextInput className={p.numInput} type="number" min={1} max={20} aria-label={`${u.name} の同時に進める依頼`} value={u.limits.concurrentTasks} onChange={(e) => set({ limits: { ...u.limits, concurrentTasks: Number(e.target.value) } })} />
+              <TextInput className={p.numInput} type="number" min={1} max={20} aria-label={`${u.name} の同時に進めるタスク`} value={u.limits.concurrentTasks} onChange={(e) => set({ limits: { ...u.limits, concurrentTasks: Number(e.target.value) } })} />
             </td>
             <td>
               <TextInput className={p.numInput} type="number" min={0} aria-label={`${u.name} の月の上限（ドル）`} value={u.limits.monthlyUsd} onChange={(e) => set({ limits: { ...u.limits, monthlyUsd: Number(e.target.value) } })} />

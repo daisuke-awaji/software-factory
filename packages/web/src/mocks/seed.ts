@@ -1,4 +1,4 @@
-// モックの初期データ。ワークアイテムは、シミュレーターを過去の時刻で一気に流して作る（イベントの履歴と中身が必ず揃う）
+// モックの初期データ。タスクは、シミュレーターを過去の時刻で一気に流して作る（イベントの履歴と中身が必ず揃う）
 import { CreateTaskRequest, Publication, ulid } from '@factory/contracts';
 import { setDb, type MockDb } from './db';
 import * as fx from './fixtures';
@@ -7,7 +7,7 @@ import { advance, atTime, cancel, createTask, fastForward, withPrNumbers } from 
 const MIN = 60_000;
 
 type PastRepo = 'support-site' | 'sales-insights' | 'platform' | 'crm-scripts' | 'handbook';
-/** サイドパネルの「過去の依頼」と、続きの読み込みを確かめるための、終わった依頼（何日前・タイトル・リポジトリ。リポジトリがなければ chat ライン） */
+/** サイドパネルの「過去のタスク」と、続きの読み込みを確かめるための、終わったタスク（何日前・タイトル・リポジトリ。リポジトリがなければ chat ワークフロー） */
 const PAST: [days: number, title: string, repo?: PastRepo | undefined, end?: 'cancelled'][] = [
   [1, '請求書の PDF から金額を抜き出す'],
   [1, '採用ページの文言を直す', 'support-site'],
@@ -75,7 +75,7 @@ export function seed(): MockDb {
     return { item, at };
   };
 
-  // 0. 過去の依頼（終わったもの）。PR は新しいものから #127, #126, … にする（下のフォームの依頼を #128 にするため）
+  // 0. 過去のタスク（終わったもの）。PR は新しいものから #127, #126, … にする（下のフォームのタスクを #128 にするため）
   let pastPr = 128;
   for (const [days, title, repo, end] of PAST) {
     const past = make(days * 24 * 60 + 90, {
@@ -86,7 +86,7 @@ export function seed(): MockDb {
     });
     if (end === 'cancelled') {
       const stopped = fastForward(past.item.id, past.at, () => 'stop', 2000, 6);
-      atTime(stopped + 3 * MIN, () => cancel(past.item.id, '計画を見て、依頼を取り下げました。'));
+      atTime(stopped + 3 * MIN, () => cancel(past.item.id, '計画を見て、タスクを取り下げました。'));
     } else {
       withPrNumbers(() => --pastPr, () => fastForward(past.item.id, past.at, () => 'approve', 2000, 6));
     }

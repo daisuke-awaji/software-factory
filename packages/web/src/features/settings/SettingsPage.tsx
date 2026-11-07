@@ -51,7 +51,7 @@ export function SettingsPage() {
               <p>
                 {me.github.connected
                   ? `@${me.github.login} として連携しています。リポジトリへの権限は GitHub 側の設定に従います。`
-                  : 'リポジトリを使う依頼には、GitHub との連携が必要です（GitHub App の user-to-server 認可）。'}
+                  : 'リポジトリを使うタスクには、GitHub との連携が必要です（GitHub App の user-to-server 認可）。'}
               </p>
             </div>
             {me.github.connected ? (
@@ -122,7 +122,7 @@ export function SettingsPage() {
             <div className={p.settingRow}>
               <div>
                 <h3>データを作り直す</h3>
-                <p>依頼・公開物・イメージを、最初の状態に戻します（ブラウザに保存しているモックのデータを消します）。</p>
+                <p>タスク・公開物・イメージを、最初の状態に戻します（ブラウザに保存しているモックのデータを消します）。</p>
               </div>
               <Button
                 size="sm"

@@ -1,4 +1,4 @@
-// 開いているワークアイテムのリアルタイムの状態。WebSocket のイベントは applyEvent の1か所で畳み込む（実装計画 §5.2）
+// 開いているタスクのリアルタイムの状態。WebSocket のイベントは applyEvent の1か所で畳み込む（実装計画 §5.2）
 import { FactoryEventEnvelope } from '@factory/contracts';
 import { create } from 'zustand';
 import { emptySession, reduce, reduceAll, type Session } from '../lib/session';
@@ -8,7 +8,7 @@ type SessionStore = {
   /** 受け取ったイベント（eventId の順）。古いイベントが後から届いたときに、最初から畳み込み直すために持つ */
   events: FactoryEventEnvelope[];
   open: (taskId: string) => void;
-  /** 検証してから反映する（契約に合わないイベントと、別のワークアイテムのイベントは捨てる） */
+  /** 検証してから反映する（契約に合わないイベントと、別のタスクのイベントは捨てる） */
   applyEvent: (raw: unknown) => void;
   applyHistory: (events: FactoryEventEnvelope[]) => void;
   close: () => void;

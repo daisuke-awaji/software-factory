@@ -67,7 +67,7 @@ export function PreviewTab({ item, session }: { item: Task; session: Session }) 
         </IconButton>
       </div>
       {error ? <ErrorBanner error={error} onRetry={() => setNonce((n) => n + 1)} /> : url ? <iframe key={url} className={t.frame} src={url} title="プレビュー" sandbox={url.startsWith('blob:') ? 'allow-scripts allow-forms' : 'allow-scripts allow-forms allow-same-origin'} /> : <Loading label="プレビューを開いています…" />}
-      <p className={t.previewNote}>このブラウザで同時に開けるプレビューは1つだけです（D16）。別の依頼のプレビューを開くと、こちらは閉じます。</p>
+      <p className={t.previewNote}>このブラウザで同時に開けるプレビューは1つだけです（D16）。別のタスクのプレビューを開くと、こちらは閉じます。</p>
     </div>
   );
 }
@@ -255,7 +255,7 @@ export function FilesTab({ item, version, onPublish }: { item: Task; version: nu
   );
 }
 
-// ---------------------------------------------------------------- 計画とステージの構成
+// ---------------------------------------------------------------- 計画とステップの構成
 export function PlanTab({ session, workflow, actions }: { session: Session; workflow: Workflow | undefined; actions: PlanActions }) {
   const latest = session.latestPlan ? session.plans[session.latestPlan] : undefined;
   const older = Object.values(session.plans).filter((p) => p.version !== session.latestPlan).sort((a, b) => b.version - a.version);
@@ -268,15 +268,15 @@ export function PlanTab({ session, workflow, actions }: { session: Session; work
           <div className={t.empty}>
             <IconList />
             <strong>計画を立てています</strong>
-            <span>エージェントが依頼の内容と関係するファイルを確かめて、計画を出します。承認するまで作業は始まりません（D3）。</span>
+            <span>エージェントがタスクの内容と関係するファイルを確かめて、計画を出します。承認するまで作業は始まりません（D3）。</span>
           </div>
         )}
         {workflow && (
           <>
-            <h3 className={t.h}>ライン「{workflow.title ?? workflow.name}」のステージ（{workflow.name}@{workflow.version}）</h3>
+            <h3 className={t.h}>ワークフロー「{workflow.title ?? workflow.name}」のステップ（{workflow.name}@{workflow.version}）</h3>
             <table className={t.stepTable}>
               <thead>
-                <tr><th>ステージ</th><th>VM のイメージ</th><th>通信</th><th>進み方</th></tr>
+                <tr><th>ステップ</th><th>VM のイメージ</th><th>通信</th><th>進み方</th></tr>
               </thead>
               <tbody>
                 {workflow.steps.map((st) => (
@@ -289,7 +289,7 @@ export function PlanTab({ session, workflow, actions }: { session: Session; work
                       {st.action === 'create-pull-request' && 'プルリクエストを作る'}
                       {st.action === 'propose-publish' && '公開を提案する'}
                       {st.on?.fail && `失敗したら ${stepLabel(st.on.fail.goto)} に戻る（最大 ${st.on.fail.maxLoops} 回）`}
-                      {!st.action && !st.on?.fail && (st.on?.pass ?? st.next ? `次は ${stepLabel(st.on?.pass ?? st.next!)}` : '最後のステージ')}
+                      {!st.action && !st.on?.fail && (st.on?.pass ?? st.next ? `次は ${stepLabel(st.on?.pass ?? st.next!)}` : '最後のステップ')}
                     </td>
                   </tr>
                 ))}
@@ -338,7 +338,7 @@ export function LogTab({ item, session, workflow, onRetry }: { item: Task; sessi
           <div className={t.empty}>
             <IconList />
             <strong>まだ作業はありません</strong>
-            <span>計画が承認されると、ステージごとの作業（コマンド、ファイルの編集、テスト）がここに出ます。</span>
+            <span>計画が承認されると、ステップごとの作業（コマンド、ファイルの編集、テスト）がここに出ます。</span>
           </div>
         )}
         {runs.map((r) => {

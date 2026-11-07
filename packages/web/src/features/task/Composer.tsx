@@ -36,7 +36,7 @@ export function Composer({
     : pending?.kind === 'approval' ? '質問や補足を書く…（承認への回答は上のカードで）'
     : running ? '指示を追加する…（次の手順から反映します）'
     : state === 'suspended' ? '指示を送ると、続きから再開します…'
-    : state === 'completed' ? '続けて依頼する…'
+    : state === 'completed' ? '続けて指示する…'
     : 'メッセージを書く…';
 
   const send = async () => {

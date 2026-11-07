@@ -1,4 +1,4 @@
-/* 公開物・イメージ・ライン・管理・設定の画面で共有する見た目 */
+/* 公開物・イメージ・ワークフロー・管理・設定の画面で共有する見た目 */
 .stack { display: grid; gap: 20px; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 14px; }
 .cardBody { padding: 14px 16px; display: grid; gap: 10px; }

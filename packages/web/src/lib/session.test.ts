@@ -17,7 +17,7 @@ describe('reduce', () => {
     expect(s.timeline).toHaveLength(1);
   });
 
-  it('別のワークアイテムのイベントは無視する', () => {
+  it('別のタスクのイベントは無視する', () => {
     const s0 = emptySession(wid);
     const other = { ...ev({ type: 'egress.blocked', host: 'x.example' }), taskId: ulid() } as FactoryEventEnvelope;
     expect(reduce(s0, other)).toBe(s0);
@@ -39,7 +39,7 @@ describe('reduce', () => {
     expect(s.fileVersion).toBe(1); // edit_file が成功した
   });
 
-  it('ステージの実行は回数ごとに分ける（verify#2）', () => {
+  it('ステップの実行は回数ごとに分ける（verify#2）', () => {
     const s = reduceAll(emptySession(wid), [
       ev({ type: 'step.changed', stepId: 'verify', state: 'started' }),
       ev({ type: 'step.changed', stepId: 'verify', state: 'failed' }),

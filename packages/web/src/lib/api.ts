@@ -64,7 +64,7 @@ export function createApiClient({ baseUrl = globalThis.location?.origin ?? 'http
   return {
     me: () => request(Me, '/me'),
 
-    // ---- ワークアイテム ----
+    // ---- タスク ----
     listTasks: (p: { state?: string; archived?: boolean; cursor?: string; limit?: number } = {}) =>
       request(TaskPage, `/tasks${q({ state: p.state, archived: p.archived ? 'true' : undefined, cursor: p.cursor, limit: p.limit?.toString() })}`),
     createTask: (input: z.input<typeof CreateTaskRequest>) =>
@@ -86,7 +86,7 @@ export function createApiClient({ baseUrl = globalThis.location?.origin ?? 'http
     answerApproval: (id: string, approvalId: string, body: ApprovalDecisionBody) =>
       request(NoContent, `${taskPath(id)}/approvals/${encodeURIComponent(approvalId)}`, json('POST', body)),
 
-    // ---- ステージ・ファイル・成果物 ----
+    // ---- ステップ・ファイル・成果物 ----
     steps: (id: string) => request(z.array(StepRun), `${taskPath(id)}/steps`),
     retryStep: (id: string, runId: string) => request(NoContent, `${taskPath(id)}/steps/${encodeURIComponent(runId)}/retry`, json('POST')),
     files: (id: string, path = '') => request(FileTree, `${taskPath(id)}/files${q({ path })}`),
@@ -123,7 +123,7 @@ export function createApiClient({ baseUrl = globalThis.location?.origin ?? 'http
     githubConnectUrl: () => new URL('/api/v1/github/connect', baseUrl).toString(),
     repos: () => request(z.array(Repo), '/github/repos'),
 
-    // ---- イメージとライン ----
+    // ---- イメージとワークフロー ----
     images: () => request(z.array(ImageSummary), '/images'),
     buildImage: (spec: z.input<typeof ImageSpec>) => request(ImageVersion, '/images', json('POST', ImageSpec.parse(spec))),
     imageVersions: (name: string) => request(z.array(ImageVersion), `/images/${encodeURIComponent(name)}/versions`),

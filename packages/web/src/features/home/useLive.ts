@@ -1,4 +1,4 @@
-// ホーム用: 一覧のワークアイテムのイベントを購読して、変わったら読み直す。承認待ちのものは、何を待っているかを履歴から調べる
+// ホーム用: 一覧のタスクのイベントを購読して、変わったら読み直す。承認待ちのものは、何を待っているかを履歴から調べる
 import type { Task } from '@factory/contracts';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { isTerminal } from '../../lib/format';
@@ -27,7 +27,7 @@ export function useLiveReload(items: Task[] | undefined, reload: () => void) {
   }, [ids, events]);
 }
 
-/** 承認待ちのワークアイテムが、何の回答を待っているか */
+/** 承認待ちのタスクが、何の回答を待っているか */
 export function usePending(items: Task[] | undefined) {
   const { api } = useServices();
   const [pending, setPending] = useState<Record<string, Pending>>({});

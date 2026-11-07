@@ -37,7 +37,7 @@ export function ImagesPage() {
     <Page>
       <PageHeader
         title="イメージ"
-        description="ステージの VM で使う実行環境です。既定のイメージに、パッケージやコマンドを足したカスタムイメージを作れます。VM のメモリもイメージで決まります。"
+        description="ステップの VM で使う実行環境です。既定のイメージに、パッケージやコマンドを足したカスタムイメージを作れます。VM のメモリもイメージで決まります。"
         actions={<Button size="sm" icon={<IconPlus />} onClick={() => setCreating('new')}>新しいイメージ</Button>}
       />
       <ErrorBanner error={images.error} onRetry={() => void images.reload()} />

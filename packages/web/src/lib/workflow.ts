@@ -1,4 +1,4 @@
-// ラインの進み具合（計画 → 各ステージ）を、画面に出す形にする
+// ワークフローの進み具合（計画 → 各ステップ）を、画面に出す形にする
 import type { Workflow, Task } from '@factory/contracts';
 import { stepLabel } from './format';
 import type { Session } from './session';
@@ -37,7 +37,7 @@ export function progressFromSession(workflow: Workflow | undefined, s: Session):
   return steps;
 }
 
-/** 一覧用: ワークアイテムの状態と、いまのステージから大まかに出す（pending は受け箱で分かった承認の種類） */
+/** 一覧用: タスクの状態と、いまのステップから大まかに出す（pending は受け箱で分かった承認の種類） */
 export function progressFromTask(workflow: Workflow | undefined, item: Task, pending?: 'plan' | 'approval'): ProgressStep[] {
   const defs = workflow?.steps ?? [];
   const idx = item.currentStepId ? defs.findIndex((st) => st.id === item.currentStepId) : -1;

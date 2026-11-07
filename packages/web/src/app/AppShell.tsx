@@ -29,7 +29,7 @@ export function AppShell() {
   useEffect(loadMe, [api, setMe]);
   useEffect(() => events.onState(setConn), [events]);
 
-  // サイドパネルの依頼の一覧。画面を移ったとき（新しい依頼を出したときなど）と、状態が変わったときに読み直す
+  // サイドパネルのタスクの一覧。画面を移ったとき（新しいタスクを作ったときなど）と、状態が変わったときに読み直す
   const feed = useTaskFeed([location.pathname], { pollMs: 20_000, enabled: !!me });
   useLiveReload(feed.items, () => void feed.reload());
 
@@ -165,7 +165,7 @@ export function NotFound() {
   return (
     <div className={s.page}>
       <Banner>
-        ページが見つかりません。<Link to="/">依頼の一覧に戻る</Link>
+        ページが見つかりません。<Link to="/">タスクの一覧に戻る</Link>
       </Banner>
     </div>
   );

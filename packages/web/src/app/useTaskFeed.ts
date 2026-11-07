@@ -1,4 +1,4 @@
-// サイドパネルの依頼の一覧（06_ui_spec.md §1.1）: 新しい順に PAGE 件ずつ読み、下までスクロールしたら続きを足す
+// サイドパネルのタスクの一覧（06_ui_spec.md §1.1）: 新しい順に PAGE 件ずつ読み、下までスクロールしたら続きを足す
 import type { Task } from '@factory/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { errorMessage } from '../lib/api';

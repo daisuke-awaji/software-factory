@@ -1,4 +1,4 @@
-// ワークスペースのデータ: ワークアイテム（REST）と、イベントを畳み込んだセッション（WebSocket + 履歴）
+// ワークスペースのデータ: タスク（REST）と、イベントを畳み込んだセッション（WebSocket + 履歴）
 import { useEffect, useMemo, useState } from 'react';
 import { errorMessage } from '../../lib/api';
 import { findWorkflow } from '../../lib/workflow';
@@ -38,7 +38,7 @@ export function useWorkspace(id: string) {
     };
   }, [id, api, events]);
 
-  // 状態が変わったら、ワークアイテム（PR・費用など）を読み直す
+  // 状態が変わったら、タスク（PR・費用など）を読み直す
   const state = session?.state ?? item.data?.state ?? null;
   const reloadItem = item.reload;
   useEffect(() => {

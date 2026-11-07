@@ -1,4 +1,4 @@
-// すべての依頼（ADR-0010）: 絞り込み・検索つきの表。スマホではカードにする。サイドパネルの一覧で足りないときに使う
+// すべてのタスク（ADR-0010）: 絞り込み・検索つきの表。スマホではカードにする。サイドパネルの一覧で足りないときに使う
 import type { Workflow, Task } from '@factory/contracts';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -46,7 +46,7 @@ export function TasksPage() {
 
   return (
     <Page wide>
-      <h1 className={s.title}>すべての依頼</h1>
+      <h1 className={s.title}>すべてのタスク</h1>
       <div className={s.listHead}>
         <SegmentedControl<Filter>
           size="sm"
@@ -64,7 +64,7 @@ export function TasksPage() {
         />
         <label className={s.search}>
           <IconSearch />
-          <span className="sr-only">依頼を検索</span>
+          <span className="sr-only">タスクを検索</span>
           <TextInput type="search" placeholder="タイトルやリポジトリで探す" value={query} onChange={(e) => setQuery(e.target.value)} />
         </label>
       </div>
@@ -73,8 +73,8 @@ export function TasksPage() {
       {list.loading && !list.data ? (
         <Loading />
       ) : shown.length === 0 ? (
-        <Empty title={query ? '見つかりませんでした' : 'この条件の依頼はありません'} icon={<IconInbox />}>
-          {filter === 'all' && !query && <><Link to="/">新しい依頼</Link>から、最初の依頼を出してみましょう。</>}
+        <Empty title={query ? '見つかりませんでした' : 'この条件のタスクはありません'} icon={<IconInbox />}>
+          {filter === 'all' && !query && <><Link to="/">新しいタスク</Link>から、最初のタスクを作ってみましょう。</>}
         </Empty>
       ) : phone ? (
         <TaskCards items={shown} workflows={workflows.data} pending={pending} />
@@ -89,12 +89,12 @@ function TaskTable({ items, workflows, pending }: { items: Task[]; workflows: Wo
   const navigate = useNavigate();
   return (
     <div className={s.tableWrap}>
-      <table className={s.table} aria-label="依頼の一覧">
+      <table className={s.table} aria-label="タスクの一覧">
         <thead>
           <tr>
-            <th scope="col">依頼</th>
+            <th scope="col">タスク</th>
             <th scope="col">状態</th>
-            <th scope="col">ライン</th>
+            <th scope="col">ワークフロー</th>
             <th scope="col" className={s.num}>所要</th>
             <th scope="col" className={s.num}>費用</th>
             <th scope="col" className={s.num}>更新</th>
@@ -140,7 +140,7 @@ function TaskTable({ items, workflows, pending }: { items: Task[]; workflows: Wo
 /** スマホの一覧: 表の代わりに、1件を1枚のカードにする */
 function TaskCards({ items, workflows, pending }: { items: Task[]; workflows: Workflow[] | undefined; pending: Record<string, Pending> }) {
   return (
-    <ul className={s.cards} aria-label="依頼の一覧">
+    <ul className={s.cards} aria-label="タスクの一覧">
       {items.map((i) => {
         const workflow = findWorkflow(workflows, i.workflowRef);
         const p = pending[i.id];

@@ -43,7 +43,7 @@
 }
 .panel:not([data-expanded]) .badge { position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; padding: 0 4px; font-size: 10px; }
 
-/* ---------- 依頼の一覧 ---------- */
+/* ---------- タスクの一覧 ---------- */
 .sessions { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-top: 14px; }
 .search { flex: none; position: relative; display: block; margin: 0 0 6px; }
 .search :global(.icon) { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--faint); pointer-events: none; }

@@ -1,4 +1,4 @@
-// 新しい依頼の入力欄（FR-UI-01・03）。本文・添付・リポジトリだけを受け取る。タイトルはサーバーが本文から作り、ワークスペースの「名前を変更」で直せる
+// 新しいタスクの入力欄（FR-UI-01・03）。本文・添付・リポジトリだけを受け取る。タイトルはサーバーが本文から作り、ワークスペースの「名前を変更」で直せる
 import type { Workflow } from '@factory/contracts';
 import { useId, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -25,7 +25,7 @@ export function NewTask({ workflows }: { workflows: Workflow[] | undefined }) {
   const ids = { text: useId(), repo: useId() };
 
   const selectedRepo = repos.data?.find((r) => `${r.owner}/${r.name}` === repo);
-  /** ラインは選ばせない: リポジトリを使うなら「作って確かめる」、使わないなら会話 */
+  /** ワークフローは選ばせない: リポジトリを使うなら「作って確かめる」、使わないなら会話 */
   const workflow = repo ? 'build-verify' : 'chat';
   const uploading = files.some((f) => !f.path && !f.error);
   const canSubmit = text.trim().length > 0 && !busy && !uploading;
@@ -65,9 +65,9 @@ export function NewTask({ workflows }: { workflows: Workflow[] | undefined }) {
   };
 
   return (
-    <section className={s.newTask} aria-label="新しい依頼">
+    <section className={s.newTask} aria-label="新しいタスク">
       <div className={s.newCard}>
-        <label htmlFor={ids.text} className="sr-only">依頼の内容</label>
+        <label htmlFor={ids.text} className="sr-only">タスクの内容</label>
         <textarea
           id={ids.text}
           className={s.newInput}
@@ -115,7 +115,7 @@ export function NewTask({ workflows }: { workflows: Workflow[] | undefined }) {
           )}
           <span className={s.spacer} />
           <Button size="sm" icon={<IconSend />} onClick={() => void submit()} disabled={!canSubmit} loading={busy}>
-            依頼する
+            開始する
           </Button>
         </div>
       </div>

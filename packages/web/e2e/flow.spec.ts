@@ -3,14 +3,14 @@ import { expect, test, type Page } from '@playwright/test';
 
 const fresh = async (page: Page, path = '/') => {
   await page.goto(`${path}?mock-reset&mock-speed=8`);
-  await expect(page.getByRole('navigation', { name: '依頼' }).getByRole('link').first()).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'タスク' }).getByRole('link').first()).toBeVisible();
 };
 
-test('依頼を出して、計画を承認すると、検証のやり直しを経て PR とプレビューが届く', async ({ page }) => {
+test('タスクを作って、計画を承認すると、検証のやり直しを経て PR とプレビューが届く', async ({ page }) => {
   await fresh(page);
-  await page.getByLabel('依頼の内容').fill('問い合わせフォームで、メールアドレスが正しくなくても送信できます。入力チェックを直してください。');
+  await page.getByLabel('タスクの内容').fill('問い合わせフォームで、メールアドレスが正しくなくても送信できます。入力チェックを直してください。');
   await page.getByLabel('リポジトリ').selectOption('acme/support-site');
-  await page.getByRole('button', { name: '依頼する' }).click();
+  await page.getByRole('button', { name: '開始する' }).click();
   await expect(page).toHaveURL(/\/t\//);
 
   const chat = page.getByRole('region', { name: '会話' });
@@ -60,7 +60,7 @@ test('再読み込みしても、会話と状態は履歴から組み立て直�
   await expect(chat.getByText('グラフは折れ線にしてください').first()).toBeVisible();
 });
 
-test('完了した依頼の成果物を、社内に公開できる', async ({ page }) => {
+test('完了したタスクの成果物を、社内に公開できる', async ({ page }) => {
   await fresh(page);
   await page.getByRole('link', { name: '部署別の売上レポートを作って公開' }).click();
   await page.getByRole('region', { name: '成果物' }).getByRole('button', { name: '公開する' }).click();

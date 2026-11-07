@@ -42,27 +42,27 @@ function renderAt(path: string) {
 }
 
 describe('ホーム', () => {
-  it('サイドパネルに依頼の一覧と対応が必要な項目を、ホームに入力欄だけを出す', async () => {
+  it('サイドパネルにタスクの一覧と対応が必要な項目を、ホームに入力欄だけを出す', async () => {
     renderAt('/');
-    const side = await screen.findByRole('navigation', { name: '依頼' });
+    const side = await screen.findByRole('navigation', { name: 'タスク' });
     const action = await within(side).findByRole('region', { name: '対応が必要' });
     expect(within(action).getByRole('link', { name: /週次売上ダッシュボードを追加/ })).toBeInTheDocument();
     expect(within(side).getByRole('link', { name: /問い合わせフォームの入力チェックを直す/ })).toBeInTheDocument();
-    const form = screen.getByRole('region', { name: '新しい依頼' });
-    expect(within(form).getByLabelText('依頼の内容')).toBeInTheDocument();
+    const form = screen.getByRole('region', { name: '新しいタスク' });
+    expect(within(form).getByLabelText('タスクの内容')).toBeInTheDocument();
     expect(within(form).queryByLabelText('タイトル')).not.toBeInTheDocument();
-    expect(within(form).queryByLabelText('ライン')).not.toBeInTheDocument();
+    expect(within(form).queryByLabelText('ワークフロー')).not.toBeInTheDocument();
     expect(screen.queryByRole('group', { name: 'ひな形から始める' })).not.toBeInTheDocument();
     expect(screen.queryByText('計画の承認: 週次売上ダッシュボードを追加')).not.toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'この7日間' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('table', { name: '依頼の一覧' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('table', { name: 'タスクの一覧' })).not.toBeInTheDocument();
   });
 
-  it('サイドパネルに過去の依頼を日付で分けて出し、続きを読み込める', async () => {
+  it('サイドパネルに過去のタスクを日付で分けて出し、続きを読み込める', async () => {
     const user = userEvent.setup();
     renderAt('/');
-    const side = await screen.findByRole('navigation', { name: '依頼' });
-    // 1日前の依頼は、時刻によって「昨日」か「過去7日間」に入る
+    const side = await screen.findByRole('navigation', { name: 'タスク' });
+    // 1日前のタスクは、時刻によって「昨日」か「過去7日間」に入る
     expect(await within(side).findAllByRole('region', { name: /^(昨日|過去7日間)$/ })).not.toHaveLength(0);
     expect(within(side).getByRole('region', { name: 'それより前' })).toBeInTheDocument();
     expect(within(side).queryByRole('link', { name: /セッションの有効期限を延ばす/ })).not.toBeInTheDocument();
@@ -75,13 +75,13 @@ describe('ホーム', () => {
   it('サイドパネルは畳むとアイコンの列になり、畳んだことを覚えておく', async () => {
     const user = userEvent.setup();
     renderAt('/');
-    await screen.findByRole('navigation', { name: '依頼' });
+    await screen.findByRole('navigation', { name: 'タスク' });
     await user.click(screen.getByRole('button', { name: 'サイドパネルを畳む' }));
-    expect(screen.queryByRole('navigation', { name: '依頼' })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'すべての依頼' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'タスク' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'すべてのタスク' })).toBeInTheDocument();
     expect(localStorage.getItem('sf.sidebar')).toBe('collapsed');
     await user.keyboard('{Control>}b{/Control}');
-    expect(await screen.findByRole('navigation', { name: '依頼' })).toBeInTheDocument();
+    expect(await screen.findByRole('navigation', { name: 'タスク' })).toBeInTheDocument();
     expect(localStorage.getItem('sf.sidebar')).toBeNull();
   });
 });
@@ -96,23 +96,23 @@ describe('dayBucket', () => {
   });
 });
 
-describe('すべての依頼', () => {
+describe('すべてのタスク', () => {
   it('表で絞り込み・検索できる', async () => {
     const user = userEvent.setup();
-    renderAt('/requests');
-    const table = await screen.findByRole('table', { name: '依頼の一覧' });
+    renderAt('/tasks');
+    const table = await screen.findByRole('table', { name: 'タスクの一覧' });
     expect(within(table).getByText('問い合わせフォームの入力チェックを直す')).toBeInTheDocument();
-    await user.type(screen.getByRole('searchbox', { name: '依頼を検索' }), '週次');
+    await user.type(screen.getByRole('searchbox', { name: 'タスクを検索' }), '週次');
     await waitFor(() => expect(within(table).queryByText('問い合わせフォームの入力チェックを直す')).not.toBeInTheDocument());
     expect(within(table).getByText('週次売上ダッシュボードを追加')).toBeInTheDocument();
   });
 
-  it('新しい依頼を出すと、ワークスペースに移って計画が出る → 承認すると完了まで進む', async () => {
+  it('新しいタスクを作ると、ワークスペースに移って計画が出る → 承認すると完了まで進む', async () => {
     const user = userEvent.setup();
     const router = renderAt('/');
-    await user.type(await screen.findByLabelText('依頼の内容'), 'README にテストの実行手順を追記してください');
+    await user.type(await screen.findByLabelText('タスクの内容'), 'README にテストの実行手順を追記してください');
     await user.selectOptions(await screen.findByLabelText('リポジトリ'), 'acme/platform');
-    await user.click(screen.getByRole('button', { name: '依頼する' }));
+    await user.click(screen.getByRole('button', { name: '開始する' }));
     await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/t\//));
     // タイトルは本文から作られる（後から「名前を変更」で直せる）
     expect(await screen.findByRole('heading', { level: 1, name: 'README にテストの実行手順を追記してください' })).toBeInTheDocument();
@@ -140,14 +140,14 @@ describe('ワークスペース', () => {
     expect(screen.getAllByText(/グラフは折れ線にしてください/).length).toBeGreaterThan(0);
   }, 20000);
 
-  it('失敗した依頼は、理由とやり直すボタンを出す', async () => {
+  it('失敗したタスクは、理由とやり直すボタンを出す', async () => {
     const failed = getDb().tasks.find((w) => w.state === 'failed')!;
     renderAt(`/t/${failed.id}`);
-    expect(await screen.findByText('ラインが止まりました')).toBeInTheDocument();
+    expect(await screen.findByText('ワークフローが止まりました')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'やり直す' }).length).toBeGreaterThan(0);
   });
 
-  it('存在しない依頼は、見つからないと伝える', async () => {
+  it('存在しないタスクは、見つからないと伝える', async () => {
     renderAt('/t/01J00000000000000000000000');
     expect(await screen.findByRole('alert')).toHaveTextContent('見つかりません');
   });

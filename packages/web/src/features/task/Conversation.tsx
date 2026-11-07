@@ -47,7 +47,7 @@ export function Conversation(p: ConversationProps) {
             variant="plain"
             loop
             interval={1200}
-            phases={session.state === 'running' ? ['次の手順を考えています', '結果を確かめています'] : ['依頼を読んでいます', '関係するファイルを確かめています', '計画を立てています']}
+            phases={session.state === 'running' ? ['次の手順を考えています', '結果を確かめています'] : ['タスクを読んでいます', '関係するファイルを確かめています', '計画を立てています']}
           />
         </div>
       )}
@@ -152,7 +152,7 @@ function Msg({ who, name, at, children, actions }: { who: 'user' | 'agent'; name
   );
 }
 
-/** 作業のまとめ: ステージの実行ごとに1行（細かい内容は実行ログのタブで見る） */
+/** 作業のまとめ: ステップの実行ごとに1行（細かい内容は実行ログのタブで見る） */
 function WorkRows({ tools, session, workflow, openTab }: ConversationProps & { tools: ToolState[] }) {
   const approvedAt = Object.values(session.plans).find((pl) => pl.decision?.decision === 'approved')?.decision?.at ?? Infinity;
   const groups: { key: string; label: string; image?: string | undefined; tools: ToolState[] }[] = [];
@@ -260,14 +260,14 @@ function Failure({ session, openTab, onRetry }: ConversationProps) {
       <section className={s.tray} aria-label="失敗">
         <header className={s.trayHead}>
           <span className={s.badge} data-tone="err">失敗</span>
-          <span>ラインが止まりました</span>
+          <span>ワークフローが止まりました</span>
           {failedRun && <span className={s.trayRight}>{stepLabel(failedRun.stepId)} · {failedRun.runId}</span>}
         </header>
         <div className={s.card}>
-          <p className={s.failText}>{failedRun ? `${stepLabel(failedRun.stepId)}のステージが失敗しました。` : '作業が止まりました。'}原因を直してから、やり直せます。</p>
+          <p className={s.failText}>{failedRun ? `${stepLabel(failedRun.stepId)}のステップが失敗しました。` : '作業が止まりました。'}原因を直してから、やり直せます。</p>
           {failedTool && <div className={s.failReason}>{failedTool.summary} → {failedTool.result}</div>}
           <div className={s.actions}>
-            <span className={s.actionsHint}>やり直すと、同じステージを新しい VM で実行します</span>
+            <span className={s.actionsHint}>やり直すと、同じステップを新しい VM で実行します</span>
             <Button size="sm" variant="secondary" onClick={() => openTab('log')}>実行ログを見る</Button>
             {failedRun && <Button size="sm" onClick={() => void onRetry(failedRun.runId)}>やり直す</Button>}
           </div>

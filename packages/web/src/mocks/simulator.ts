@@ -1,5 +1,5 @@
-// ラインの実行のシミュレーター。台本（SimStep の列）を時間をかけて流し、イベントを出す。
-// 本物と同じく「計画 → 承認 → ステージごとの VM → PR」の順に進み、承認や中断で止まる
+// ワークフローの実行のシミュレーター。台本（SimStep の列）を時間をかけて流し、イベントを出す。
+// 本物と同じく「計画 → 承認 → ステップごとの VM → PR」の順に進み、承認や中断で止まる
 import { type CreateTaskRequest, type FactoryEvent, type Workflow, type Task, titleFromMessage, ulid } from '@factory/contracts';
 import { emit as rawEmit, getDb, save, task, type DistributiveOmit, type Sim, type SimStep } from './db';
 import { repoFiles } from './fixtures';
@@ -40,11 +40,11 @@ export function atTime<T>(t: number, fn: () => T): T {
 export function workflowOf(item: Task): Workflow {
   const name = item.workflowRef.split('@')[0];
   const def = getDb().workflows.find((l) => l.name === name);
-  if (!def) throw new Error(`ラインが見つかりません: ${item.workflowRef}`);
+  if (!def) throw new Error(`ワークフローが見つかりません: ${item.workflowRef}`);
   return def.workflow;
 }
 
-/** イベントを出す。ステージの実行の記録（GET /steps）もここで更新する */
+/** イベントを出す。ステップの実行の記録（GET /steps）もここで更新する */
 function ev(id: string, event: DistributiveOmit<FactoryEvent, 'taskId'>) {
   const at = now();
   if (event.type === 'step.changed') {
@@ -122,7 +122,7 @@ function applyStep(id: string, step: SimStep) {
   }
 }
 
-/** ラインの定義に沿って、次のステージの台本を返す */
+/** ワークフローの定義に沿って、次のステップの台本を返す */
 function nextStep(id: string, sim: Sim, outcome: 'pass' | 'fail'): SimStep[] {
   const workflow = workflowOf(task(id)!);
   const idx = workflow.steps.findIndex((s) => s.id === sim.step);
@@ -135,7 +135,7 @@ function nextStep(id: string, sim: Sim, outcome: 'pass' | 'fail'): SimStep[] {
     if (fail && loops <= fail.maxLoops) target = fail.goto;
     else
       return [
-        { t: 'say', delay: 300, text: `${cur?.id === 'verify' ? '検証' : 'ステージ'}が ${loops} 回続けて失敗したため、ラインを止めました。実行ログで原因を確かめて、「やり直す」で再開できます。` },
+        { t: 'say', delay: 300, text: `${cur?.id === 'verify' ? '検証' : 'ステップ'}が ${loops} 回続けて失敗したため、ワークフローを止めました。実行ログで原因を確かめて、「やり直す」で再開できます。` },
         { t: 'finish', delay: 100, state: 'failed' },
       ];
   }
@@ -341,7 +341,7 @@ export function postMessage(id: string, text: string, attachments: string[], by:
   } else if (sim.waiting === 'approval') {
     sayNow(id, '承知しました。承認への回答をいただいてから、反映します。');
   } else {
-    sayNow(id, item.state === 'completed' ? 'ありがとうございます。続けて手を加える場合は、内容を書いて新しい依頼にしてください（この依頼の成果物を引き継げます）。' : 'この依頼は終了しています。必要なら「やり直す」から再開してください。');
+    sayNow(id, item.state === 'completed' ? 'ありがとうございます。続けて手を加える場合は、内容を書いて新しいタスクにしてください（このタスクの成果物を引き継げます）。' : 'このタスクは終了しています。必要なら「やり直す」から再開してください。');
   }
   save();
   tick(id);
@@ -358,7 +358,7 @@ export function interrupt(id: string) {
   save();
 }
 
-export function cancel(id: string, reason = 'ラインを中止しました。VM は停止しています。', state: 'cancelled' | 'failed' = 'cancelled') {
+export function cancel(id: string, reason = 'ワークフローを中止しました。VM は停止しています。', state: 'cancelled' | 'failed' = 'cancelled') {
   const d = getDb();
   const sim = d.sim[id];
   const item = task(id);
@@ -379,13 +379,13 @@ export function retry(id: string, runId: string) {
   const item = task(id);
   const run = d.stepRuns[id]?.find((r) => r.runId === runId);
   if (!sim || !item || !run) throw new Conflict('見つかりません');
-  if (item.state !== 'failed' || run.state !== 'failed') throw new Conflict('やり直せるのは、失敗したステージだけです');
+  if (item.state !== 'failed' || run.state !== 'failed') throw new Conflict('やり直せるのは、失敗したステップだけです');
   sim.flags['retried'] = true;
   sim.step = run.stepId;
   const attempt = (sim.attempts[run.stepId] ?? 0) + 1;
   sim.attempts[run.stepId] = attempt;
   ev(id, { type: 'task.state', state: 'running' });
-  sim.queue = [{ t: 'say', delay: 300, text: `${run.stepId === 'verify' ? '検証' : 'ステージ'}をやり直します。` }, ...stepWork(sim.scenario, run.stepId, attempt, sim, false)];
+  sim.queue = [{ t: 'say', delay: 300, text: `${run.stepId === 'verify' ? '検証' : 'ステップ'}をやり直します。` }, ...stepWork(sim.scenario, run.stepId, attempt, sim, false)];
   save();
   tick(id);
 }

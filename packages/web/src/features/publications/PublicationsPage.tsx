@@ -36,13 +36,13 @@ export function PublicationsPage() {
 
   return (
     <Page>
-      <PageHeader title="公開物" description="依頼の成果物を、社内向けに公開したものです。開くには社内のアカウントでのログインが必要です。" />
+      <PageHeader title="公開物" description="タスクの成果物を、社内向けに公開したものです。開くには社内のアカウントでのログインが必要です。" />
       <ErrorBanner error={list.error} onRetry={() => void list.reload()} />
       {list.loading && !list.data ? (
         <Loading />
       ) : !list.data?.length ? (
         <Empty title="公開したものはまだありません" icon={<IconGlobe />}>
-          完了した依頼の「成果物」から「公開する」を選ぶと、ここに並びます。
+          完了したタスクの「成果物」から「公開する」を選ぶと、ここに並びます。
         </Empty>
       ) : (
         <Table head={['タイトル', '範囲', '状態', '版', '期限', '更新', '']} label="公開物の一覧">
@@ -57,7 +57,7 @@ export function PublicationsPage() {
                     <span className={p.link}>{pub.title}</span>
                   )}
                   <span className={p.sub}>
-                    <span className="mono">{pub.path}</span> · <Link to={`/t/${pub.taskId}`}>元の依頼</Link>
+                    <span className="mono">{pub.path}</span> · <Link to={`/t/${pub.taskId}`}>元のタスク</Link>
                   </span>
                 </td>
                 <td>

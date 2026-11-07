@@ -34,7 +34,7 @@ describe('モックのバックエンド', () => {
     expect(res.status).toBe(401);
   });
 
-  it('シードには承認待ち・実行中・完了・失敗のワークアイテムがあり、履歴とつじつまが合う', async () => {
+  it('シードには承認待ち・実行中・完了・失敗のタスクがあり、履歴とつじつまが合う', async () => {
     initMockBackend({ fresh: true, speed: 0.1 });
     const page = await get(Items, '/tasks');
     const states = page.items.map((i) => i.state);
@@ -55,7 +55,7 @@ describe('モックのバックエンド', () => {
     const all = [...first.items, ...rest.items];
     expect(new Set(all.map((i) => i.id)).size).toBe(all.length);
     expect(all.map((i) => i.updatedAt)).toEqual(all.map((i) => i.updatedAt).sort().reverse());
-    // 過去の依頼の PR は 128 より前の番号にする
+    // 過去のタスクの PR は 128 より前の番号にする
     expect(Math.max(...rest.items.map((i) => i.pullRequest?.number ?? 0))).toBeLessThan(128);
   });
 
@@ -106,7 +106,7 @@ describe('モックのバックエンド', () => {
     await until(async () => (await stateOf(id)) === 'completed', 15000);
   });
 
-  it('失敗したステージをやり直すと、最後まで進む', async () => {
+  it('失敗したステップをやり直すと、最後まで進む', async () => {
     const page = await get(Items, '/tasks?state=failed');
     const id = page.items[0]!.id;
     const runs = await get(z.array(StepRun), `/tasks/${id}/steps`);
@@ -142,7 +142,7 @@ describe('モックのバックエンド', () => {
     expect(log.done).toBe(true);
   });
 
-  it('管理: ラインの YAML を検証して新しい版にする', async () => {
+  it('管理: ワークフローの YAML を検証して新しい版にする', async () => {
     const bad = await fetch(`${base}/admin/workflows/chat`, { method: 'PUT', headers: h, body: JSON.stringify({ yaml: 'name: chat\nsteps:\n  - id: X\n    type: agent\n' }) });
     expect(bad.status).toBe(400);
     const ok = await fetch(`${base}/admin/workflows/chat`, { method: 'PUT', headers: h, body: JSON.stringify({ yaml: 'name: chat\nversion: 1\nsteps:\n  - id: workbench\n    type: agent\n    image: base@3\n' }) });

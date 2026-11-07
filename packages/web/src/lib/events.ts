@@ -1,4 +1,4 @@
-// WebSocket のイベントの受信（API 仕様 §4）。購読はワークアイテムごと。
+// WebSocket のイベントの受信（API 仕様 §4）。購読はタスクごと。
 // 切れたら自動でつなぎ直し、`GET /events?after=` で取りこぼしを埋めてから購読し直す
 import { FactoryEventEnvelope } from '@factory/contracts';
 import type { ApiClient } from './api';
@@ -43,7 +43,7 @@ export class EventStream {
     };
   }
 
-  /** 購読する。同じワークアイテムを複数の画面が購読しても、サーバーへの subscribe は1回 */
+  /** 購読する。同じタスクを複数の画面が購読しても、サーバーへの subscribe は1回 */
   subscribe(taskId: string, handler: Handler) {
     let set = this.subs.get(taskId);
     if (!set) {

@@ -40,7 +40,7 @@ const stepNames: Record<string, string> = {
   implement: '実装',
   verify: '検証',
   review: 'レビュー',
-  deliver: '納品',
+  deliver: '完了',
   publish: '公開の提案',
 };
 export const stepLabel = (id: string) => stepNames[id] ?? id;

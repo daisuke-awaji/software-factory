@@ -9,7 +9,7 @@ const ev = (e: object) => ({ ...e, taskId: wid, eventId: ulid((t += 1000)) }) as
 
 describe('useSessionStore', () => {
   it('古い履歴が後から届いても、発言と状態が正しい順になる', () => {
-    const user = ev({ type: 'message.user', messageId: 'u', text: '依頼', author: '佐藤' });
+    const user = ev({ type: 'message.user', messageId: 'u', text: 'タスク', author: '佐藤' });
     const planning = ev({ type: 'task.state', state: 'planning' });
     const reply = ev({ type: 'message.delta', messageId: 'a', text: '計画を作りました' });
     const awaiting = ev({ type: 'task.state', state: 'awaiting_approval' });

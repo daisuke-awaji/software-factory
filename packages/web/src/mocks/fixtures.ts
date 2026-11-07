@@ -1,4 +1,4 @@
-// モックの固定データ（リポジトリ、ライン、イメージ、許可リスト、ユーザー）。すべて contracts で検証してから使う
+// モックの固定データ（リポジトリ、ワークフロー、イメージ、許可リスト、ユーザー）。すべて contracts で検証してから使う
 import { AdminUser, ImageSpec, ImageSummary, ImageVersion, Workflow, WorkflowDefinition, Me, NetworkProfile, PackageSource, Repo } from '@factory/contracts';
 import { parse } from 'yaml';
 
@@ -58,7 +58,7 @@ export const repoFiles: Record<string, Record<string, string>> = {
   'acme/handbook': { 'README.md': '# handbook\n\n社内ハンドブックです。\n' },
 };
 
-// ---------------------------------------------------------------- ライン（YAML で持ち、Zod で検証する）
+// ---------------------------------------------------------------- ワークフロー（YAML で持ち、Zod で検証する）
 export const workflowYaml: Record<string, string> = {
   chat: `name: chat
 version: 1
@@ -156,7 +156,7 @@ export const buildLog = (name: string, v: number, ok = true) => [
 
 // ---------------------------------------------------------------- 管理
 export const networkProfiles = NetworkProfile.array().parse([
-  { name: 'default', description: 'chat ラインの既定（パッケージの取得だけ）', allow: ['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org'], updatedAt: at(14) },
+  { name: 'default', description: 'chat ワークフローの既定（パッケージの取得だけ）', allow: ['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org'], updatedAt: at(14) },
   { name: 'web', description: 'Web アプリの開発', allow: ['registry.npmjs.org', 'fonts.googleapis.com', 'fonts.gstatic.com'], updatedAt: at(9) },
   { name: 'data', description: 'データの集計', allow: ['pypi.org', 'files.pythonhosted.org'], updatedAt: at(9) },
   { name: 'none', description: '外部への通信なし（検証とレビュー）', allow: [], updatedAt: at(14) },

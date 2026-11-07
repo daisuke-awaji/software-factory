@@ -1,4 +1,4 @@
-// ワークアイテムの画面（パターン B: ADR-0007）。左に会話、右に成果物のタブ、下にステータスバー
+// タスクの画面（パターン B: ADR-0007）。左に会話、右に成果物のタブ、下にステータスバー
 import type { Workflow, Task } from '@factory/contracts';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
@@ -49,7 +49,7 @@ export function WorkspacePage() {
     return (
       <div style={{ padding: 28, maxWidth: 720, margin: '0 auto', display: 'grid', gap: 12 }}>
         <ErrorBanner error={item.error} onRetry={() => void item.reload()} />
-        <Link to="/requests">依頼の一覧に戻る</Link>
+        <Link to="/tasks">タスクの一覧に戻る</Link>
       </div>
     );
   }
@@ -178,8 +178,8 @@ export function WorkspacePage() {
       <RenameDialog open={dialog === 'rename'} item={current} onClose={() => setDialog(null)} onSaved={() => void item.reload()} />
       <ConfirmDialog
         open={dialog === 'cancel'}
-        title="ライン全体を中止しますか？"
-        body="動いている VM を止めて、この依頼を中止します。ここまでのファイルは残りますが、続きから再開することはできません。"
+        title="ワークフロー全体を中止しますか？"
+        body="動いている VM を止めて、このタスクを中止します。ここまでのファイルは残りますが、続きから再開することはできません。"
         confirm="中止する"
         danger
         onConfirm={() => guard(() => api.cancel(id), '中止しました').catch(() => undefined)}
@@ -204,7 +204,7 @@ function Header({ item, session, workflow, pending, onRename, onCancel, onArchiv
         <span className={s.back}><LogoToggle label="サイドパネルを開く" expanded={false} onClick={() => openSidebar(true)} /></span>
       )}
       <nav className={s.crumbs} aria-label="場所">
-        <Link to="/requests" className={s.crumb}>依頼</Link>
+        <Link to="/tasks" className={s.crumb}>タスク</Link>
         <IconChevron />
         {item.repo && (
           <>
@@ -238,7 +238,7 @@ function Header({ item, session, workflow, pending, onRename, onCancel, onArchiv
             { label: '名前を変更', onSelect: onRename },
             { label: item.archived ? 'アーカイブから戻す' : 'アーカイブ', onSelect: onArchive },
             { label: '作業を中断', onSelect: onInterrupt, disabled: !(state === 'running' || state === 'planning') },
-            { label: 'ライン全体を中止', onSelect: onCancel, danger: true, disabled: isTerminal(state) },
+            { label: 'ワークフロー全体を中止', onSelect: onCancel, danger: true, disabled: isTerminal(state) },
           ]}
         />
       </div>
