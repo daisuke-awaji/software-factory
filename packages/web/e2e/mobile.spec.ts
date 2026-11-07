@@ -1,4 +1,4 @@
-// スマホの幅（06_ui_spec.md §6）: 横にはみ出さない・会話と成果物の切り替え・左から出すサイドパネル・下から出るダイアログ
+// スマホの幅（06_ui_spec.md §6）: 横にはみ出さない・会話と成果物の切り替え・左上のロゴで左から出すサイドパネル・下から出るダイアログ
 import { expect, test, type Page } from '@playwright/test';
 
 const fresh = async (page: Page) => {
@@ -35,12 +35,43 @@ test('ホーム: 対応が必要な項目が入力欄より先に出る。すべ
   expect(size).toBeGreaterThanOrEqual(16);
 });
 
-test('左上のボタンでサイドパネルを開き、ほかの画面に移れる', async ({ page }) => {
+/** 指で左へなぞる（Touch を作って送る） */
+const swipeLeft = async (page: Page, selector: string, from: number, to: number, y = 300) => {
+  await page.evaluate(
+    ({ selector, from, to, y }) => {
+      const el = document.querySelector(selector)!;
+      const at = (x: number) => new Touch({ identifier: 1, target: el, clientX: x, clientY: y });
+      el.dispatchEvent(new TouchEvent('touchstart', { touches: [at(from)], bubbles: true }));
+      for (let x = from; x >= to; x -= 20) el.dispatchEvent(new TouchEvent('touchmove', { touches: [at(x)], bubbles: true }));
+      el.dispatchEvent(new TouchEvent('touchend', { touches: [], bubbles: true }));
+    },
+    { selector, from, to, y },
+  );
+};
+
+test('左上のロゴでサイドパネルを左から出し、ほかの画面に移れる', async ({ page }) => {
   await fresh(page);
-  await page.getByRole('button', { name: 'サイドパネルを開く' }).click();
+  const logo = page.getByRole('button', { name: 'サイドパネルを開く' });
+  const logoBox = (await logo.boundingBox())!;
+  expect(logoBox.x).toBeLessThan(24);
+  expect(logoBox.y).toBeLessThan(80);
+  await logo.click();
   const drawer = page.getByRole('dialog', { name: 'サイドパネル' });
   await expect(drawer.getByRole('navigation', { name: '依頼' })).toBeVisible();
+  // 左の端に付いて出る（滑り込み終わると x = 0）
+  await expect.poll(async () => Math.round((await drawer.boundingBox())!.x)).toBe(0);
+  await expect(logo).toHaveAttribute('aria-expanded', 'true');
   await expectNoHorizontalScroll(page);
+
+  // 過去の依頼も出る
+  await expect(drawer.getByRole('region', { name: 'それより前' })).toBeAttached();
+
+  // 左へなぞると閉じる
+  await swipeLeft(page, '[role="dialog"][aria-label="サイドパネル"]', 220, 40);
+  await expect(drawer).toHaveCount(0);
+
+  await logo.click();
+  await expect(drawer.getByRole('navigation', { name: '依頼' })).toBeVisible();
   await drawer.getByRole('link', { name: '公開物' }).click();
   await expect(page).toHaveURL(/\/publications/);
   await expect(drawer).toHaveCount(0);
@@ -66,7 +97,7 @@ test('ワークスペース: 会話と成果物を切り替えて、計画を承
   await openItem(page, /週次売上ダッシュボードを追加/);
 
   // 上の細いバーは隠し、サイドパネルはワークスペースのヘッダーから開く
-  await expect(page.getByRole('link', { name: 'Software Factory（ホーム）' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Software Factory', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'サイドパネルを開く' })).toBeVisible();
 
   const views = page.getByRole('tablist', { name: '表示の切り替え' });

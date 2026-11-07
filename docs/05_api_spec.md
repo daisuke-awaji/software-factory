@@ -38,7 +38,7 @@
 | メソッド | パス | 内容 | 主な要件 |
 |---|---|---|---|
 | POST | `/work-items` | 作成する（`CreateWorkItemRequest`: title、lineRef、projectId?、repo?、message）。durable execution を起動する | FR-UI-01、FR-LINE-07 |
-| GET | `/work-items` | 自分のワークアイテムの一覧（`?state=`） | FR-UI-02 |
+| GET | `/work-items` | 自分のワークアイテムの一覧（`?state=`・`?archived=`）。更新の新しい順に、ページングで返す | FR-UI-02 |
 | GET | `/work-items/{id}` | 詳細（状態、現在のステージ、使用量） | |
 | PATCH | `/work-items/{id}` | 名前の変更、アーカイブ | FR-UI-02 |
 | POST | `/work-items/{id}/messages` | 追加の指示を送る（VM の `/v1/messages` に転送する） | FR-UI-07 |

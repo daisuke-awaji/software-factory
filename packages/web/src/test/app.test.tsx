@@ -5,6 +5,7 @@ import { setupServer } from 'msw/node';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { routes } from '../app/App';
+import { dayBucket } from '../app/Sidebar';
 import { createApiClient } from '../lib/api';
 import { EventStream } from '../lib/events';
 import { ServicesProvider, type Services } from '../lib/services';
@@ -51,6 +52,20 @@ describe('ホーム', () => {
     expect(screen.queryByRole('table', { name: '依頼の一覧' })).not.toBeInTheDocument();
   });
 
+  it('サイドパネルに過去の依頼を日付で分けて出し、続きを読み込める', async () => {
+    const user = userEvent.setup();
+    renderAt('/');
+    const side = await screen.findByRole('navigation', { name: '依頼' });
+    // 1日前の依頼は、時刻によって「昨日」か「過去7日間」に入る
+    expect(await within(side).findAllByRole('region', { name: /^(昨日|過去7日間)$/ })).not.toHaveLength(0);
+    expect(within(side).getByRole('region', { name: 'それより前' })).toBeInTheDocument();
+    expect(within(side).queryByRole('link', { name: /セッションの有効期限を延ばす/ })).not.toBeInTheDocument();
+    // jsdom ではスクロールで読めないので、ボタンで読む
+    await user.click(within(side).getByRole('button', { name: '続きを読み込む' }));
+    expect(await within(side).findByRole('link', { name: /セッションの有効期限を延ばす/ })).toBeInTheDocument();
+    expect(within(side).queryByRole('button', { name: '続きを読み込む' })).not.toBeInTheDocument();
+  });
+
   it('サイドパネルは畳むとアイコンの列になり、畳んだことを覚えておく', async () => {
     const user = userEvent.setup();
     renderAt('/');
@@ -62,6 +77,16 @@ describe('ホーム', () => {
     await user.keyboard('{Control>}b{/Control}');
     expect(await screen.findByRole('navigation', { name: '依頼' })).toBeInTheDocument();
     expect(localStorage.getItem('sf.sidebar')).toBeNull();
+  });
+});
+
+describe('dayBucket', () => {
+  it('今日・昨日・過去7日間・それより前に分ける（暦の日で数える）', () => {
+    const now = new Date(2026, 10, 7, 9, 0);
+    expect(dayBucket(new Date(2026, 10, 7, 0, 5).toISOString(), now)).toBe('today');
+    expect(dayBucket(new Date(2026, 10, 6, 23, 50).toISOString(), now)).toBe('yesterday');
+    expect(dayBucket(new Date(2026, 10, 1, 0, 0).toISOString(), now)).toBe('week');
+    expect(dayBucket(new Date(2026, 9, 31, 23, 59).toISOString(), now)).toBe('older');
   });
 });
 

@@ -1,4 +1,4 @@
-// サイドパネル（ADR-0010・06_ui_spec.md §6）: 依頼の切り替え、畳む・広げる、1280px 未満で重ねて出す
+// サイドパネル（ADR-0010・06_ui_spec.md §6）: 依頼の切り替え、過去の依頼と続きの読み込み、畳む・広げる（左上のロゴ）、1280px 未満で左から重ねて出す
 import { expect, test, type Page } from '@playwright/test';
 
 const fresh = async (page: Page) => {
@@ -26,6 +26,24 @@ test('サイドパネルから、ホームに戻らずに依頼を切り替え�
   await expect(list.getByRole('link', { name: /週次売上ダッシュボードを追加/ })).toHaveCount(0);
 });
 
+test('過去の依頼を日付で分けて出し、下までスクロールすると続きを読む', async ({ page }) => {
+  await fresh(page);
+  const list = page.getByRole('complementary', { name: 'サイドパネル' }).getByRole('navigation', { name: '依頼' });
+  await expect(list.getByRole('region', { name: 'それより前' })).toBeVisible();
+  const oldest = list.getByRole('link', { name: /セッションの有効期限を延ばす/ });
+  await expect(oldest).toHaveCount(0);
+  const before = await list.getByRole('link').count();
+
+  await list.evaluate((el) => el.scrollTo({ top: el.scrollHeight }));
+  await expect(oldest).toBeVisible();
+  expect(await list.getByRole('link').count()).toBeGreaterThan(before);
+  await expect(list.getByRole('button', { name: '続きを読み込む' })).toHaveCount(0);
+
+  await oldest.click();
+  await expect(page.getByRole('heading', { level: 1, name: 'セッションの有効期限を延ばす' })).toBeVisible();
+  await expect(oldest).toHaveAttribute('aria-current', 'page');
+});
+
 test('畳むとアイコンの列になり、読み込み直しても畳んだまま', async ({ page }) => {
   await fresh(page);
   const side = page.getByRole('complementary', { name: 'サイドパネル' });
@@ -39,7 +57,14 @@ test('畳むとアイコンの列になり、読み込み直しても畳んだ�
   await side.getByRole('link', { name: '公開物' }).click();
   await expect(page).toHaveURL(/\/publications/);
   await page.reload();
-  await expect(side.getByRole('button', { name: 'サイドパネルを広げる' })).toBeVisible();
+  // 畳んだ列の左上はロゴ。押すと広がる
+  const logo = side.getByRole('button', { name: 'サイドパネルを広げる' });
+  await expect(logo).toBeVisible();
+  const box = (await logo.boundingBox())!;
+  expect(box.y).toBeLessThan(40);
+  await logo.click();
+  await expect(side.getByRole('navigation', { name: '依頼' })).toBeVisible();
+  await side.getByRole('button', { name: 'サイドパネルを畳む' }).click();
 
   await page.keyboard.press('ControlOrMeta+b');
   await expect(side.getByRole('navigation', { name: '依頼' })).toBeVisible();
@@ -54,6 +79,7 @@ test('1280px 未満では、アイコンの列から重ねて広げる', async (
 
   await side.getByRole('button', { name: 'サイドパネルを広げる' }).click();
   const drawer = page.getByRole('dialog', { name: 'サイドパネル' });
+  await expect.poll(async () => Math.round((await drawer.boundingBox())!.x)).toBe(0);
   await drawer.getByRole('link', { name: /週次売上ダッシュボードを追加/ }).click();
   await expect(drawer).toHaveCount(0);
   await expect(page.getByRole('heading', { level: 1, name: '週次売上ダッシュボードを追加' })).toBeVisible();
