@@ -7,20 +7,60 @@ import s from './WorkflowGraph.module.css';
 export type FlowEdgeData = GraphEdgeData & { markers: string; dip?: number; direction: 'RIGHT' | 'DOWN'; route?: EdgeRoute };
 export type FlowEdge = Edge<FlowEdgeData, 'flow' | 'loop'>;
 
-const tone = (d: FlowEdgeData, selected?: boolean) => (selected ? 'selected' : d.kind === 'fail' ? (d.state === 'taken' ? 'loop-taken' : 'loop') : d.state === 'taken' ? 'taken' : d.state === 'skipped' ? 'skipped' : 'idle');
+const tone = (d: FlowEdgeData, selected?: boolean) =>
+  selected
+    ? 'selected'
+    : d.kind === 'fail'
+      ? d.state === 'taken'
+        ? 'loop-taken'
+        : 'loop'
+      : d.state === 'taken'
+        ? 'taken'
+        : d.state === 'skipped'
+          ? 'skipped'
+          : 'idle';
 
-function Label({ x, y, children, kind, selected, start }: { x: number; y: number; children: string; kind: string; selected?: boolean | undefined; start?: boolean }) {
+function Label({
+  x,
+  y,
+  children,
+  kind,
+  selected,
+  start,
+}: {
+  x: number;
+  y: number;
+  children: string;
+  kind: string;
+  selected?: boolean | undefined;
+  start?: boolean;
+}) {
   // start: 左端をその位置に合わせる（縦に並べたときの戻る矢印。ラベルがノードに重ならないように、曲線の外側に置く）
   return (
     <EdgeLabelRenderer>
-      <span className={s.edgeLabel} data-kind={kind} data-selected={selected || undefined} style={{ transform: `translate(${start ? '-6px' : '-50%'}, -50%) translate(${x}px, ${y}px)` }}>
+      <span
+        className={s.edgeLabel}
+        data-kind={kind}
+        data-selected={selected || undefined}
+        style={{ transform: `translate(${start ? '-6px' : '-50%'}, -50%) translate(${x}px, ${y}px)` }}
+      >
         {children}
       </span>
     </EdgeLabelRenderer>
   );
 }
 
-export function FlowEdgeView({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, selected }: EdgeProps<FlowEdge>) {
+export function FlowEdgeView({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  data,
+  selected,
+}: EdgeProps<FlowEdge>) {
   // ELK が引いた道すじ（ほかのノードを避ける）を使う。まだなければ、ベジェ曲線で仮に引く
   const route = data!.route;
   const [bezier, bx, by] = getBezierPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, curvature: 0.35 });
@@ -31,7 +71,11 @@ export function FlowEdgeView({ id, sourceX, sourceY, targetX, targetY, sourcePos
   return (
     <>
       <BaseEdge id={id} path={path} className={s.edge} data-tone={t} markerEnd={`url(#${data!.markers}-${t})`} interactionWidth={18} />
-      {data!.kind === 'case' && data!.label && <Label x={lx} y={ly} kind="case" selected={selected}>{data!.label}</Label>}
+      {data!.kind === 'case' && data!.label && (
+        <Label x={lx} y={ly} kind="case" selected={selected}>
+          {data!.label}
+        </Label>
+      )}
     </>
   );
 }
@@ -57,13 +101,16 @@ export function LoopEdgeView({ id, sourceX, sourceY, targetX, targetY, data, sel
   return (
     <>
       <BaseEdge id={id} path={path} className={s.edge} data-tone={t} markerEnd={`url(#${d.markers}-${t})`} interactionWidth={18} />
-      <Label x={lx} y={ly} kind="loop" selected={selected} start={d.direction === 'DOWN'}>{loopText(d.maxLoops ?? 0, d.direction)}</Label>
+      <Label x={lx} y={ly} kind="loop" selected={selected} start={d.direction === 'DOWN'}>
+        {loopText(d.maxLoops ?? 0, d.direction)}
+      </Label>
     </>
   );
 }
 
 /** 戻る矢印のラベル（縦に並べたときは右に出るので短くする） */
-export const loopText = (n: number, direction: 'RIGHT' | 'DOWN') => (direction === 'RIGHT' ? `失敗したら戻る（${n} 回まで）` : `失敗 · ${n} 回まで`);
+export const loopText = (n: number, direction: 'RIGHT' | 'DOWN') =>
+  direction === 'RIGHT' ? `失敗したら戻る（${n} 回まで）` : `失敗 · ${n} 回まで`;
 
 /** 文字の幅の見積もり（11px。全角は 1 文字 11px、半角は 6.5px） */
 export const textWidth = (t: string) => [...t].reduce((w, c) => w + (/[\u3000-\uffff]/.test(c) ? 11 : 6.5), 0);
@@ -76,7 +123,18 @@ export function Markers({ prefix }: { prefix: string }) {
     <svg className={s.markers} aria-hidden="true">
       <defs>
         {TONES.map((t) => (
-          <marker key={t} id={`${prefix}-${t}`} className={s.marker} data-tone={t} viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <marker
+            key={t}
+            id={`${prefix}-${t}`}
+            className={s.marker}
+            data-tone={t}
+            viewBox="0 0 10 10"
+            refX="8.5"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
             <path d="M1 1.5L8.5 5L1 8.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
           </marker>
         ))}

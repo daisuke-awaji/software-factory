@@ -1,16 +1,47 @@
 // イベントを畳み込んで、ワークスペースに出す状態を作る（純粋な関数。ストアとホームの受け箱で共有する）
 import { type ApprovalReason, type FactoryEventEnvelope, type Plan, ulidTime, type TaskState } from '@factory/contracts';
 
-export type ChatMessage = { id: string; role: 'user' | 'assistant'; text: string; done: boolean; at: number; author?: string; attachments?: string[] };
+export type ChatMessage = {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+  done: boolean;
+  at: number;
+  author?: string;
+  attachments?: string[];
+};
 export type PlanState = {
   version: number;
   plan: Plan;
   at: number;
   decision?: { decision: 'approved' | 'changes_requested' | 'rejected'; by: string; at: number; comment?: string };
 };
-export type ApprovalState = { id: string; reason: ApprovalReason; detail: string; at: number; resolved?: { decision: 'approve' | 'deny'; by: string; at: number } };
-export type ToolState = { id: string; tool: string; summary: string; result?: string; ok?: boolean; startedAt: number; endedAt?: number; runId?: string };
-export type RunState = { runId: string; stepId: string; state: 'running' | 'completed' | 'failed'; startedAt: number; endedAt?: number; tools: string[]; label?: string };
+export type ApprovalState = {
+  id: string;
+  reason: ApprovalReason;
+  detail: string;
+  at: number;
+  resolved?: { decision: 'approve' | 'deny'; by: string; at: number };
+};
+export type ToolState = {
+  id: string;
+  tool: string;
+  summary: string;
+  result?: string;
+  ok?: boolean;
+  startedAt: number;
+  endedAt?: number;
+  runId?: string;
+};
+export type RunState = {
+  runId: string;
+  stepId: string;
+  state: 'running' | 'completed' | 'failed';
+  startedAt: number;
+  endedAt?: number;
+  tools: string[];
+  label?: string;
+};
 
 export type Entry =
   | { k: 'user'; id: string }
@@ -42,8 +73,21 @@ export type Session = {
 
 export function emptySession(taskId: string): Session {
   return {
-    taskId, state: null, lastEventId: null, seen: {}, timeline: [], messages: {}, plans: {}, latestPlan: null, approvals: {},
-    tools: {}, runs: [], blocked: [], usage: { inputTokens: 0, outputTokens: 0, vmSeconds: 0 }, preview: null, fileVersion: 0,
+    taskId,
+    state: null,
+    lastEventId: null,
+    seen: {},
+    timeline: [],
+    messages: {},
+    plans: {},
+    latestPlan: null,
+    approvals: {},
+    tools: {},
+    runs: [],
+    blocked: [],
+    usage: { inputTokens: 0, outputTokens: 0, vmSeconds: 0 },
+    preview: null,
+    fileVersion: 0,
   };
 }
 
@@ -64,7 +108,18 @@ export function reduce(s: Session, e: FactoryEventEnvelope): Session {
 
   switch (e.type) {
     case 'message.user':
-      next.messages = { ...s.messages, [e.messageId]: { id: e.messageId, role: 'user', text: e.text, done: true, at, author: e.author, ...(e.attachments ? { attachments: e.attachments } : {}) } };
+      next.messages = {
+        ...s.messages,
+        [e.messageId]: {
+          id: e.messageId,
+          role: 'user',
+          text: e.text,
+          done: true,
+          at,
+          author: e.author,
+          ...(e.attachments ? { attachments: e.attachments } : {}),
+        },
+      };
       push({ k: 'user', id: e.messageId });
       break;
     case 'message.delta': {
@@ -83,8 +138,13 @@ export function reduce(s: Session, e: FactoryEventEnvelope): Session {
     }
     case 'tool.started': {
       // 並列で動いているときは、stepId でどのステップの作業かを決める
-      const run = (e.stepId ? s.runs.findLast((r) => r.state === 'running' && r.stepId === e.stepId) : undefined) ?? s.runs.findLast((r) => r.state === 'running');
-      next.tools = { ...s.tools, [e.toolUseId]: { id: e.toolUseId, tool: e.tool, summary: e.summary, startedAt: at, ...(run ? { runId: run.runId } : {}) } };
+      const run =
+        (e.stepId ? s.runs.findLast((r) => r.state === 'running' && r.stepId === e.stepId) : undefined) ??
+        s.runs.findLast((r) => r.state === 'running');
+      next.tools = {
+        ...s.tools,
+        [e.toolUseId]: { id: e.toolUseId, tool: e.tool, summary: e.summary, startedAt: at, ...(run ? { runId: run.runId } : {}) },
+      };
       if (run) next.runs = s.runs.map((r) => (r === run ? { ...r, tools: [...r.tools, e.toolUseId] } : r));
       // 会話の中では、続けて動いたツールを1つのまとまり（work）にする
       const lastEntry = s.timeline.at(-1);
@@ -105,7 +165,11 @@ export function reduce(s: Session, e: FactoryEventEnvelope): Session {
       break;
     case 'plan.decided': {
       const p = s.plans[e.planVersion];
-      if (p) next.plans = { ...s.plans, [e.planVersion]: { ...p, decision: { decision: e.decision, by: e.by, at, ...(e.comment ? { comment: e.comment } : {}) } } };
+      if (p)
+        next.plans = {
+          ...s.plans,
+          [e.planVersion]: { ...p, decision: { decision: e.decision, by: e.by, at, ...(e.comment ? { comment: e.comment } : {}) } },
+        };
       break;
     }
     case 'approval.required':
@@ -122,7 +186,11 @@ export function reduce(s: Session, e: FactoryEventEnvelope): Session {
       push({ k: 'egress', host: e.host, at });
       break;
     case 'usage':
-      next.usage = { inputTokens: s.usage.inputTokens + e.inputTokens, outputTokens: s.usage.outputTokens + e.outputTokens, vmSeconds: s.usage.vmSeconds + e.vmSeconds };
+      next.usage = {
+        inputTokens: s.usage.inputTokens + e.inputTokens,
+        outputTokens: s.usage.outputTokens + e.outputTokens,
+        vmSeconds: s.usage.vmSeconds + e.vmSeconds,
+      };
       break;
     case 'step.changed':
       if (e.state === 'started') {
@@ -130,7 +198,12 @@ export function reduce(s: Session, e: FactoryEventEnvelope): Session {
         next.runs = [...s.runs, { runId: `${e.stepId}#${n}`, stepId: e.stepId, state: 'running', startedAt: at, tools: [] }];
       } else {
         const run = s.runs.findLast((r) => r.stepId === e.stepId && r.state === 'running');
-        if (run) next.runs = s.runs.map((r) => (r === run ? { ...r, state: e.state === 'completed' ? 'completed' : 'failed', endedAt: at, ...(e.label ? { label: e.label } : {}) } : r));
+        if (run)
+          next.runs = s.runs.map((r) =>
+            r === run
+              ? { ...r, state: e.state === 'completed' ? 'completed' : 'failed', endedAt: at, ...(e.label ? { label: e.label } : {}) }
+              : r,
+          );
       }
       break;
     case 'task.state':
@@ -154,13 +227,13 @@ export function reduceAll(s: Session, events: FactoryEventEnvelope[]): Session {
 }
 
 /** 回答を待っている承認（計画の承認か、再承認） */
-export type Pending =
-  | { kind: 'plan'; version: number; plan: Plan; at: number }
-  | { kind: 'approval'; approval: ApprovalState };
+export type Pending = { kind: 'plan'; version: number; plan: Plan; at: number } | { kind: 'approval'; approval: ApprovalState };
 
 export function pendingOf(s: Session): Pending | null {
   if (s.state !== 'awaiting_approval') return null;
-  const open = Object.values(s.approvals).filter((a) => !a.resolved).sort((a, b) => b.at - a.at)[0];
+  const open = Object.values(s.approvals)
+    .filter((a) => !a.resolved)
+    .sort((a, b) => b.at - a.at)[0];
   if (open) return { kind: 'approval', approval: open };
   const latest = s.latestPlan ? s.plans[s.latestPlan] : undefined;
   if (latest && !latest.decision) return { kind: 'plan', version: latest.version, plan: latest.plan, at: latest.at };

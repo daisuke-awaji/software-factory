@@ -18,18 +18,29 @@ export function WorkflowsPage() {
       <PageHeader
         title="ワークフロー"
         description="タスクを進めるステップのつながりです。ステップごとに別の VM（別のイメージ）で動きます（D15）。"
-        actions={isAdmin(me) ? <Link to="/admin?tab=workflows" className={p.link}>管理で編集する</Link> : undefined}
+        actions={
+          isAdmin(me) ? (
+            <Link to="/admin?tab=workflows" className={p.link}>
+              管理で編集する
+            </Link>
+          ) : undefined
+        }
       />
       <ErrorBanner error={workflows.error} onRetry={() => void workflows.reload()} />
       {!workflows.data ? (
-        workflows.error ? null : <CardStackSkeleton count={2} lines={1} body={<Skeleton width="100%" height={160} radius={16} />} />
+        workflows.error ? null : (
+          <CardStackSkeleton count={2} lines={1} body={<Skeleton width="100%" height={160} radius={16} />} />
+        )
       ) : (
         <div className={p.stack}>
           {workflows.data.map((l) => (
             <Card key={l.name}>
               <div className={p.cardBody}>
                 <h2 className={p.cardTitle}>
-                  {l.title ?? l.name} <span className="mono">{l.name}@{l.version}</span>
+                  {l.title ?? l.name}{' '}
+                  <span className="mono">
+                    {l.name}@{l.version}
+                  </span>
                 </h2>
                 {l.description && <p className={p.desc}>{l.description}</p>}
                 <WorkflowGraph workflow={l} mode="view" label={`${l.title ?? l.name} のステップ`} />

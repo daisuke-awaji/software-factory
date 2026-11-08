@@ -6,8 +6,18 @@ import { emptySession, pendingOf, reduce, reduceAll } from './session';
 
 const wid = ulid();
 let t = Date.UTC(2026, 10, 7, 1, 0, 0);
-const ev = (e: DistributiveOmit<FactoryEvent, 'taskId'>): FactoryEventEnvelope => ({ ...e, taskId: wid, eventId: ulid((t += 1000)) }) as FactoryEventEnvelope;
-const plan: Plan = { summaryForHumans: 's', goal: 'g', deliverables: [], repos: [], steps: ['a'], doneCriteria: [], externalAccess: [], estimate: { minutes: 1, usd: 0.1 } };
+const ev = (e: DistributiveOmit<FactoryEvent, 'taskId'>): FactoryEventEnvelope =>
+  ({ ...e, taskId: wid, eventId: ulid((t += 1000)) }) as FactoryEventEnvelope;
+const plan: Plan = {
+  summaryForHumans: 's',
+  goal: 'g',
+  deliverables: [],
+  repos: [],
+  steps: ['a'],
+  doneCriteria: [],
+  externalAccess: [],
+  estimate: { minutes: 1, usd: 0.1 },
+};
 
 describe('reduce', () => {
   it('同じ eventId は2回反映しない（WebSocket と履歴の両方から届く）', () => {
@@ -63,7 +73,10 @@ describe('reduce', () => {
   });
 
   it('承認待ちのときに、何を待っているかが分かる', () => {
-    let s = reduceAll(emptySession(wid), [ev({ type: 'plan.proposed', planVersion: 1, plan }), ev({ type: 'task.state', state: 'awaiting_approval' })]);
+    let s = reduceAll(emptySession(wid), [
+      ev({ type: 'plan.proposed', planVersion: 1, plan }),
+      ev({ type: 'task.state', state: 'awaiting_approval' }),
+    ]);
     expect(pendingOf(s)).toMatchObject({ kind: 'plan', version: 1 });
     s = reduceAll(s, [
       ev({ type: 'plan.decided', planVersion: 1, decision: 'approved', by: '佐藤' }),
@@ -72,7 +85,10 @@ describe('reduce', () => {
       ev({ type: 'task.state', state: 'awaiting_approval' }),
     ]);
     expect(pendingOf(s)).toMatchObject({ kind: 'approval', approval: { id: 'a1' } });
-    s = reduceAll(s, [ev({ type: 'approval.resolved', approvalId: 'a1', decision: 'approve', by: '佐藤' }), ev({ type: 'task.state', state: 'running' })]);
+    s = reduceAll(s, [
+      ev({ type: 'approval.resolved', approvalId: 'a1', decision: 'approve', by: '佐藤' }),
+      ev({ type: 'task.state', state: 'running' }),
+    ]);
     expect(pendingOf(s)).toBeNull();
   });
 });

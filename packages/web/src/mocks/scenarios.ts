@@ -17,8 +17,16 @@ export function pickScenario(title: string, message: string): Scenario {
 
 // ---------------------------------------------------------------- 小さな部品
 const say = (text: string, delay = 500): SimStep => ({ t: 'say', delay, text });
-const usage = (i: number, o: number, vm: number): SimStep => ({ t: 'emit', delay: 50, event: { type: 'usage', inputTokens: i, outputTokens: o, vmSeconds: vm } });
-const stepChanged = (stepId: string, state: 'started' | 'completed' | 'failed', delay = 400, label?: string): SimStep => ({ t: 'emit', delay, event: { type: 'step.changed', stepId, state, ...(label ? { label } : {}) } });
+const usage = (i: number, o: number, vm: number): SimStep => ({
+  t: 'emit',
+  delay: 50,
+  event: { type: 'usage', inputTokens: i, outputTokens: o, vmSeconds: vm },
+});
+const stepChanged = (stepId: string, state: 'started' | 'completed' | 'failed', delay = 400, label?: string): SimStep => ({
+  t: 'emit',
+  delay,
+  event: { type: 'step.changed', stepId, state, ...(label ? { label } : {}) },
+});
 const state = (s: Task['state'], delay = 200): SimStep => ({ t: 'emit', delay, event: { type: 'task.state', state: s } });
 const write = (path: string, content: string | null, delay = 100): SimStep => ({ t: 'write', delay, path, content });
 
@@ -40,28 +48,49 @@ export function planFor(sc: Scenario, item: Task, comments: string[]): Plan {
   const repo = item.repo ? `${item.repo.owner}/${item.repo.name}` : undefined;
   const base: Record<Scenario, Omit<Plan, 'repos'>> = {
     'web-form': {
-      summaryForHumans: '問い合わせフォームで、入力の誤りを送信する前にその場で知らせるようにします。メールの形式と、内容が空でないことを確かめ、誤りがあれば欄のすぐ下に理由を出します。',
+      summaryForHumans:
+        '問い合わせフォームで、入力の誤りを送信する前にその場で知らせるようにします。メールの形式と、内容が空でないことを確かめ、誤りがあれば欄のすぐ下に理由を出します。',
       goal: 'フォームの入力チェックを直し、誤った内容のまま送信されないようにする',
       deliverables: ['入力チェックの修正（src/contact-form.ts）', 'テストの追加', 'プルリクエスト'],
-      steps: ['いまの入力チェックと画面を確認する', 'メールの形式と必須の項目のチェックを足す', '誤りを欄の下に表示する', 'テストを足して、別の VM で確かめる', 'プルリクエストを作る'],
+      steps: [
+        'いまの入力チェックと画面を確認する',
+        'メールの形式と必須の項目のチェックを足す',
+        '誤りを欄の下に表示する',
+        'テストを足して、別の VM で確かめる',
+        'プルリクエストを作る',
+      ],
       doneCriteria: ['誤ったメールアドレスでは送信できない', '既存と追加のテストがすべて通る'],
       externalAccess: [],
       estimate: { minutes: 12, usd: 0.6 },
     },
     dashboard: {
-      summaryForHumans: '売上データから、地域ごとの週次の売上を棒グラフで見られる画面を追加します。グラフの部品に Chart.js を使う予定です。',
+      summaryForHumans:
+        '売上データから、地域ごとの週次の売上を棒グラフで見られる画面を追加します。グラフの部品に Chart.js を使う予定です。',
       goal: '週次の売上を地域別に見られるダッシュボードを追加する',
       deliverables: ['ダッシュボードの画面（src/pages/weekly.tsx）', '週次の集計の関数とテスト', 'プルリクエスト'],
-      steps: ['売上データの形を確認する', '週次・地域別に集計する関数を書く', 'グラフの画面を作る', 'テストを書いて、別の VM で確かめる', 'プルリクエストを作る'],
+      steps: [
+        '売上データの形を確認する',
+        '週次・地域別に集計する関数を書く',
+        'グラフの画面を作る',
+        'テストを書いて、別の VM で確かめる',
+        'プルリクエストを作る',
+      ],
       doneCriteria: ['サンプルのデータで、週ごとの合計が元のデータと一致する', '画面にグラフが表示される'],
       externalAccess: ['cdn.jsdelivr.net（Chart.js の取得）'],
       estimate: { minutes: 8, usd: 0.9 },
     },
     readme: {
-      summaryForHumans: 'README に、ローカルで開発を始めるための手順（準備、テストの実行、よくあるエラー）を書き足します。コードは変えません。',
+      summaryForHumans:
+        'README に、ローカルで開発を始めるための手順（準備、テストの実行、よくあるエラー）を書き足します。コードは変えません。',
       goal: '新しく参加した人が README だけで開発を始められるようにする',
       deliverables: ['README.md の更新', 'docs/development.md（詳しい手順）', 'プルリクエスト'],
-      steps: ['いまの README とスクリプトを確認する', '準備からテストの実行までの手順を書く', 'よくあるエラーと対処を書く', 'リンク切れがないか確かめる', 'プルリクエストを作る'],
+      steps: [
+        'いまの README とスクリプトを確認する',
+        '準備からテストの実行までの手順を書く',
+        'よくあるエラーと対処を書く',
+        'リンク切れがないか確かめる',
+        'プルリクエストを作る',
+      ],
       doneCriteria: ['書いた手順のコマンドが、そのまま動く'],
       externalAccess: [],
       estimate: { minutes: 6, usd: 0.3 },
@@ -70,16 +99,28 @@ export function planFor(sc: Scenario, item: Task, comments: string[]): Plan {
       summaryForHumans: '顧客リストの会社名の表記（全角・半角、「株式会社」と「(株)」など）をそろえる処理を直します。',
       goal: '会社名の表記ゆれを統一する',
       deliverables: ['scripts/normalize.py の修正', 'テストの追加', 'プルリクエスト'],
-      steps: ['いまの整形の処理とデータを確認する', '全角・半角と法人の種類の表記をそろえる', 'テストを足して、別の VM で確かめる', 'プルリクエストを作る'],
+      steps: [
+        'いまの整形の処理とデータを確認する',
+        '全角・半角と法人の種類の表記をそろえる',
+        'テストを足して、別の VM で確かめる',
+        'プルリクエストを作る',
+      ],
       doneCriteria: ['サンプルの3件が同じ書き方になる', 'テストがすべて通る'],
       externalAccess: [],
       estimate: { minutes: 7, usd: 0.4 },
     },
     report: {
-      summaryForHumans: '添付のデータを部署ごとに集計して、グラフ付きのレポート（HTML）を作ります。できあがったら、社内に公開できる形にします。',
+      summaryForHumans:
+        '添付のデータを部署ごとに集計して、グラフ付きのレポート（HTML）を作ります。できあがったら、社内に公開できる形にします。',
       goal: '部署別の売上レポートを作り、社内で共有できるようにする',
       deliverables: ['report/index.html（グラフ付きのレポート）', 'report/summary.csv（集計の結果）'],
-      steps: ['データを読み込み、列と件数を確かめる', '部署ごとに合計と前月比を出す', 'グラフを描いて HTML にまとめる', '合計が元のデータと一致するか確かめる', '公開の前のチェックをする'],
+      steps: [
+        'データを読み込み、列と件数を確かめる',
+        '部署ごとに合計と前月比を出す',
+        'グラフを描いて HTML にまとめる',
+        '合計が元のデータと一致するか確かめる',
+        '公開の前のチェックをする',
+      ],
       doneCriteria: ['すべての部署の合計が元のデータと一致する', 'レポートがブラウザで開ける'],
       externalAccess: [],
       estimate: { minutes: 10, usd: 0.8 },
@@ -98,7 +139,9 @@ export function planFor(sc: Scenario, item: Task, comments: string[]): Plan {
   const fixes = comments.map((c) => `（ご指摘を反映）${c}`);
   return {
     ...p,
-    summaryForHumans: comments.length ? `${p.summaryForHumans} あわせて、ご指摘の点（${comments.at(-1)}）を反映します。` : p.summaryForHumans,
+    summaryForHumans: comments.length
+      ? `${p.summaryForHumans} あわせて、ご指摘の点（${comments.at(-1)}）を反映します。`
+      : p.summaryForHumans,
     steps: [...p.steps.slice(0, -1), ...fixes, p.steps.at(-1)!],
     repos: repo ? [repo] : [],
     estimate: { minutes: p.estimate.minutes + comments.length * 2, usd: Math.round((p.estimate.usd + comments.length * 0.1) * 100) / 100 },
@@ -108,11 +151,27 @@ export function planFor(sc: Scenario, item: Task, comments: string[]): Plan {
 export function planning(sc: Scenario, item: Task, firstStep: string, version: number, comments: string[]): SimStep[] {
   const files = item.repo ? 'リポジトリ' : 'ワークスペース';
   return [
-    ...(version === 1 ? [state('planning', 300), stepChanged(firstStep, 'started', 500), say(`内容を確認しました。${files}の中身を見てから、計画を立てます。`)] : [state('planning'), say('ご指摘を反映して、計画を見直します。')]),
-    ...(version === 1 ? [...tool('list_files', `${files}のファイルを一覧する`, item.repo ? '6 件のファイル' : '添付ファイルを確認'), ...tool('read_file', item.repo ? 'README.md を読む' : '添付ファイルを読む', '読み込みました', true, 600)] : []),
+    ...(version === 1
+      ? [
+          state('planning', 300),
+          stepChanged(firstStep, 'started', 500),
+          say(`内容を確認しました。${files}の中身を見てから、計画を立てます。`),
+        ]
+      : [state('planning'), say('ご指摘を反映して、計画を見直します。')]),
+    ...(version === 1
+      ? [
+          ...tool('list_files', `${files}のファイルを一覧する`, item.repo ? '6 件のファイル' : '添付ファイルを確認'),
+          ...tool('read_file', item.repo ? 'README.md を読む' : '添付ファイルを読む', '読み込みました', true, 600),
+        ]
+      : []),
     usage(5200, 900, 25),
     { t: 'emit', delay: 700, event: { type: 'plan.proposed', planVersion: version, plan: planFor(sc, item, comments) } },
-    say(version === 1 ? '計画を作りました。内容を確かめて、問題がなければ承認してください。直してほしい点があれば、そのまま書いて送ってください。' : `計画を見直しました（第${version}版）。もう一度確かめてください。`, 300),
+    say(
+      version === 1
+        ? '計画を作りました。内容を確かめて、問題がなければ承認してください。直してほしい点があれば、そのまま書いて送ってください。'
+        : `計画を見直しました（第${version}版）。もう一度確かめてください。`,
+      300,
+    ),
     state('awaiting_approval', 100),
     { t: 'gate', delay: 0, gate: 'plan' },
   ];
@@ -244,9 +303,16 @@ export function stepWork(sc: Scenario, stepId: string, attempt: number, sim: Sim
     const steps: SimStep[] = [...start];
     if (attempt > 1) {
       steps.push(say('検証で見つかった問題を直します。'));
-      if (sc === 'web-form') steps.push(...edit('src/contact-form.ts', formTs(true), 'src/contact-form.ts: 前後の空白を取り除いてから確かめる'));
-      if (sc === 'csv-cleanup') steps.push(...edit('scripts/normalize.py', normalizePy(attempt > 2), 'scripts/normalize.py: 法人の種類の表記を足す'));
-      steps.push(...tool('run', 'npm test', sc === 'csv-cleanup' ? 'pytest: 4 件が通過' : '4 件のテストが通過'), usage(8000, 2100, 60), stepChanged(stepId, 'completed'), { t: 'next', delay: 200, outcome: 'pass' });
+      if (sc === 'web-form')
+        steps.push(...edit('src/contact-form.ts', formTs(true), 'src/contact-form.ts: 前後の空白を取り除いてから確かめる'));
+      if (sc === 'csv-cleanup')
+        steps.push(...edit('scripts/normalize.py', normalizePy(attempt > 2), 'scripts/normalize.py: 法人の種類の表記を足す'));
+      steps.push(
+        ...tool('run', 'npm test', sc === 'csv-cleanup' ? 'pytest: 4 件が通過' : '4 件のテストが通過'),
+        usage(8000, 2100, 60),
+        stepChanged(stepId, 'completed'),
+        { t: 'next', delay: 200, outcome: 'pass' },
+      );
       return steps;
     }
     steps.push(say('承認ありがとうございます。作業を始めます。'));
@@ -270,7 +336,17 @@ export function stepWork(sc: Scenario, stepId: string, attempt: number, sim: Sim
           ...tool('run', 'npm install chart.js', 'cdn.jsdelivr.net への接続が拒否されました', false, 1100),
           { t: 'emit', delay: 100, event: { type: 'egress.blocked', host: 'cdn.jsdelivr.net' } },
           say('Chart.js の取得先（cdn.jsdelivr.net）への通信が、許可リストで止められました。続けるには許可が必要です。'),
-          { t: 'emit', delay: 200, event: { type: 'approval.required', approvalId: 'ap_egress_jsdelivr', reason: 'egress', detail: 'cdn.jsdelivr.net への通信（Chart.js の取得）を、この作業の間だけ許可しますか？ 許可しない場合は、SVG で自前のグラフを描きます。' } },
+          {
+            t: 'emit',
+            delay: 200,
+            event: {
+              type: 'approval.required',
+              approvalId: 'ap_egress_jsdelivr',
+              reason: 'egress',
+              detail:
+                'cdn.jsdelivr.net への通信（Chart.js の取得）を、この作業の間だけ許可しますか？ 許可しない場合は、SVG で自前のグラフを描きます。',
+            },
+          },
           state('awaiting_approval', 100),
           { t: 'gate', delay: 0, gate: 'approval', approvalId: 'ap_egress_jsdelivr' },
           ...edit('src/pages/weekly.tsx', weeklyTsx, 'src/pages/weekly.tsx: 週次のグラフの画面を作る'),
@@ -296,8 +372,16 @@ export function stepWork(sc: Scenario, stepId: string, attempt: number, sim: Sim
       case 'report':
         steps.push(
           ...tool('run', 'python -c "import pandas as pd; ..."', '1,284 行・6 列を読み込みました', true, 1200),
-          ...edit('scripts/aggregate.py', 'import pandas as pd\n\ndf = pd.read_csv("attachments/sales.csv")\nsummary = df.groupby("部署")["売上"].sum()\nsummary.to_csv("report/summary.csv")\n', 'scripts/aggregate.py: 部署ごとに集計する'),
-          ...edit('report/summary.csv', '部署,売上,前月比\n営業1部,18400000,+6.2%\n営業2部,13250000,+1.8%\n企画部,10900000,-3.4%\n管理部,7150000,+0.5%\n', 'report/summary.csv: 集計の結果'),
+          ...edit(
+            'scripts/aggregate.py',
+            'import pandas as pd\n\ndf = pd.read_csv("attachments/sales.csv")\nsummary = df.groupby("部署")["売上"].sum()\nsummary.to_csv("report/summary.csv")\n',
+            'scripts/aggregate.py: 部署ごとに集計する',
+          ),
+          ...edit(
+            'report/summary.csv',
+            '部署,売上,前月比\n営業1部,18400000,+6.2%\n営業2部,13250000,+1.8%\n企画部,10900000,-3.4%\n管理部,7150000,+0.5%\n',
+            'report/summary.csv: 集計の結果',
+          ),
           ...edit('report/index.html', reportHtml, 'report/index.html: グラフ付きのレポート'),
           ...tool('run', 'python -m http.server 8000 --directory report', 'http://localhost:8000 で待ち受けています', true, 800),
           { t: 'emit', delay: 100, event: { type: 'preview.ready', port: 8000, path: '/' } },
@@ -305,7 +389,9 @@ export function stepWork(sc: Scenario, stepId: string, attempt: number, sim: Sim
         );
         break;
       default:
-        steps.push(...edit('notes.md', `# 作業のまとめ\n\n- タスクの内容を確認しました\n- 必要な作業を行いました\n`, 'notes.md: 作業のまとめ'));
+        steps.push(
+          ...edit('notes.md', `# 作業のまとめ\n\n- タスクの内容を確認しました\n- 必要な作業を行いました\n`, 'notes.md: 作業のまとめ'),
+        );
     }
     steps.push(usage(18000, 4200, 140), stepChanged(stepId, 'completed'), { t: 'next', delay: 200, outcome: 'pass' });
     return steps;
@@ -315,12 +401,34 @@ export function stepWork(sc: Scenario, stepId: string, attempt: number, sim: Sim
     const fail = (sc === 'web-form' && attempt === 1) || (sc === 'csv-cleanup' && !sim.flags['retried']);
     return [
       ...start,
-      say(attempt === 1 ? '検証用の VM（web-playwright@2）で、テストとブラウザでの確認をします。' : `もう一度検証します（${attempt} 回目）。`),
-      ...tool('run', sc === 'csv-cleanup' ? 'pytest -q' : 'npm test', fail ? (sc === 'web-form' ? '1 件が失敗: 空白だけの内容でも送信できる' : '1 件が失敗: 「カブシキガイシャ」（全角カナ）がそろわない') : '4 件のテストが通過', !fail, 1400),
-      ...(sc === 'web-form' || sc === 'dashboard' ? tool('browser', 'ブラウザで画面を確かめる', fail ? '空白だけで送信できました' : '想定どおりに動きました', !fail, 1500) : []),
+      say(
+        attempt === 1 ? '検証用の VM（web-playwright@2）で、テストとブラウザでの確認をします。' : `もう一度検証します（${attempt} 回目）。`,
+      ),
+      ...tool(
+        'run',
+        sc === 'csv-cleanup' ? 'pytest -q' : 'npm test',
+        fail
+          ? sc === 'web-form'
+            ? '1 件が失敗: 空白だけの内容でも送信できる'
+            : '1 件が失敗: 「カブシキガイシャ」（全角カナ）がそろわない'
+          : '4 件のテストが通過',
+        !fail,
+        1400,
+      ),
+      ...(sc === 'web-form' || sc === 'dashboard'
+        ? tool('browser', 'ブラウザで画面を確かめる', fail ? '空白だけで送信できました' : '想定どおりに動きました', !fail, 1500)
+        : []),
       usage(9000, 1600, 90),
       ...(fail
-        ? [say(sc === 'web-form' ? '空白だけの入力を、空として扱えていませんでした。実装に戻して直します。' : '全角カナの「カブシキガイシャ」がそろっていません。実装に戻して直します。'), stepChanged(stepId, 'failed'), { t: 'next' as const, delay: 200, outcome: 'fail' as const }]
+        ? [
+            say(
+              sc === 'web-form'
+                ? '空白だけの入力を、空として扱えていませんでした。実装に戻して直します。'
+                : '全角カナの「カブシキガイシャ」がそろっていません。実装に戻して直します。',
+            ),
+            stepChanged(stepId, 'failed'),
+            { t: 'next' as const, delay: 200, outcome: 'fail' as const },
+          ]
         : [stepChanged(stepId, 'completed'), { t: 'next' as const, delay: 200, outcome: 'pass' as const }]),
     ];
   }
@@ -361,7 +469,13 @@ export function stepWork(sc: Scenario, stepId: string, attempt: number, sim: Sim
   if (stepId === 'unit-test') {
     return [
       ...start,
-      ...tool('run', sc === 'csv-cleanup' ? 'pytest -q' : 'npm test -- --reporter=dot', sc === 'csv-cleanup' ? 'pytest: 4 件が通過' : '12 件のテストが通過', true, 1600),
+      ...tool(
+        'run',
+        sc === 'csv-cleanup' ? 'pytest -q' : 'npm test -- --reporter=dot',
+        sc === 'csv-cleanup' ? 'pytest: 4 件が通過' : '12 件のテストが通過',
+        true,
+        1600,
+      ),
       usage(0, 0, 45),
       stepChanged(stepId, 'completed'),
       { t: 'next', delay: 200, outcome: 'pass' },
@@ -384,12 +498,30 @@ export function stepWork(sc: Scenario, stepId: string, attempt: number, sim: Sim
     const label = sc === 'dashboard' ? 'large' : 'small';
     return [
       ...start,
-      ...tool('review_diff', '単体テストと E2E の結果、差分の大きさを確かめる', fail ? 'E2E の録画で、空白だけの入力が送信されていました' : label === 'large' ? '外部のライブラリを追加（大きい変更）' : '変更は 3 ファイル・小さい変更', !fail, 1100),
+      ...tool(
+        'review_diff',
+        '単体テストと E2E の結果、差分の大きさを確かめる',
+        fail
+          ? 'E2E の録画で、空白だけの入力が送信されていました'
+          : label === 'large'
+            ? '外部のライブラリを追加（大きい変更）'
+            : '変更は 3 ファイル・小さい変更',
+        !fail,
+        1100,
+      ),
       usage(5000, 700, 30),
       ...(fail
-        ? [say('E2E の録画を見ると、空白だけの入力でも送信できていました。実装に戻して直します。'), stepChanged(stepId, 'failed'), { t: 'next' as const, delay: 200, outcome: 'fail' as const }]
+        ? [
+            say('E2E の録画を見ると、空白だけの入力でも送信できていました。実装に戻して直します。'),
+            stepChanged(stepId, 'failed'),
+            { t: 'next' as const, delay: 200, outcome: 'fail' as const },
+          ]
         : [
-            say(label === 'large' ? '外部のライブラリを追加しているので、セキュリティレビューに回します。' : '小さい変更なので、そのままプルリクエストにします。'),
+            say(
+              label === 'large'
+                ? '外部のライブラリを追加しているので、セキュリティレビューに回します。'
+                : '小さい変更なので、そのままプルリクエストにします。',
+            ),
             stepChanged(stepId, 'completed', 400, label),
             { t: 'next' as const, delay: 200, outcome: 'pass' as const, label },
           ]),
@@ -447,7 +579,8 @@ const formHtml = `<!doctype html>
 
 /** プレビューに出す HTML（モックでは、ワークスペースのファイルから組み立てる） */
 export function previewHtml(sc: Scenario, files: Record<string, string>, path: string): string {
-  const banner = '<div style="position:fixed;right:8px;bottom:8px;font:11px system-ui;color:#737373;background:#f0f0f0;padding:2px 8px;border-radius:99px">モックのプレビュー</div>';
+  const banner =
+    '<div style="position:fixed;right:8px;bottom:8px;font:11px system-ui;color:#737373;background:#f0f0f0;padding:2px 8px;border-radius:99px">モックのプレビュー</div>';
   if (sc === 'report') return (files['report/index.html'] ?? reportHtml).replace('</body>', `${banner}</body>`);
   if (sc === 'web-form') {
     return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><style>

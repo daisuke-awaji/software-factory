@@ -1,4 +1,4 @@
-"use client";
+'use client';
 // AffectUI（無料の部品）を取り込んだもの（ADR-0008）
 
 import {
@@ -10,17 +10,17 @@ import {
   type ComponentPropsWithRef,
   type SyntheticEvent,
   type ReactNode,
-} from "react";
+} from 'react';
 
 /*
  * Button – a single self-contained file.
  * The styles are injected below, so no extra files are needed.
  */
 
-export type ButtonProps = ComponentPropsWithRef<"button"> & {
+export type ButtonProps = ComponentPropsWithRef<'button'> & {
   /** primary: dark and filled · secondary: white with an outline · ghost: text only · destructive: red, for deleting */
-  variant?: "primary" | "secondary" | "ghost" | "destructive";
-  size?: "sm" | "md" | "lg";
+  variant?: 'primary' | 'secondary' | 'ghost' | 'destructive';
+  size?: 'sm' | 'md' | 'lg';
   /** Shows a shimmer over the label and blocks clicks */
   loading?: boolean;
   /** Icon before the label, e.g. an inline SVG */
@@ -30,8 +30,8 @@ export type ButtonProps = ComponentPropsWithRef<"button"> & {
 };
 
 export function Button({
-  variant = "primary",
-  size = "md",
+  variant = 'primary',
+  size = 'md',
   loading = false,
   icon,
   iconRight,
@@ -40,18 +40,18 @@ export function Button({
   disabled,
   onClick,
   onPointerEnter,
-  type = "button",
+  type = 'button',
   ref,
   ...rest
 }: ButtonProps) {
   // The shimmer copies the label, so it only works on plain text
-  const text = typeof children === "string" ? children : undefined;
+  const text = typeof children === 'string' ? children : undefined;
   // An empty string or false is no label – the icon stays centered
-  const hasLabel = children != null && children !== false && children !== "";
+  const hasLabel = children != null && children !== false && children !== '';
   const iconOnly = !hasLabel && Boolean(icon || iconRight);
   // Unknown values fall back to the defaults instead of an unstyled button
-  const tone = VARIANTS.includes(variant) ? variant : "primary";
-  const scale = SIZES.includes(size) ? size : "md";
+  const tone = VARIANTS.includes(variant) ? variant : 'primary';
+  const scale = SIZES.includes(size) ? size : 'md';
 
   // Morph: when label or icon change, the width glides to its new size and the new content blurs in.
   // Nothing animates on the first render.
@@ -59,8 +59,8 @@ export function Button({
   const lastWidth = useRef(0);
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
-  const labelKey = text ?? "label";
-  const iconKey = loading && icon ? "spinner" : contentKey(icon);
+  const labelKey = text ?? 'label';
+  const iconKey = loading && icon ? 'spinner' : contentKey(icon);
   const iconRightKey = contentKey(iconRight);
 
   const content = `${labelKey}|${iconKey}|${iconRightKey}`;
@@ -76,10 +76,10 @@ export function Button({
     lastWidth.current = width;
     lastContent.current = content;
     if (!changed || !from || Math.abs(from - width) < 0.5) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     el.animate([{ width: `${from}px` }, { width: `${width}px` }], {
       duration: 480,
-      easing: "cubic-bezier(0.25, 1, 0.5, 1)",
+      easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
     });
   });
 
@@ -91,7 +91,7 @@ export function Button({
       </style>
       <button
         type={type}
-        className={["ui-button", className].filter(Boolean).join(" ")}
+        className={['ui-button', className].filter(Boolean).join(' ')}
         data-variant={tone}
         data-size={scale}
         data-loading={loading || undefined}
@@ -99,7 +99,7 @@ export function Button({
         data-ready={ready || undefined}
         ref={(el) => {
           inner.current = el;
-          if (typeof ref === "function") ref(el);
+          if (typeof ref === 'function') ref(el);
           else if (ref) ref.current = el;
         }}
         disabled={disabled}
@@ -114,8 +114,8 @@ export function Button({
         }}
         onPointerEnter={(event) => {
           // A label cut short shows its full text on hover
-          const label = event.currentTarget.querySelector<HTMLElement>(".ui-button__label");
-          if (label && text && !rest.title) label.title = label.scrollWidth > label.clientWidth + 1 ? text : "";
+          const label = event.currentTarget.querySelector<HTMLElement>('.ui-button__label');
+          if (label && text && !rest.title) label.title = label.scrollWidth > label.clientWidth + 1 ? text : '';
           onPointerEnter?.(event);
         }}
         {...rest}
@@ -141,24 +141,17 @@ export function Button({
   );
 }
 
-const VARIANTS = ["primary", "secondary", "ghost", "destructive"];
-const SIZES = ["sm", "md", "lg"];
+const VARIANTS = ['primary', 'secondary', 'ghost', 'destructive'];
+const SIZES = ['sm', 'md', 'lg'];
 
 /** An icon image that fails to load leaves an empty slot instead of a broken-image glyph */
 const hideBroken = (event: SyntheticEvent<HTMLElement>) => {
-  if (event.target instanceof HTMLImageElement) event.target.style.visibility = "hidden";
+  if (event.target instanceof HTMLImageElement) event.target.style.visibility = 'hidden';
 };
 
 /** Shown in place of the left icon while loading */
 const Spinner = () => (
-  <svg
-    className="ui-button__spinner"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-  >
+  <svg className="ui-button__spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
     <circle cx="12" cy="12" r="8.5" opacity={0.2} />
     <path d="M12 3.5a8.5 8.5 0 0 1 8.5 8.5" />
   </svg>
@@ -168,7 +161,7 @@ const Spinner = () => (
 const ids = new WeakMap<object, number>();
 let nextId = 1;
 function contentKey(node: ReactNode) {
-  if (!isValidElement(node) || typeof node.type === "string") return 0;
+  if (!isValidElement(node) || typeof node.type === 'string') return 0;
   const type = node.type as object;
   if (!ids.has(type)) ids.set(type, nextId++);
   return ids.get(type)!;

@@ -132,7 +132,11 @@ test('ワークスペース: 会話の「ログ」から、成果物の実行ロ
 test('ダイアログは、画面の下から出るシートになる', async ({ page }) => {
   await fresh(page);
   await openItem(page, /部署別の売上レポートを作って公開/);
-  await page.getByRole('region', { name: '会話' }).getByRole('region', { name: '成果物' }).getByRole('button', { name: '公開する' }).click();
+  await page
+    .getByRole('region', { name: '会話' })
+    .getByRole('region', { name: '成果物' })
+    .getByRole('button', { name: '公開する' })
+    .click();
   const dialog = page.getByRole('dialog', { name: '社内に公開' });
   await expect(dialog.getByText(/問題はありません/)).toBeVisible();
   const box = (await dialog.boundingBox())!;
@@ -145,7 +149,11 @@ test('ダイアログは、画面の下から出るシートになる', async ({
 const expectDocumentFixed = async (page: Page) => {
   const d = await page.evaluate(() => {
     window.scrollTo(0, 500);
-    return { y: window.scrollY, html: getComputedStyle(document.documentElement).overflowY, body: getComputedStyle(document.body).overflowY };
+    return {
+      y: window.scrollY,
+      html: getComputedStyle(document.documentElement).overflowY,
+      body: getComputedStyle(document.body).overflowY,
+    };
   });
   expect(d.y).toBe(0);
   expect(d.html).toBe('hidden');
@@ -165,7 +173,10 @@ test('ワークスペース: スクロールするのは会話だけで、ヘッ
 
   // 会話は内側でスクロールする
   const scroller = chat.locator('> div').first();
-  const top = await scroller.evaluate((el) => { el.scrollTop = 0; return el.scrollHeight > el.clientHeight; });
+  const top = await scroller.evaluate((el) => {
+    el.scrollTop = 0;
+    return el.scrollHeight > el.clientHeight;
+  });
   expect(top).toBe(true);
   await scroller.hover();
   await page.mouse.wheel(0, 2000);
@@ -177,10 +188,12 @@ test('ワークスペース: スクロールするのは会話だけで、ヘッ
   // 見えている範囲が縮んでも（キーボードが出たとき）、入力欄は画面の下に付いたまま
   const vp = page.viewportSize()!;
   await page.setViewportSize({ width: vp.width, height: vp.height - 300 });
-  await expect.poll(async () => {
-    const b = (await input.boundingBox())!;
-    return b.y + b.height <= vp.height - 300;
-  }).toBe(true);
+  await expect
+    .poll(async () => {
+      const b = (await input.boundingBox())!;
+      return b.y + b.height <= vp.height - 300;
+    })
+    .toBe(true);
   // ヘッダーは上に付いたまま（高さ 520px 以下では余白を詰めるので、少し上がることはある）
   const headY = (await head.boundingBox())!.y;
   expect(headY).toBeGreaterThanOrEqual(0);

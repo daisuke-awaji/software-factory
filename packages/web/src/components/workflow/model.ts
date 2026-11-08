@@ -41,7 +41,10 @@ export const NODE = { width: 168, height: 72 };
 export const NODE_NARROW = { width: 150, height: 72 };
 export const START_NODE = { width: 72, height: 40 };
 
-const actionText: Record<NonNullable<StepDef['action']>, string> = { 'create-pull-request': 'PR を作る（VM なし）', 'propose-publish': '公開を提案（VM なし）' };
+const actionText: Record<NonNullable<StepDef['action']>, string> = {
+  'create-pull-request': 'PR を作る（VM なし）',
+  'propose-publish': '公開を提案（VM なし）',
+};
 
 export function subOf(st: StepDef): string | undefined {
   if (st.type === 'system') return st.action ? actionText[st.action] : '処理を選んでください';
@@ -49,7 +52,12 @@ export function subOf(st: StepDef): string | undefined {
   return st.image;
 }
 
-export function buildModel(workflow: Pick<Workflow, 'steps'>, statuses?: Record<string, StepStatus>, planStatus?: ProgressStatus, narrow = false): Model {
+export function buildModel(
+  workflow: Pick<Workflow, 'steps'>,
+  statuses?: Record<string, StepStatus>,
+  planStatus?: ProgressStatus,
+  narrow = false,
+): Model {
   const size = narrow ? NODE_NARROW : NODE;
   const { issues } = analyzeWorkflow(workflow);
   const issueOf = new Map<string, string>();
@@ -59,16 +67,24 @@ export function buildModel(workflow: Pick<Workflow, 'steps'>, statuses?: Record<
     if (id && !issueOf.has(id)) issueOf.set(id, i.message);
   }
   const nodes: ModelNode[] = [
-    { id: START, ...START_NODE, data: { kind: 'start', stepId: START, label: '計画', sub: '人が承認する', ...(planStatus ? { status: planStatus } : {}) } },
+    {
+      id: START,
+      ...START_NODE,
+      data: { kind: 'start', stepId: START, label: '計画', sub: '人が承認する', ...(planStatus ? { status: planStatus } : {}) },
+    },
   ];
   for (const st of workflow.steps) {
     const status = statuses?.[st.id];
     const sub = subOf(st);
     const fork = Array.isArray(st.next) && st.next.length > 1 ? st.next.length : 0;
     nodes.push({
-      id: st.id, ...size,
+      id: st.id,
+      ...size,
       data: {
-        kind: 'step', stepId: st.id, label: stepLabel(st.id), type: st.type,
+        kind: 'step',
+        stepId: st.id,
+        label: stepLabel(st.id),
+        type: st.type,
         ...(sub ? { sub } : {}),
         ...(st.network ? { network: st.network } : {}),
         ...(st.gates.includes('plan-approval') ? { gate: true } : {}),
@@ -82,10 +98,21 @@ export function buildModel(workflow: Pick<Workflow, 'steps'>, statuses?: Record<
   const ids = new Set(workflow.steps.map((s) => s.id));
   const edges: ModelEdge[] = [];
   const first = workflow.steps[0];
-  if (first) edges.push({ id: `${START}->${first.id}`, source: START, target: first.id, data: { kind: 'start', ...(statuses && planStatus === 'done' ? { state: 'taken' as const } : {}) } });
+  if (first)
+    edges.push({
+      id: `${START}->${first.id}`,
+      source: START,
+      target: first.id,
+      data: { kind: 'start', ...(statuses && planStatus === 'done' ? { state: 'taken' as const } : {}) },
+    });
   for (const e of graphEdges(workflow)) {
     if (!ids.has(e.to)) continue;
-    const data: GraphEdgeData = { kind: e.kind, ...(e.label ? { label: e.label } : {}), ...(e.maxLoops !== undefined ? { maxLoops: e.maxLoops } : {}), ...(e.parallel ? { parallel: true } : {}) };
+    const data: GraphEdgeData = {
+      kind: e.kind,
+      ...(e.label ? { label: e.label } : {}),
+      ...(e.maxLoops !== undefined ? { maxLoops: e.maxLoops } : {}),
+      ...(e.parallel ? { parallel: true } : {}),
+    };
     if (statuses) {
       const from = statuses[e.from];
       const to = statuses[e.to];

@@ -64,7 +64,9 @@ export function AppShell() {
 
   return (
     <div className={s.app} data-full={full || undefined}>
-      <a href="#main" className={s.skip}>本文へ移動</a>
+      <a href="#main" className={s.skip}>
+        本文へ移動
+      </a>
       {!phone && (
         <aside className={s.side} aria-label="サイドパネル" inert={floating || undefined}>
           <Sidebar expanded={!overlayMode && pinned} feed={feed} conn={conn} mock={mock} onToggle={toggle} />
@@ -79,16 +81,30 @@ export function AppShell() {
         {phone && !full && (
           <header className={s.bar}>
             <LogoToggle label="サイドパネルを開く" expanded={overlay} onClick={toggle} />
-            <Link to="/" className={s.brand}>Software Factory</Link>
-            {conn === 'reconnecting' && <span className={s.conn} role="status">再接続しています…</span>}
+            <Link to="/" className={s.brand}>
+              Software Factory
+            </Link>
+            {conn === 'reconnecting' && (
+              <span className={s.conn} role="status">
+                再接続しています…
+              </span>
+            )}
             {mock && <span className={s.mock}>モック</span>}
           </header>
         )}
         <main className={s.main} id="main">
           {error ? (
-            <div className={s.page}><ErrorBanner error={error} onRetry={loadMe} /></div>
+            <div className={s.page}>
+              <ErrorBanner error={error} onRetry={loadMe} />
+            </div>
           ) : !me ? (
-            full ? <WorkspaceSkeleton /> : <Page><PageSkeleton /></Page>
+            full ? (
+              <WorkspaceSkeleton />
+            ) : (
+              <Page>
+                <PageSkeleton />
+              </Page>
+            )
           ) : (
             <Outlet />
           )}

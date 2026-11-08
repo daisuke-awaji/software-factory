@@ -11,7 +11,23 @@ import { useApi } from '../../lib/services';
 import { useUi } from '../../stores/ui';
 import t from './tabs/tabs.module.css';
 
-export function ConfirmDialog({ open, title, body, confirm, danger, onConfirm, onClose }: { open: boolean; title: string; body: string; confirm: string; danger?: boolean; onConfirm: () => Promise<void>; onClose: () => void }) {
+export function ConfirmDialog({
+  open,
+  title,
+  body,
+  confirm,
+  danger,
+  onConfirm,
+  onClose,
+}: {
+  open: boolean;
+  title: string;
+  body: string;
+  confirm: string;
+  danger?: boolean;
+  onConfirm: () => Promise<void>;
+  onClose: () => void;
+}) {
   const [busy, setBusy] = useState(false);
   return (
     <Dialog
@@ -21,7 +37,9 @@ export function ConfirmDialog({ open, title, body, confirm, danger, onConfirm, o
       width={440}
       footer={
         <>
-          <Button variant="ghost" size="sm" onClick={onClose}>やめる</Button>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            やめる
+          </Button>
           <Button
             variant={danger ? 'destructive' : 'primary'}
             size="sm"
@@ -44,7 +62,17 @@ export function ConfirmDialog({ open, title, body, confirm, danger, onConfirm, o
   );
 }
 
-export function RenameDialog({ open, item, onClose, onSaved }: { open: boolean; item: Task; onClose: () => void; onSaved: (w: Task) => void }) {
+export function RenameDialog({
+  open,
+  item,
+  onClose,
+  onSaved,
+}: {
+  open: boolean;
+  item: Task;
+  onClose: () => void;
+  onSaved: (w: Task) => void;
+}) {
   const api = useApi();
   const [title, setTitle] = useState(item.title);
   const [error, setError] = useState<string | null>(null);
@@ -66,13 +94,23 @@ export function RenameDialog({ open, item, onClose, onSaved }: { open: boolean; 
       width={460}
       footer={
         <>
-          <Button variant="ghost" size="sm" onClick={onClose}>やめる</Button>
-          <Button size="sm" disabled={!title.trim()} onClick={() => void save()}>保存</Button>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            やめる
+          </Button>
+          <Button size="sm" disabled={!title.trim()} onClick={() => void save()}>
+            保存
+          </Button>
         </>
       }
     >
       <Field label="タイトル" htmlFor={id} error={error ?? undefined}>
-        <TextInput id={id} value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && void save()} />
+        <TextInput
+          id={id}
+          value={title}
+          maxLength={200}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && void save()}
+        />
       </Field>
     </Dialog>
   );
@@ -121,10 +159,17 @@ export function PublishDialog({ open, item, onClose }: { open: boolean; item: Ta
     if (!open || !path) return;
     setChecking(true);
     setCheck(null);
-    api.precheck(item.id, path).then(setCheck, (e: unknown) => setError(errorMessage(e))).finally(() => setChecking(false));
+    api
+      .precheck(item.id, path)
+      .then(setCheck, (e: unknown) => setError(errorMessage(e)))
+      .finally(() => setChecking(false));
   }, [open, path, api, item.id]);
 
-  const list = (v: string) => v.split(/[,、\s]+/).map((x) => x.trim()).filter(Boolean);
+  const list = (v: string) =>
+    v
+      .split(/[,、\s]+/)
+      .map((x) => x.trim())
+      .filter(Boolean);
   const aclOk = scope === 'org' || list(groups).length + list(users).length > 0;
 
   const publish = async () => {
@@ -135,7 +180,10 @@ export function PublishDialog({ open, item, onClose }: { open: boolean; item: Ta
         taskId: item.id,
         path,
         title: title.trim() || item.title,
-        acl: scope === 'org' ? { scope } : { scope, ...(list(groups).length ? { groups: list(groups) } : {}), ...(list(users).length ? { users: list(users) } : {}) },
+        acl:
+          scope === 'org'
+            ? { scope }
+            : { scope, ...(list(groups).length ? { groups: list(groups) } : {}), ...(list(users).length ? { users: list(users) } : {}) },
         ...(expiry ? { expiresAt: new Date(Date.now() + Number(expiry) * 86_400_000).toISOString() } : {}),
       });
       setDone(pub);
@@ -156,13 +204,28 @@ export function PublishDialog({ open, item, onClose }: { open: boolean; item: Ta
       footer={
         done ? (
           <>
-            <Button variant="secondary" size="sm" onClick={() => { onClose(); void navigate('/publications'); }}>公開物の一覧へ</Button>
-            <Button size="sm" onClick={onClose}>閉じる</Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                onClose();
+                void navigate('/publications');
+              }}
+            >
+              公開物の一覧へ
+            </Button>
+            <Button size="sm" onClick={onClose}>
+              閉じる
+            </Button>
           </>
         ) : (
           <>
-            <Button variant="ghost" size="sm" onClick={onClose}>やめる</Button>
-            <Button size="sm" disabled={!check?.ok || !aclOk || checking} loading={busy} onClick={() => void publish()}>公開する</Button>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              やめる
+            </Button>
+            <Button size="sm" disabled={!check?.ok || !aclOk || checking} loading={busy} onClick={() => void publish()}>
+              公開する
+            </Button>
           </>
         )
       }
@@ -170,7 +233,8 @@ export function PublishDialog({ open, item, onClose }: { open: boolean; item: Ta
       {done ? (
         <>
           <Banner tone="ok">
-            <strong>{done.title}</strong> を公開しました。{done.acl.scope === 'org' ? '社内のだれでも' : '指定した人だけが'}、社内のアカウントでログインして開けます。
+            <strong>{done.title}</strong> を公開しました。{done.acl.scope === 'org' ? '社内のだれでも' : '指定した人だけが'}
+            、社内のアカウントでログインして開けます。
           </Banner>
           <div className={t.copyRow}>
             <code className={t.url}>{done.url}</code>
@@ -186,7 +250,11 @@ export function PublishDialog({ open, item, onClose }: { open: boolean; item: Ta
               コピー
             </Button>
           </div>
-          {done.expiresAt && <p className="muted" style={{ margin: 0, fontSize: 13 }}>{date(done.expiresAt)} まで公開します。期限や範囲は「公開物」の画面で変えられます。</p>}
+          {done.expiresAt && (
+            <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+              {date(done.expiresAt)} まで公開します。期限や範囲は「公開物」の画面で変えられます。
+            </p>
+          )}
         </>
       ) : (
         <>
@@ -194,7 +262,9 @@ export function PublishDialog({ open, item, onClose }: { open: boolean; item: Ta
             <Select id={ids.path} value={path} onChange={(e) => setPath(e.target.value)}>
               <option value=".">ワークスペース全体</option>
               {dirs.map((d) => (
-                <option key={d.path} value={`${d.path}/`}>{d.path}/</option>
+                <option key={d.path} value={`${d.path}/`}>
+                  {d.path}/
+                </option>
               ))}
             </Select>
           </Field>
@@ -227,11 +297,17 @@ export function PublishDialog({ open, item, onClose }: { open: boolean; item: Ta
             <legend>公開する範囲</legend>
             <label className={t.radio}>
               <input type="radio" name="scope" checked={scope === 'restricted'} onChange={() => setScope('restricted')} />
-              <span><strong>限られた人</strong><span className="muted">指定したグループとユーザーだけ</span></span>
+              <span>
+                <strong>限られた人</strong>
+                <span className="muted">指定したグループとユーザーだけ</span>
+              </span>
             </label>
             <label className={t.radio}>
               <input type="radio" name="scope" checked={scope === 'org'} onChange={() => setScope('org')} />
-              <span><strong>社内のだれでも</strong><span className="muted">社内のアカウントでログインした人</span></span>
+              <span>
+                <strong>社内のだれでも</strong>
+                <span className="muted">社内のアカウントでログインした人</span>
+              </span>
             </label>
           </fieldset>
           {scope === 'restricted' && (
@@ -247,7 +323,9 @@ export function PublishDialog({ open, item, onClose }: { open: boolean; item: Ta
           <Field label="公開の期限" htmlFor={ids.expiry}>
             <Select id={ids.expiry} value={expiry} onChange={(e) => setExpiry(e.target.value)}>
               {expiryOptions.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
               ))}
             </Select>
           </Field>

@@ -84,5 +84,6 @@ export function duration(ms: number) {
 
 export const usd = (v: number | undefined) => (v === undefined ? '—' : `$${v.toFixed(2)}`);
 export const tokens = (n: number) => (n >= 10_000 ? `${(n / 1000).toFixed(0)}k` : n.toLocaleString('ja-JP'));
-export const bytes = (n: number) => (n < 1024 ? `${n} B` : n < 1024 ** 2 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1024 ** 2).toFixed(1)} MB`);
+export const bytes = (n: number) =>
+  n < 1024 ? `${n} B` : n < 1024 ** 2 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1024 ** 2).toFixed(1)} MB`;
 export const mib = (n: number) => (n >= 1024 ? `${n / 1024} GB` : `${n} MB`);

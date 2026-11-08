@@ -1,7 +1,7 @@
-"use client";
+'use client';
 // AffectUI（無料の部品）を取り込んだもの。noUncheckedIndexedAccess と exactOptionalPropertyTypes に合わせて最小限だけ直した（ADR-0008）
 
-import { useState } from "react";
+import { useState } from 'react';
 
 /*
  * Decision Inbox – open decisions with two quick actions each, in a gray tray with a white card, in a single self-contained file.
@@ -25,24 +25,22 @@ export type Decision = {
 export type DecisionInboxProps = {
   decisions: Decision[];
   /** Called with the decision and the chosen answer */
-  onDecide?: (decision: Decision, answer: "primary" | "secondary") => void;
+  onDecide?: (decision: Decision, answer: 'primary' | 'secondary') => void;
   className?: string;
 };
 
 type State = { open: boolean; answered?: string; gone?: boolean };
 
 export function DecisionInbox({ decisions, onDecide, className }: DecisionInboxProps) {
-  const [state, setState] = useState<Record<string, State>>(() =>
-    Object.fromEntries(decisions.map((d) => [d.id, { open: !d.collapsed }])),
-  );
+  const [state, setState] = useState<Record<string, State>>(() => Object.fromEntries(decisions.map((d) => [d.id, { open: !d.collapsed }])));
   const patch = (id: string, next: Partial<State>) => setState((s) => ({ ...s, [id]: { open: false, ...s[id], ...next } as State }));
 
   const open = decisions.filter((d) => !state[d.id]?.answered).length;
   // 1284 → "1,284"
-  const count = new Intl.NumberFormat("en").format(open);
+  const count = new Intl.NumberFormat('en').format(open);
 
-  const decide = (d: Decision, answer: "primary" | "secondary") => {
-    patch(d.id, { answered: answer === "primary" ? d.primary : d.secondary });
+  const decide = (d: Decision, answer: 'primary' | 'secondary') => {
+    patch(d.id, { answered: answer === 'primary' ? d.primary : d.secondary });
     onDecide?.(d, answer);
     // Show the confirmation for a moment, then fold the row away and open the next folded one
     window.setTimeout(() => {
@@ -60,14 +58,12 @@ export function DecisionInbox({ decisions, onDecide, className }: DecisionInboxP
       <style href="ui-decision-inbox" precedence="default">
         {css}
       </style>
-      <section className={["ui-di", className].filter(Boolean).join(" ")} data-clear={open === 0 || undefined}>
+      <section className={['ui-di', className].filter(Boolean).join(' ')} data-clear={open === 0 || undefined}>
         <header className="ui-di__head" aria-live="polite">
           {open > 0 ? (
             <>
               <AlertIcon />
-              <span>
-                対応が必要な項目 {count} 件
-              </span>
+              <span>対応が必要な項目 {count} 件</span>
             </>
           ) : (
             <>
@@ -89,7 +85,13 @@ export function DecisionInbox({ decisions, onDecide, className }: DecisionInboxP
                         {d.title}
                       </p>
                     ) : (
-                      <button type="button" className="ui-di__title ui-di__title--folded" dir="auto" title={d.title} onClick={() => patch(d.id, { open: true })}>
+                      <button
+                        type="button"
+                        className="ui-di__title ui-di__title--folded"
+                        dir="auto"
+                        title={d.title}
+                        onClick={() => patch(d.id, { open: true })}
+                      >
                         {d.title}
                       </button>
                     )}
@@ -108,10 +110,15 @@ export function DecisionInbox({ decisions, onDecide, className }: DecisionInboxP
                             </span>
                           ) : (
                             <>
-                              <button type="button" className="ui-di__btn ui-di__btn--primary" dir="auto" onClick={() => decide(d, "primary")}>
+                              <button
+                                type="button"
+                                className="ui-di__btn ui-di__btn--primary"
+                                dir="auto"
+                                onClick={() => decide(d, 'primary')}
+                              >
                                 {d.primary}
                               </button>
-                              <button type="button" className="ui-di__btn" dir="auto" onClick={() => decide(d, "secondary")}>
+                              <button type="button" className="ui-di__btn" dir="auto" onClick={() => decide(d, 'secondary')}>
                                 {d.secondary}
                               </button>
                             </>

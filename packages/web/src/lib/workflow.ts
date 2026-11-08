@@ -5,7 +5,15 @@ import type { Session } from './session';
 
 export type ProgressStatus = 'waiting' | 'running' | 'done' | 'alert' | 'failed' | 'skipped';
 /** column: 左からの列（0 は計画）。同じ列のステップは、並列で動くか、分岐でどちらかだけが動く */
-export type ProgressStep = { id: string; label: string; status: ProgressStatus; column: number; sub?: string; attempts?: number; caseLabel?: string };
+export type ProgressStep = {
+  id: string;
+  label: string;
+  status: ProgressStatus;
+  column: number;
+  sub?: string;
+  attempts?: number;
+  caseLabel?: string;
+};
 export type StepStatus = { status: ProgressStatus; attempts: number; caseLabel?: string };
 
 export function workflowName(ref: string) {
@@ -24,11 +32,15 @@ export function columnsOf(workflow: Workflow): Record<string, number> {
 
 export function planStatusOf(s: Session): ProgressStatus {
   const latest = s.latestPlan ? s.plans[s.latestPlan] : undefined;
-  return latest?.decision?.decision === 'approved' ? 'done'
-    : latest?.decision?.decision === 'rejected' ? 'failed'
-    : latest && !latest.decision && s.state === 'awaiting_approval' ? 'alert'
-    : s.state === 'cancelled' || s.state === 'failed' ? 'waiting'
-    : 'running';
+  return latest?.decision?.decision === 'approved'
+    ? 'done'
+    : latest?.decision?.decision === 'rejected'
+      ? 'failed'
+      : latest && !latest.decision && s.state === 'awaiting_approval'
+        ? 'alert'
+        : s.state === 'cancelled' || s.state === 'failed'
+          ? 'waiting'
+          : 'running';
 }
 
 /** ステップごとの状態（ワークスペースの図と進み具合で使う） */
@@ -43,16 +55,19 @@ export function stepStatusesFromSession(workflow: Workflow, s: Session): Record<
     const attempts = s.runs.filter((r) => r.stepId === st.id).length;
     let status: ProgressStatus = 'waiting';
     if (run?.state === 'running') {
-      status = planStatus !== 'done' || isTerminal(s.state) ? 'waiting' : s.state === 'awaiting_approval' && pendingApproval ? 'alert' : 'running';
+      status =
+        planStatus !== 'done' || isTerminal(s.state) ? 'waiting' : s.state === 'awaiting_approval' && pendingApproval ? 'alert' : 'running';
     } else if (run?.state === 'completed') status = 'done';
     else if (run?.state === 'failed') status = 'failed';
     else {
       // 前のステップがすべて終わり、どれもここへ進まなかった（分岐で別の道を選んだ）なら、飛ばした
       const preds = edges.filter((e) => e.to === st.id).map((e) => workflow.steps.find((x) => x.id === e.from)!);
-      const passedBy = preds.length > 0 && preds.every((p) => {
-        const r = lastRun(p.id);
-        return r?.state === 'completed' && !resolveNext(p, 'pass', r.label).targets.includes(st.id);
-      });
+      const passedBy =
+        preds.length > 0 &&
+        preds.every((p) => {
+          const r = lastRun(p.id);
+          return r?.state === 'completed' && !resolveNext(p, 'pass', r.label).targets.includes(st.id);
+        });
       if (passedBy || s.state === 'completed') status = 'skipped';
     }
     out[st.id] = { status, attempts, ...(run?.label ? { caseLabel: run.label } : {}) };
@@ -69,8 +84,12 @@ export function progressFromSession(workflow: Workflow | undefined, s: Session):
   for (const st of workflow.steps) {
     const { status, attempts, caseLabel } = statuses[st.id]!;
     steps.push({
-      id: st.id, label: stepLabel(st.id), status, column: columns[st.id]!,
-      ...(attempts > 1 ? { attempts } : {}), ...(caseLabel ? { caseLabel } : {}),
+      id: st.id,
+      label: stepLabel(st.id),
+      status,
+      column: columns[st.id]!,
+      ...(attempts > 1 ? { attempts } : {}),
+      ...(caseLabel ? { caseLabel } : {}),
       ...(st.image ? { sub: `${st.image}${attempts > 1 ? ` · ${attempts} 回目` : ''}` } : {}),
     });
   }
@@ -85,7 +104,13 @@ export function progressFromTask(workflow: Workflow | undefined, item: Task, pen
   const current = Math.max(-1, ...active.map((id) => columns[id] ?? -1));
   const planning = item.state === 'queued' || item.state === 'planning' || (item.state === 'awaiting_approval' && pending !== 'approval');
   const planStatus: ProgressStatus =
-    item.state === 'awaiting_approval' && pending !== 'approval' ? 'alert' : planning ? 'running' : item.state === 'cancelled' && current <= 1 ? 'waiting' : 'done';
+    item.state === 'awaiting_approval' && pending !== 'approval'
+      ? 'alert'
+      : planning
+        ? 'running'
+        : item.state === 'cancelled' && current <= 1
+          ? 'waiting'
+          : 'done';
   const steps: ProgressStep[] = [{ id: '__plan', label: '計画', status: planStatus, column: 0 }];
   for (const st of defs) {
     const column = columns[st.id]!;
@@ -94,7 +119,14 @@ export function progressFromTask(workflow: Workflow | undefined, item: Task, pen
     else if (planning) status = 'waiting';
     else if (column < current) status = 'done';
     else if (active.includes(st.id)) {
-      status = item.state === 'failed' ? 'failed' : item.state === 'awaiting_approval' ? 'alert' : item.state === 'cancelled' ? 'waiting' : 'running';
+      status =
+        item.state === 'failed'
+          ? 'failed'
+          : item.state === 'awaiting_approval'
+            ? 'alert'
+            : item.state === 'cancelled'
+              ? 'waiting'
+              : 'running';
     }
     steps.push({ id: st.id, label: stepLabel(st.id), status, column });
   }
@@ -102,5 +134,8 @@ export function progressFromTask(workflow: Workflow | undefined, item: Task, pen
 }
 
 function sortByColumn(steps: ProgressStep[]) {
-  return steps.map((st, i) => ({ st, i })).sort((a, b) => a.st.column - b.st.column || a.i - b.i).map((x) => x.st);
+  return steps
+    .map((st, i) => ({ st, i }))
+    .sort((a, b) => a.st.column - b.st.column || a.i - b.i)
+    .map((x) => x.st);
 }

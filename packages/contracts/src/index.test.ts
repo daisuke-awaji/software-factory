@@ -31,13 +31,17 @@ describe('入力の検証', () => {
 
   it('タイトルは省略でき、本文の最初の文から作れる', () => {
     expect(CreateTaskRequest.parse({ message: 'm' }).title).toBeUndefined();
-    expect(titleFromMessage('\n  問い合わせフォームを直してください。誤りはその場で知らせたいです。')).toBe('問い合わせフォームを直してください');
+    expect(titleFromMessage('\n  問い合わせフォームを直してください。誤りはその場で知らせたいです。')).toBe(
+      '問い合わせフォームを直してください',
+    );
     expect(titleFromMessage('あ'.repeat(80))).toBe(`${'あ'.repeat(59)}…`);
   });
   it('イメージの名前とメモリを検証する', () => {
     expect(ImageSpec.safeParse({ name: 'Web', base: 'web@5', memoryMiB: 4096, packages: {} }).success).toBe(false);
     expect(ImageSpec.safeParse({ name: 'web-pw', base: 'web@5', memoryMiB: 3000, packages: {} }).success).toBe(false);
-    expect(ImageSpec.parse({ name: 'web-pw', base: 'web@5', memoryMiB: 4096, packages: { npm: ['playwright@1'] } }).packages.apt).toEqual([]);
+    expect(ImageSpec.parse({ name: 'web-pw', base: 'web@5', memoryMiB: 4096, packages: { npm: ['playwright@1'] } }).packages.apt).toEqual(
+      [],
+    );
   });
   it('許可リストはホスト名だけを受け付ける', () => {
     const base = { name: 'web', updatedAt: new Date().toISOString() };

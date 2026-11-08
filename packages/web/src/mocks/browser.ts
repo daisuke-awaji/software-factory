@@ -11,7 +11,11 @@ export async function startMockWorker() {
   // 画面のファイル（/src/*.tsx など）は MSW を通さずにそのまま取りに行く
   // GitHub Pages では /<リポジトリ名>/ の下に置くため、ワーカーの場所と範囲をベースのパスに合わせる
   const base = import.meta.env.BASE_URL;
-  await worker.start({ quiet: true, onUnhandledFrame: 'bypass', serviceWorker: { url: `${base}mockServiceWorker.js`, options: { scope: base } } });
+  await worker.start({
+    quiet: true,
+    onUnhandledFrame: 'bypass',
+    serviceWorker: { url: `${base}mockServiceWorker.js`, options: { scope: base } },
+  });
   if (params.has('mock-reset') || speed) {
     params.delete('mock-reset');
     params.delete('mock-speed');

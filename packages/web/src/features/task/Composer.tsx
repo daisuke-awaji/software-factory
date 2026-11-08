@@ -13,7 +13,11 @@ import h from '../home/home.module.css';
 type Attached = { key: string; name: string; path?: string; error?: string };
 
 export function Composer({
-  state, pending, onSend, onInterrupt, upload,
+  state,
+  pending,
+  onSend,
+  onInterrupt,
+  upload,
 }: {
   state: TaskState | null;
   pending: Pending | null;
@@ -32,19 +36,27 @@ export function Composer({
   const uploading = files.some((f) => !f.path && !f.error);
 
   const placeholder =
-    pending?.kind === 'plan' ? '計画への修正を書く…（送ると、修正を依頼します）'
-    : pending?.kind === 'approval' ? '質問や補足を書く…（承認への回答は上のカードで）'
-    : running ? '指示を追加する…（次の手順から反映します）'
-    : state === 'suspended' ? '指示を送ると、続きから再開します…'
-    : state === 'completed' ? '続けて指示する…'
-    : 'メッセージを書く…';
+    pending?.kind === 'plan'
+      ? '計画への修正を書く…（送ると、修正を依頼します）'
+      : pending?.kind === 'approval'
+        ? '質問や補足を書く…（承認への回答は上のカードで）'
+        : running
+          ? '指示を追加する…（次の手順から反映します）'
+          : state === 'suspended'
+            ? '指示を送ると、続きから再開します…'
+            : state === 'completed'
+              ? '続けて指示する…'
+              : 'メッセージを書く…';
 
   const send = async () => {
     const t = text.trim();
     if (!t || busy || uploading) return;
     setBusy(true);
     try {
-      await onSend(t, files.flatMap((f) => (f.path ? [f.path] : [])));
+      await onSend(
+        t,
+        files.flatMap((f) => (f.path ? [f.path] : [])),
+      );
       setText('');
       setFiles([]);
     } catch (e) {
@@ -75,9 +87,15 @@ export function Composer({
         void send();
       }}
     >
-      {pending?.kind === 'plan' && <div className={s.composerHint} data-tone="alert">計画の承認を待っています。直してほしい点を書いて送ると、エージェントが計画を見直します。</div>}
+      {pending?.kind === 'plan' && (
+        <div className={s.composerHint} data-tone="alert">
+          計画の承認を待っています。直してほしい点を書いて送ると、エージェントが計画を見直します。
+        </div>
+      )}
       <div className={s.composerCard}>
-        <label htmlFor={id} className="sr-only">メッセージ</label>
+        <label htmlFor={id} className="sr-only">
+          メッセージ
+        </label>
         <textarea
           id={id}
           className={s.composerInput}
@@ -110,7 +128,14 @@ export function Composer({
           <IconButton label="ファイルを添付" onClick={() => input.current?.click()}>
             <IconClip />
           </IconButton>
-          <input ref={input} type="file" multiple hidden aria-label="添付するファイル" onChange={(e) => void attach(e.target.files).then(() => (e.target.value = ''))} />
+          <input
+            ref={input}
+            type="file"
+            multiple
+            hidden
+            aria-label="添付するファイル"
+            onChange={(e) => void attach(e.target.files).then(() => (e.target.value = ''))}
+          />
           <span className={s.spacer} />
           <span className={s.kbd}>⌘ / Ctrl + Enter</span>
           {running && (

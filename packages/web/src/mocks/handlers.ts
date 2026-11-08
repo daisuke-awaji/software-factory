@@ -1,9 +1,31 @@
 // MSW 3 のハンドラー。開発時はブラウザ（setupWorker）、テストでは Node（setupServer）で同じものを使う（実装計画 §6.3）
 // 入力も出力も contracts で検証する。パスは `*/api/v1/...` と書き、どのオリジンでも一致させる（N2）
 import {
-  AdminUser, ApprovalDecisionBody, AttachmentRequest, CreatePublicationRequest, CreateTaskRequest, DownloadRequest, FileEntry, ImageScope,
-  ImageSpec, ImageSummary, ImageVersion, WorkflowDefinition, NetworkProfile, PackageSource, PostMessageRequest, PrecheckResult, Publication,
-  RequestChangesBody, UpdateAdminUserRequest, UpdatePublicationRequest, UpdateTaskRequest, VmInfo, Task, WsClientFrame, ulid,
+  AdminUser,
+  ApprovalDecisionBody,
+  AttachmentRequest,
+  CreatePublicationRequest,
+  CreateTaskRequest,
+  DownloadRequest,
+  FileEntry,
+  ImageScope,
+  ImageSpec,
+  ImageSummary,
+  ImageVersion,
+  WorkflowDefinition,
+  NetworkProfile,
+  PackageSource,
+  PostMessageRequest,
+  PrecheckResult,
+  Publication,
+  RequestChangesBody,
+  UpdateAdminUserRequest,
+  UpdatePublicationRequest,
+  UpdateTaskRequest,
+  VmInfo,
+  Task,
+  WsClientFrame,
+  ulid,
 } from '@factory/contracts';
 import { http, HttpResponse, delay, ws } from 'msw';
 import { parse as parseYaml, stringify } from 'yaml';
@@ -32,7 +54,8 @@ async function body<S extends z.ZodType>(schema: S, request: Request): Promise<z
     return err(400, 'VALIDATION_ERROR', '本文が JSON ではありません');
   }
   const parsed = schema.safeParse(raw);
-  if (!parsed.success) return err(400, 'VALIDATION_ERROR', parsed.error.issues.map((i) => `${i.path.join('.') || '(本文)'}: ${i.message}`).join(' / '));
+  if (!parsed.success)
+    return err(400, 'VALIDATION_ERROR', parsed.error.issues.map((i) => `${i.path.join('.') || '(本文)'}: ${i.message}`).join(' / '));
   return parsed.data;
 }
 const isResponse = (v: unknown): v is R => v instanceof Response;
@@ -55,7 +78,9 @@ const mine = (id: string | readonly string[] | undefined) => {
 const isAdmin = () => getDb().me.roles.includes('admin');
 
 // ---------------------------------------------------------------- 一時的な URL（presigned URL の代わり）
-type Ticket = { kind: 'upload'; path: string; fileName: string; contentType: string } | { kind: 'download'; taskId: string; paths: string[]; format: 'file' | 'zip'; fileName: string };
+type Ticket =
+  | { kind: 'upload'; path: string; fileName: string; contentType: string }
+  | { kind: 'download'; taskId: string; paths: string[]; format: 'file' | 'zip'; fileName: string };
 const tickets = new Map<string, Ticket>();
 const ticket = (t: Ticket) => {
   const token = ulid().toLowerCase();
@@ -99,10 +124,24 @@ function precheck(id: string, path: string) {
   for (const [p, c] of files) {
     const size = new TextEncoder().encode(c).length;
     bytes += size;
-    if (/AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|password\s*=\s*\S+/i.test(c)) findings.push({ kind: 'secret', severity: 'error', path: p, message: '秘密情報（キーやパスワード）らしき文字列があります' });
-    if (size > 5 * 1024 * 1024) findings.push({ kind: 'size', severity: 'error', path: p, message: '1ファイルの上限（5 MB）を超えています' });
-    if (/(href|src)="\/(?!\/)/.test(c)) findings.push({ kind: 'absolute-path', severity: 'warning', path: p, message: 'ルートからの絶対パス（/…）は、公開先では別の場所を指します' });
-    if (/(href|src)="https?:\/\//.test(c)) findings.push({ kind: 'external-ref', severity: 'warning', path: p, message: '外部のサイトを読み込んでいます（公開先からは届かないことがあります）' });
+    if (/AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|password\s*=\s*\S+/i.test(c))
+      findings.push({ kind: 'secret', severity: 'error', path: p, message: '秘密情報（キーやパスワード）らしき文字列があります' });
+    if (size > 5 * 1024 * 1024)
+      findings.push({ kind: 'size', severity: 'error', path: p, message: '1ファイルの上限（5 MB）を超えています' });
+    if (/(href|src)="\/(?!\/)/.test(c))
+      findings.push({
+        kind: 'absolute-path',
+        severity: 'warning',
+        path: p,
+        message: 'ルートからの絶対パス（/…）は、公開先では別の場所を指します',
+      });
+    if (/(href|src)="https?:\/\//.test(c))
+      findings.push({
+        kind: 'external-ref',
+        severity: 'warning',
+        path: p,
+        message: '外部のサイトを読み込んでいます（公開先からは届かないことがあります）',
+      });
   }
   if (files.length === 0) findings.push({ kind: 'size', severity: 'error', path: path || '.', message: '公開するファイルがありません' });
   return PrecheckResult.parse({ ok: !findings.some((f) => f.severity === 'error'), files: files.length, bytes, findings });
@@ -117,7 +156,18 @@ function vms(): VmInfo[] {
     if (!run) continue;
     const image = run.image ?? 'base@3';
     const mem = d.images.find((i) => i.name === image.split('@')[0])?.memoryMiB ?? 2048;
-    out.push(VmInfo.parse({ id: `vm-${w.id.slice(-8).toLowerCase()}-${run.runId.replace('#', '-')}`, taskId: w.id, stepRunId: run.runId, owner: d.users.find((u) => u.id === w.ownerId)?.name ?? w.ownerId, image, memoryMiB: mem, state: w.state === 'running' || w.state === 'planning' ? 'running' : 'suspended', startedAt: run.startedAt }));
+    out.push(
+      VmInfo.parse({
+        id: `vm-${w.id.slice(-8).toLowerCase()}-${run.runId.replace('#', '-')}`,
+        taskId: w.id,
+        stepRunId: run.runId,
+        owner: d.users.find((u) => u.id === w.ownerId)?.name ?? w.ownerId,
+        image,
+        memoryMiB: mem,
+        state: w.state === 'running' || w.state === 'planning' ? 'running' : 'suspended',
+        startedAt: run.startedAt,
+      }),
+    );
   }
   return out;
 }
@@ -140,7 +190,13 @@ function startBuild(name: string, version: number, fail: boolean) {
       v.state = fail ? 'failed' : 'ready';
       if (fail) v.error = 'パッケージが見つかりませんでした（名前を確かめてください）';
       const summary = db.images.find((s) => s.name === name);
-      if (summary && !fail) Object.assign(summary, { latestVersion: version, updatedAt: new Date().toISOString(), memoryMiB: v.spec.memoryMiB, ...(v.spec.description ? { description: v.spec.description } : {}) });
+      if (summary && !fail)
+        Object.assign(summary, {
+          latestVersion: version,
+          updatedAt: new Date().toISOString(),
+          memoryMiB: v.spec.memoryMiB,
+          ...(v.spec.description ? { description: v.spec.description } : {}),
+        });
       save();
       return;
     }
@@ -224,11 +280,18 @@ export const handlers = [
     const d = getDb();
     const limit = d.users.find((u) => u.id === d.me.id)?.limits.concurrentTasks ?? 3;
     const active = d.tasks.filter((w) => w.ownerId === d.me.id && !['completed', 'failed', 'cancelled'].includes(w.state)).length;
-    if (active >= limit) return err(429, 'QUOTA_EXCEEDED', `同時に進められるタスクは ${limit} 件までです。終わったタスクがあれば、それを待ってから出してください。`);
-    if (!d.workflows.some((l) => l.name === input.workflowRef.split('@')[0])) return err(400, 'VALIDATION_ERROR', `ワークフロー ${input.workflowRef} はありません`);
+    if (active >= limit)
+      return err(
+        429,
+        'QUOTA_EXCEEDED',
+        `同時に進められるタスクは ${limit} 件までです。終わったタスクがあれば、それを待ってから出してください。`,
+      );
+    if (!d.workflows.some((l) => l.name === input.workflowRef.split('@')[0]))
+      return err(400, 'VALIDATION_ERROR', `ワークフロー ${input.workflowRef} はありません`);
     if (input.repo) {
       if (!d.me.github.connected) return err(403, 'GITHUB_NOT_CONNECTED', 'GitHub と連携していません');
-      if (!d.repos.some((r) => r.owner === input.repo!.owner && r.name === input.repo!.name)) return err(403, 'FORBIDDEN', 'このリポジトリを使う権限がありません');
+      if (!d.repos.some((r) => r.owner === input.repo!.owner && r.name === input.repo!.name))
+        return err(403, 'FORBIDDEN', 'このリポジトリを使う権限がありません');
     }
     const item = sim.createTask(input, d.me.id, d.me.name);
     return HttpResponse.json(Task.parse(item), { status: 201 });
@@ -326,13 +389,19 @@ export const handlers = [
   http.get(`${FILES}/obj/:id/:path`, ({ params }) => {
     const path = decodeURIComponent(String(params['path']));
     const c = getDb().files[String(params['id'])]?.[path];
-    return c === undefined ? new HttpResponse('not found', { status: 404 }) : new HttpResponse(c, { headers: { 'content-type': contentType(path) } });
+    return c === undefined
+      ? new HttpResponse('not found', { status: 404 })
+      : new HttpResponse(c, { headers: { 'content-type': contentType(path) } });
   }),
   http.get(`${API}/tasks/:id/diff`, ({ params }) => {
     const w = mine(params['id']);
     if (!w) return notFound();
     const d = getDb();
-    return HttpResponse.json({ base: w.repo?.baseBranch ?? 'main', head: w.branch ?? 'workspace', files: diffFiles(d.baseFiles[w.id] ?? {}, d.files[w.id] ?? {}) });
+    return HttpResponse.json({
+      base: w.repo?.baseBranch ?? 'main',
+      head: w.branch ?? 'workspace',
+      files: diffFiles(d.baseFiles[w.id] ?? {}, d.files[w.id] ?? {}),
+    });
   }),
   ...['/attachments', '/tasks/:id/attachments'].map((p) =>
     http.post(`${API}${p}`, async ({ params, request }) => {
@@ -349,7 +418,10 @@ export const handlers = [
     const t = tickets.get(String(params['token']));
     if (!t || t.kind !== 'upload') return new HttpResponse(null, { status: 403 });
     tickets.delete(String(params['token']));
-    const text = t.contentType.startsWith('text/') || /\.(csv|txt|md|json|tsv)$/i.test(t.fileName) ? await request.text() : `（${t.fileName}: バイナリのファイル）`;
+    const text =
+      t.contentType.startsWith('text/') || /\.(csv|txt|md|json|tsv)$/i.test(t.fileName)
+        ? await request.text()
+        : `（${t.fileName}: バイナリのファイル）`;
     getDb().attachments[t.path] = { fileName: t.fileName, contentType: t.contentType, content: text.slice(0, 200_000) };
     save();
     return new HttpResponse(null, { status: 200 });
@@ -405,11 +477,32 @@ export const handlers = [
     const w = mine(b.taskId);
     if (!w) return notFound();
     const check = precheck(w.id, b.path);
-    if (!check.ok) return err(422, 'PRECHECK_FAILED', check.findings.filter((f) => f.severity === 'error').map((f) => `${f.path}: ${f.message}`).join(' / '));
-    if (b.acl.scope === 'restricted' && !b.acl.users?.length && !b.acl.groups?.length) return err(400, 'VALIDATION_ERROR', '限られた人に公開するときは、ユーザーかグループを1つ以上指定してください');
+    if (!check.ok)
+      return err(
+        422,
+        'PRECHECK_FAILED',
+        check.findings
+          .filter((f) => f.severity === 'error')
+          .map((f) => `${f.path}: ${f.message}`)
+          .join(' / '),
+      );
+    if (b.acl.scope === 'restricted' && !b.acl.users?.length && !b.acl.groups?.length)
+      return err(400, 'VALIDATION_ERROR', '限られた人に公開するときは、ユーザーかグループを1つ以上指定してください');
     const id = ulid();
     const nowIso = new Date().toISOString();
-    const pub = Publication.parse({ id, taskId: w.id, title: b.title ?? w.title, path: b.path, url: `https://d3k8x2pub0.cloudfront.net/p/${id.toLowerCase()}/`, acl: b.acl, version: 1, status: 'active', createdAt: nowIso, updatedAt: nowIso, ...(b.expiresAt ? { expiresAt: b.expiresAt } : {}) });
+    const pub = Publication.parse({
+      id,
+      taskId: w.id,
+      title: b.title ?? w.title,
+      path: b.path,
+      url: `https://d3k8x2pub0.cloudfront.net/p/${id.toLowerCase()}/`,
+      acl: b.acl,
+      version: 1,
+      status: 'active',
+      createdAt: nowIso,
+      updatedAt: nowIso,
+      ...(b.expiresAt ? { expiresAt: b.expiresAt } : {}),
+    });
     getDb().publications.unshift(pub);
     save();
     return HttpResponse.json(pub, { status: 201 });
@@ -462,12 +555,23 @@ export const handlers = [
     if (existing && existing.scope === 'default' && !isAdmin()) return err(403, 'FORBIDDEN', '既定のイメージは管理者だけが更新できます');
     const baseName = spec.base.split('@')[0]!;
     const baseV = Number(spec.base.split('@')[1]);
-    if (!d.imageVersions[baseName]?.some((v) => v.version === baseV && v.state === 'ready')) return err(400, 'VALIDATION_ERROR', `ベースのイメージ ${spec.base} はありません`);
+    if (!d.imageVersions[baseName]?.some((v) => v.version === baseV && v.state === 'ready'))
+      return err(400, 'VALIDATION_ERROR', `ベースのイメージ ${spec.base} はありません`);
     const versions = (d.imageVersions[spec.name] ??= []);
     const version = (versions.at(-1)?.version ?? 0) + 1;
     const v = ImageVersion.parse({ name: spec.name, version, state: 'building', spec, createdAt: new Date().toISOString() });
     versions.push(v);
-    if (!existing) d.images.push(ImageSummary.parse({ name: spec.name, ...(spec.description ? { description: spec.description } : {}), scope: 'personal', owner: d.me.name, memoryMiB: spec.memoryMiB, updatedAt: v.createdAt }));
+    if (!existing)
+      d.images.push(
+        ImageSummary.parse({
+          name: spec.name,
+          ...(spec.description ? { description: spec.description } : {}),
+          scope: 'personal',
+          owner: d.me.name,
+          memoryMiB: spec.memoryMiB,
+          updatedAt: v.createdAt,
+        }),
+      );
     save();
     startBuild(spec.name, version, /nonexistent|typo/.test(JSON.stringify(spec.packages)));
     return HttpResponse.json(v, { status: 201 });
@@ -518,7 +622,8 @@ export const handlers = [
     const b = await body(PackageSource.omit({ updatedAt: true }), request);
     if (isResponse(b)) return b;
     if (b.name !== params['name']) return err(400, 'VALIDATION_ERROR', 'パスと本文の名前が違います');
-    if (b.kind === 'codeartifact' && (!b.npmRegistry || !b.pypiIndex)) return err(400, 'VALIDATION_ERROR', 'CodeArtifact では npm と PyPI の URL が必要です');
+    if (b.kind === 'codeartifact' && (!b.npmRegistry || !b.pypiIndex))
+      return err(400, 'VALIDATION_ERROR', 'CodeArtifact では npm と PyPI の URL が必要です');
     const d = getDb();
     const p = PackageSource.parse({ ...b, updatedAt: new Date().toISOString() });
     d.packageSources = [...d.packageSources.filter((x) => x.name !== p.name), p];
@@ -541,10 +646,17 @@ export const handlers = [
     const d = getDb();
     const cur = d.workflows.find((x) => x.name === params['name']);
     const parsed = WorkflowDefinition.shape.workflow.safeParse({ ...(raw as object), version: (cur?.version ?? 0) + 1 });
-    if (!parsed.success) return err(400, 'VALIDATION_ERROR', parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join(' / '));
+    if (!parsed.success)
+      return err(400, 'VALIDATION_ERROR', parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join(' / '));
     if (parsed.data.name !== params['name']) return err(400, 'VALIDATION_ERROR', 'name がパスと違います');
     const raws = raw as Record<string, unknown>;
-    const def = WorkflowDefinition.parse({ name: parsed.data.name, version: parsed.data.version, yaml: stringify({ ...raws, version: parsed.data.version }), workflow: parsed.data, updatedAt: new Date().toISOString() });
+    const def = WorkflowDefinition.parse({
+      name: parsed.data.name,
+      version: parsed.data.version,
+      yaml: stringify({ ...raws, version: parsed.data.version }),
+      workflow: parsed.data,
+      updatedAt: new Date().toISOString(),
+    });
     d.workflows = [...d.workflows.filter((x) => x.name !== def.name), def];
     save();
     return HttpResponse.json(def);
@@ -584,7 +696,8 @@ export const handlers = [
     const b = await body(UpdateAdminUserRequest, request);
     if (isResponse(b)) return b;
     if (b.roles) {
-      if (u.id === d.me.id && !b.roles.includes('admin')) return err(409, 'CONFLICT', '自分の管理者の権限は外せません（ほかの管理者に依頼してください）');
+      if (u.id === d.me.id && !b.roles.includes('admin'))
+        return err(409, 'CONFLICT', '自分の管理者の権限は外せません（ほかの管理者に依頼してください）');
       u.roles = b.roles;
     }
     if (b.limits) u.limits = b.limits;

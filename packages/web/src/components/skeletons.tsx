@@ -8,17 +8,35 @@ import s from './skeletons.module.css';
 export { Skeleton };
 
 /** 読み込み中の入れ物。読み上げには「読み込んでいます」とだけ伝える（枠そのものは aria-hidden） */
-export function Busy({ label = '読み込んでいます', className, children }: { label?: string; className?: string | undefined; children: ReactNode }) {
+export function Busy({
+  label = '読み込んでいます',
+  className,
+  children,
+}: {
+  label?: string;
+  className?: string | undefined;
+  children: ReactNode;
+}) {
   return (
     <div className={className} aria-busy="true">
-      <span className="sr-only" role="status">{label}</span>
+      <span className="sr-only" role="status">
+        {label}
+      </span>
       {children}
     </div>
   );
 }
 
 /** 1行の文字の代わり。行の高さ（1lh）は本物の文字と同じにし、帯はその中で上下の中央に置く */
-export function SkeletonText({ size, width = '100%', end = false }: { /** 省略すると親の文字の大きさに合わせる */ size?: number; width?: number | string; end?: boolean }) {
+export function SkeletonText({
+  size,
+  width = '100%',
+  end = false,
+}: {
+  /** 省略すると親の文字の大きさに合わせる */ size?: number;
+  width?: number | string;
+  end?: boolean;
+}) {
   return (
     <span className={s.line} style={{ fontSize: size, justifyContent: end ? 'flex-end' : undefined }}>
       <Skeleton height="0.72em" width={width} />
@@ -43,7 +61,11 @@ export function PageHeaderSkeleton({ description = true }: { description?: boole
     <div className={k.pageHead}>
       <div className={s.pageHeadText}>
         <SkeletonText size={22} width={160} />
-        {description && <span className={s.desc}><SkeletonText size={13.5} width="min(520px, 100%)" /></span>}
+        {description && (
+          <span className={s.desc}>
+            <SkeletonText size={13.5} width="min(520px, 100%)" />
+          </span>
+        )}
       </div>
     </div>
   );
@@ -58,7 +80,9 @@ export function TableSkeleton({ head, rows = 5, label }: { head: ReactNode[]; ro
           <thead>
             <tr>
               {head.map((h, i) => (
-                <th key={i} scope="col">{h}</th>
+                <th key={i} scope="col">
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
@@ -150,7 +174,9 @@ export function ListRowSkeleton({ className, seed = 0 }: { className?: string | 
   return (
     <span className={cx(s.listRow, className)} aria-hidden="true">
       <Skeleton width={7} circle />
-      <span className={s.listRowText}><SkeletonText size={13} width={widthAt(seed)} /></span>
+      <span className={s.listRowText}>
+        <SkeletonText size={13} width={widthAt(seed)} />
+      </span>
       <Skeleton width={26} height={8} />
     </span>
   );

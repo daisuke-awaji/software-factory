@@ -58,7 +58,8 @@ export function useWorkspace(id: string) {
   const desired: Tab = useMemo(() => {
     if (!state || state === 'queued' || state === 'planning') return 'plan';
     if (state === 'awaiting_approval') return pending?.kind === 'approval' ? 'log' : 'plan';
-    if (state === 'running' || state === 'suspended' || state === 'failed' || state === 'cancelled') return session?.preview && state === 'running' ? 'preview' : 'log';
+    if (state === 'running' || state === 'suspended' || state === 'failed' || state === 'cancelled')
+      return session?.preview && state === 'running' ? 'preview' : 'log';
     return session?.preview ? 'preview' : 'changes';
   }, [state, pending?.kind, session?.preview]);
   const autoTab = useUi((u) => u.autoTab);

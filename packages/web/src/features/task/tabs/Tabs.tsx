@@ -7,7 +7,19 @@ import { Banner, Dot, ErrorBanner, IconButton, Tag } from '../../../components/k
 import { Busy, CodeSkeleton, Skeleton, SkeletonText } from '../../../components/skeletons';
 import { WorkflowGraph } from '../../../components/workflow';
 import { ShimmerText } from '../../../components/ui/shimmer-loader';
-import { IconBlock, IconChevron, IconChevronDown, IconDownload, IconExternal, IconEye, IconFile, IconFolder, IconList, IconRefresh, toolIcon } from '../../../components/icons';
+import {
+  IconBlock,
+  IconChevron,
+  IconChevronDown,
+  IconDownload,
+  IconExternal,
+  IconEye,
+  IconFile,
+  IconFolder,
+  IconList,
+  IconRefresh,
+  toolIcon,
+} from '../../../components/icons';
 import { errorMessage } from '../../../lib/api';
 import { saveFromUrl } from '../../../lib/download';
 import { bytes, duration, stepLabel, time, tokens, usd } from '../../../lib/format';
@@ -34,7 +46,10 @@ export function PreviewTab({ item, session }: { item: Task; session: Session }) 
     let alive = true;
     setError(null);
     // チケットは一回限りで 60 秒で無効になる。開くたびに発行し直す
-    api.preview(item.id, port).then((p) => alive && setUrl(p.url), (e: unknown) => alive && setError(errorMessage(e)));
+    api.preview(item.id, port).then(
+      (p) => alive && setUrl(p.url),
+      (e: unknown) => alive && setError(errorMessage(e)),
+    );
     return () => {
       alive = false;
     };
@@ -45,19 +60,36 @@ export function PreviewTab({ item, session }: { item: Task; session: Session }) 
       <div className={t.empty}>
         <IconEye />
         <strong>プレビューはまだありません</strong>
-        <span>エージェントが VM の中でアプリを起動すると、ここに表示されます。HTML のレポートや Web アプリを、その場で確かめられます。</span>
+        <span>
+          エージェントが VM の中でアプリを起動すると、ここに表示されます。HTML のレポートや Web アプリを、その場で確かめられます。
+        </span>
       </div>
     );
   }
-  if (stopped) return <div className={t.empty}><IconEye /><strong>VM が停止しているため、プレビューは開けません</strong><span>成果物は「ファイル」のタブから見られます。</span></div>;
+  if (stopped)
+    return (
+      <div className={t.empty}>
+        <IconEye />
+        <strong>VM が停止しているため、プレビューは開けません</strong>
+        <span>成果物は「ファイル」のタブから見られます。</span>
+      </div>
+    );
 
   const shown = `preview.factory › ${item.id.slice(-6).toLowerCase()}:${session.preview.port}${session.preview.path}`;
   return (
     <div className={t.preview}>
       <div className={t.chrome}>
-        <span className={t.dots} aria-hidden="true"><i /><i /><i /></span>
-        <span className={t.url} title={shown}>{shown}</span>
-        <IconButton label="再読み込み" onClick={() => setNonce((n) => n + 1)}><IconRefresh /></IconButton>
+        <span className={t.dots} aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
+        <span className={t.url} title={shown}>
+          {shown}
+        </span>
+        <IconButton label="再読み込み" onClick={() => setNonce((n) => n + 1)}>
+          <IconRefresh />
+        </IconButton>
         <IconButton
           label="新しいタブで開く"
           onClick={() => {
@@ -70,8 +102,24 @@ export function PreviewTab({ item, session }: { item: Task; session: Session }) 
           <IconExternal />
         </IconButton>
       </div>
-      {error ? <ErrorBanner error={error} onRetry={() => setNonce((n) => n + 1)} /> : url ? <iframe key={url} className={t.frame} src={url} title="プレビュー" sandbox={url.startsWith('blob:') ? 'allow-scripts allow-forms' : 'allow-scripts allow-forms allow-same-origin'} /> : <div className={t.frame} style={{ display: 'grid', placeItems: 'center' }} role="status"><ShimmerText>プレビューを開いています…</ShimmerText></div>}
-      <p className={t.previewNote}>このブラウザで同時に開けるプレビューは1つだけです（D16）。別のタスクのプレビューを開くと、こちらは閉じます。</p>
+      {error ? (
+        <ErrorBanner error={error} onRetry={() => setNonce((n) => n + 1)} />
+      ) : url ? (
+        <iframe
+          key={url}
+          className={t.frame}
+          src={url}
+          title="プレビュー"
+          sandbox={url.startsWith('blob:') ? 'allow-scripts allow-forms' : 'allow-scripts allow-forms allow-same-origin'}
+        />
+      ) : (
+        <div className={t.frame} style={{ display: 'grid', placeItems: 'center' }} role="status">
+          <ShimmerText>プレビューを開いています…</ShimmerText>
+        </div>
+      )}
+      <p className={t.previewNote}>
+        このブラウザで同時に開けるプレビューは1つだけです（D16）。別のタスクのプレビューを開くと、こちらは閉じます。
+      </p>
     </div>
   );
 }
@@ -106,7 +154,12 @@ export function ChangesTab({ diff }: { diff: { data: Diff | undefined; error: st
   const [sel, setSel] = useState<string | null>(null);
   const current = files.find((f) => f.path === sel) ?? files[0];
   const lines = useMemo(() => (current ? parsePatch(current.patch) : []), [current]);
-  if (diff.error) return <div className={t.pad}><ErrorBanner error={diff.error} onRetry={() => void diff.reload()} /></div>;
+  if (diff.error)
+    return (
+      <div className={t.pad}>
+        <ErrorBanner error={diff.error} onRetry={() => void diff.reload()} />
+      </div>
+    );
   if (!diff.data) return <ChangesSkeleton />;
   if (files.length === 0)
     return (
@@ -127,7 +180,14 @@ export function ChangesTab({ diff }: { diff: { data: Diff | undefined; error: st
           <span className={t.minus}>−{minus}</span>
         </div>
         {files.map((f) => (
-          <button key={f.path} type="button" className={t.file} aria-current={f.path === current?.path || undefined} onClick={() => setSel(f.path)} title={f.path}>
+          <button
+            key={f.path}
+            type="button"
+            className={t.file}
+            aria-current={f.path === current?.path || undefined}
+            onClick={() => setSel(f.path)}
+            title={f.path}
+          >
             <IconFile />
             <span className={t.fileName}>{f.path}</span>
             <span className={t.plus}>+{f.additions}</span>
@@ -140,7 +200,9 @@ export function ChangesTab({ diff }: { diff: { data: Diff | undefined; error: st
           <div className={t.diffHead}>
             <span className={t.status}>{statusLabel[current.status]}</span>
             {current.path}
-            <span style={{ marginLeft: 'auto' }} className="muted">{diff.data.base} ← {diff.data.head}</span>
+            <span style={{ marginLeft: 'auto' }} className="muted">
+              {diff.data.base} ← {diff.data.head}
+            </span>
           </div>
           <pre className={t.code} aria-label={`${current.path} の差分`}>
             {lines.map((l, i) => (
@@ -165,7 +227,9 @@ function ChangesSkeleton() {
   return (
     <Busy className={t.changes}>
       <div className={t.fileList} aria-hidden="true">
-        <div className={t.fileHead}><SkeletonText size={12.5} width={96} /></div>
+        <div className={t.fileHead}>
+          <SkeletonText size={12.5} width={96} />
+        </div>
         {FILE_W.map((w, i) => (
           <div key={i} className={t.file}>
             <Skeleton width={14} height={14} radius={4} />
@@ -176,8 +240,12 @@ function ChangesSkeleton() {
         ))}
       </div>
       <div className={t.diff} aria-hidden="true">
-        <div className={t.diffHead}><SkeletonText size={12} width={220} /></div>
-        <span className={t.codeSkeleton}><CodeSkeleton lines={18} /></span>
+        <div className={t.diffHead}>
+          <SkeletonText size={12} width={220} />
+        </div>
+        <span className={t.codeSkeleton}>
+          <CodeSkeleton lines={18} />
+        </span>
       </div>
     </Busy>
   );
@@ -189,7 +257,9 @@ function FilesSkeleton() {
     <Busy className={t.changes}>
       <div className={t.tree} aria-hidden="true">
         <div className={t.treeToolbar}>
-          <span className={t.source}><SkeletonText size={11.5} width={110} /></span>
+          <span className={t.source}>
+            <SkeletonText size={11.5} width={110} />
+          </span>
           <Skeleton width={30} height={30} radius={9} />
         </div>
         {FILE_W.map((w, i) => (
@@ -216,7 +286,8 @@ export function FilesTab({ item, version, onPublish }: { item: Task; version: nu
 
   useEffect(() => {
     // 開いているフォルダは、ファイルが変わったら読み直す
-    for (const dir of Object.keys(open).filter((d) => open[d])) void api.files(item.id, dir).then((tr) => setChildren((c) => ({ ...c, [dir]: tr.entries })));
+    for (const dir of Object.keys(open).filter((d) => open[d]))
+      void api.files(item.id, dir).then((tr) => setChildren((c) => ({ ...c, [dir]: tr.entries })));
     // eslint-disable-next-workflow react-hooks/exhaustive-deps
   }, [version]);
 
@@ -248,25 +319,42 @@ export function FilesTab({ item, version, onPublish }: { item: Task; version: nu
           aria-expanded={e.type === 'dir' ? !!open[e.path] : undefined}
           onClick={() => (e.type === 'dir' ? void toggle(e.path) : setSel(e.path))}
         >
-          {e.type === 'dir' ? (open[e.path] ? <IconChevronDown /> : <IconChevron />) : <span style={{ width: 14 }} />}
+          {e.type === 'dir' ? open[e.path] ? <IconChevronDown /> : <IconChevron /> : <span style={{ width: 14 }} />}
           {e.type === 'dir' ? <IconFolder /> : <IconFile />}
           {e.name}
-          {e.size !== undefined && <span className="faint" style={{ marginLeft: 'auto' }}>{bytes(e.size)}</span>}
+          {e.size !== undefined && (
+            <span className="faint" style={{ marginLeft: 'auto' }}>
+              {bytes(e.size)}
+            </span>
+          )}
         </button>
         {e.type === 'dir' && open[e.path] && children[e.path] && render(children[e.path]!, depth + 1)}
       </div>
     ));
 
-  if (root.error) return <div className={t.pad}><ErrorBanner error={root.error} onRetry={() => void root.reload()} /></div>;
+  if (root.error)
+    return (
+      <div className={t.pad}>
+        <ErrorBanner error={root.error} onRetry={() => void root.reload()} />
+      </div>
+    );
   if (!root.data) return <FilesSkeleton />;
   return (
     <div className={t.changes}>
       <nav className={t.tree} aria-label="ファイルツリー">
         <div className={t.treeToolbar}>
           <span className={t.source}>{root.data.source === 'vm' ? 'VM から（実行中）' : 'スナップショットから'}</span>
-          <IconButton label="すべてを zip でダウンロード" onClick={() => void download('zip')}><IconDownload /></IconButton>
+          <IconButton label="すべてを zip でダウンロード" onClick={() => void download('zip')}>
+            <IconDownload />
+          </IconButton>
         </div>
-        {root.data.entries.length === 0 ? <p className="muted" style={{ padding: 8 }}>ファイルはまだありません。</p> : render(root.data.entries, 0)}
+        {root.data.entries.length === 0 ? (
+          <p className="muted" style={{ padding: 8 }}>
+            ファイルはまだありません。
+          </p>
+        ) : (
+          render(root.data.entries, 0)
+        )}
       </nav>
       <div className={t.diff}>
         {sel ? (
@@ -274,12 +362,18 @@ export function FilesTab({ item, version, onPublish }: { item: Task; version: nu
             <div className={t.diffHead}>
               {sel}
               <span className={t.viewerActions}>
-                <Button size="sm" variant="ghost" icon={<IconDownload />} onClick={() => void download('file', [sel])}>ダウンロード</Button>
-                <Button size="sm" variant="secondary" onClick={onPublish}>公開する</Button>
+                <Button size="sm" variant="ghost" icon={<IconDownload />} onClick={() => void download('file', [sel])}>
+                  ダウンロード
+                </Button>
+                <Button size="sm" variant="secondary" onClick={onPublish}>
+                  公開する
+                </Button>
               </span>
             </div>
             {content.error ? (
-              <div className={t.pad}><ErrorBanner error={content.error} /></div>
+              <div className={t.pad}>
+                <ErrorBanner error={content.error} />
+              </div>
             ) : content.data ? (
               <pre className={t.code} aria-label={`${sel} の中身`}>
                 {content.data.text.split('\n').map((l, i) => (
@@ -290,7 +384,11 @@ export function FilesTab({ item, version, onPublish }: { item: Task; version: nu
                 ))}
               </pre>
             ) : (
-              <Busy><span className={t.codeSkeleton}><CodeSkeleton lines={18} /></span></Busy>
+              <Busy>
+                <span className={t.codeSkeleton}>
+                  <CodeSkeleton lines={18} />
+                </span>
+              </Busy>
             )}
           </>
         ) : (
@@ -306,14 +404,32 @@ export function FilesTab({ item, version, onPublish }: { item: Task; version: nu
 }
 
 // ---------------------------------------------------------------- 計画とステップの構成
-export function PlanTab({ session, workflow, actions, onOpenStep }: { session: Session; workflow: Workflow | undefined; actions: PlanActions; onOpenStep?: (stepId: string) => void }) {
+export function PlanTab({
+  session,
+  workflow,
+  actions,
+  onOpenStep,
+}: {
+  session: Session;
+  workflow: Workflow | undefined;
+  actions: PlanActions;
+  onOpenStep?: (stepId: string) => void;
+}) {
   const latest = session.latestPlan ? session.plans[session.latestPlan] : undefined;
-  const older = Object.values(session.plans).filter((p) => p.version !== session.latestPlan).sort((a, b) => b.version - a.version);
+  const older = Object.values(session.plans)
+    .filter((p) => p.version !== session.latestPlan)
+    .sort((a, b) => b.version - a.version);
   return (
     <div className={t.pad}>
       <div className={t.narrow}>
         {latest ? (
-          <PlanCard plan={latest} latest actionable={session.state === 'awaiting_approval' && !latest.decision} actions={actions} defaultDetails />
+          <PlanCard
+            plan={latest}
+            latest
+            actionable={session.state === 'awaiting_approval' && !latest.decision}
+            actions={actions}
+            defaultDetails
+          />
         ) : (
           <div className={t.empty}>
             <IconList />
@@ -323,7 +439,9 @@ export function PlanTab({ session, workflow, actions, onOpenStep }: { session: S
         )}
         {workflow && (
           <>
-            <h3 className={t.h}>ワークフロー「{workflow.title ?? workflow.name}」のステップ（{workflow.name}@{workflow.version}）</h3>
+            <h3 className={t.h}>
+              ワークフロー「{workflow.title ?? workflow.name}」のステップ（{workflow.name}@{workflow.version}）
+            </h3>
             <WorkflowGraph
               workflow={workflow}
               mode="run"
@@ -351,7 +469,19 @@ export function PlanTab({ session, workflow, actions, onOpenStep }: { session: S
 }
 
 // ---------------------------------------------------------------- 実行ログ（FR-UI-04）
-export function LogTab({ item, session, workflow, onRetry, focusStep }: { item: Task; session: Session; workflow: Workflow | undefined; onRetry: (runId: string) => Promise<void>; focusStep?: { id: string; at: number } | null }) {
+export function LogTab({
+  item,
+  session,
+  workflow,
+  onRetry,
+  focusStep,
+}: {
+  item: Task;
+  session: Session;
+  workflow: Workflow | undefined;
+  onRetry: (runId: string) => Promise<void>;
+  focusStep?: { id: string; at: number } | null;
+}) {
   const runs = [...session.runs].reverse();
   const list = useRef<HTMLDivElement>(null);
   // 図からステップを選んだら、その最後の実行まで動かして、少しのあいだ目立たせる
@@ -368,17 +498,31 @@ export function LogTab({ item, session, workflow, onRetry, focusStep }: { item: 
     <div className={t.pad}>
       <div className={t.narrow} ref={list}>
         <dl className={t.usage} aria-label="使用量">
-          <div><dt>入力トークン</dt><dd>{tokens(session.usage.inputTokens)}</dd></div>
-          <div><dt>出力トークン</dt><dd>{tokens(session.usage.outputTokens)}</dd></div>
-          <div><dt>VM の時間</dt><dd>{duration(session.usage.vmSeconds * 1000)}</dd></div>
-          <div><dt>費用（概算）</dt><dd>{usd(item.costUsd)}</dd></div>
+          <div>
+            <dt>入力トークン</dt>
+            <dd>{tokens(session.usage.inputTokens)}</dd>
+          </div>
+          <div>
+            <dt>出力トークン</dt>
+            <dd>{tokens(session.usage.outputTokens)}</dd>
+          </div>
+          <div>
+            <dt>VM の時間</dt>
+            <dd>{duration(session.usage.vmSeconds * 1000)}</dd>
+          </div>
+          <div>
+            <dt>費用（概算）</dt>
+            <dd>{usd(item.costUsd)}</dd>
+          </div>
         </dl>
         {session.blocked.length > 0 && (
           <Banner tone="warn">
             <strong>許可リストで止めた通信</strong>
             <ul className={t.blocked}>
               {session.blocked.map((b, i) => (
-                <li key={i}><IconBlock /> <code>{b.host}</code> <span className="muted">{time(b.at)}</span></li>
+                <li key={i}>
+                  <IconBlock /> <code>{b.host}</code> <span className="muted">{time(b.at)}</span>
+                </li>
               ))}
             </ul>
           </Banner>
@@ -398,17 +542,28 @@ export function LogTab({ item, session, workflow, onRetry, focusStep }: { item: 
               <div className={t.runHead}>
                 <Dot tone={r.state === 'running' ? 'run' : r.state === 'failed' ? 'err' : 'ok'} />
                 <span className={t.runLabel}>{stepLabel(r.stepId)}</span>
-                <span className={t.runMeta}>{r.runId}{st?.image ? ` · ${st.image}` : ''}{st?.network ? ` · 通信: ${st.network}` : ''}</span>
+                <span className={t.runMeta}>
+                  {r.runId}
+                  {st?.image ? ` · ${st.image}` : ''}
+                  {st?.network ? ` · 通信: ${st.network}` : ''}
+                </span>
                 <span className={t.runRight}>
                   {r.state === 'failed' && <Tag tone="err">失敗</Tag>}
                   {r.endedAt ? duration(r.endedAt - r.startedAt) : '実行中'}
                   {r.state === 'failed' && item.state === 'failed' && r === runs.find((x) => x.state === 'failed') && (
-                    <Button size="sm" variant="secondary" onClick={() => void onRetry(r.runId)}>やり直す</Button>
+                    <Button size="sm" variant="secondary" onClick={() => void onRetry(r.runId)}>
+                      やり直す
+                    </Button>
                   )}
                 </span>
               </div>
               {tools.length > 0 && (
-                <ToolCallGroup key={`${r.runId}:${r.state}`} defaultOpen={r.state !== 'completed'} label={`${tools.length} 件の作業`} runningLabel={`${stepLabel(r.stepId)}をしています…`}>
+                <ToolCallGroup
+                  key={`${r.runId}:${r.state}`}
+                  defaultOpen={r.state !== 'completed'}
+                  label={`${tools.length} 件の作業`}
+                  runningLabel={`${stepLabel(r.stepId)}をしています…`}
+                >
                   {tools.map((tl) => (
                     <ToolCallCard
                       key={tl.id}

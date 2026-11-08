@@ -1,17 +1,7 @@
-"use client";
+'use client';
 // AffectUI（無料の部品）を取り込んだもの（ADR-0008）
 
-import {
-  Children,
-  isValidElement,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ReactElement,
-  type ReactNode,
-} from "react";
+import { Children, isValidElement, useEffect, useId, useLayoutEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';
 
 /*
  * Tool Call Card – one tool call of an AI agent, in a single self-contained file.
@@ -23,7 +13,7 @@ import {
  * The styles are injected below, so no extra files are needed.
  */
 
-export type ToolCallStatus = "running" | "success" | "error";
+export type ToolCallStatus = 'running' | 'success' | 'error';
 
 export type ToolCallCardProps = {
   /** Tool name as the agent calls it, shown in mono – e.g. "search_web" */
@@ -106,28 +96,24 @@ export function ToolCallCard({
   if (status !== prevStatus) {
     setPrevStatus(status);
     if (openProp === undefined && openOnError) {
-      if (status === "error" && !openState) {
+      if (status === 'error' && !openState) {
         setOpenState(true);
         setAutoOpened(true);
-      } else if (prevStatus === "error" && autoOpened) {
+      } else if (prevStatus === 'error' && autoOpened) {
         setOpenState(false);
         setAutoOpened(false);
       }
     }
   }
 
-  const measured = useStopwatch(status === "running", startedAt, false);
-  const ms = status === "running" ? (measured ?? 0) : (duration ?? measured);
+  const measured = useStopwatch(status === 'running', startedAt, false);
+  const ms = status === 'running' ? (measured ?? 0) : (duration ?? measured);
 
   const announce =
-    status === "running" ? `${name} を実行中` : status === "success" ? `${name} が完了` : `${name} が失敗${error ? `: ${error}` : ""}`;
+    status === 'running' ? `${name} を実行中` : status === 'success' ? `${name} が完了` : `${name} が失敗${error ? `: ${error}` : ''}`;
 
   return (
-    <div
-      className={["ui-tc", className].filter(Boolean).join(" ")}
-      data-status={status}
-      data-open={open || undefined}
-    >
+    <div className={['ui-tc', className].filter(Boolean).join(' ')} data-status={status} data-open={open || undefined}>
       {/* React 19 hoists this into <head> once, no matter how many cards render */}
       <style href="ui-tool-call" precedence="default">
         {css}
@@ -154,22 +140,20 @@ export function ToolCallCard({
             {name}
           </code>
           {summary != null && (
-            <span className="ui-tc__summary" dir="auto" title={typeof summary === "string" ? summary : undefined}>
+            <span className="ui-tc__summary" dir="auto" title={typeof summary === 'string' ? summary : undefined}>
               {summary}
             </span>
           )}
         </span>
         <span className="ui-tc__status" key={status}>
-          {status === "running" && <Spinner />}
-          {status === "success" && (
+          {status === 'running' && <Spinner />}
+          {status === 'success' && (
             <svg className="ui-tc__ok" viewBox="0 0 16 16" aria-hidden="true">
               <path d="M3.5 8.4 6.6 11.3 12.5 4.9" pathLength={1} />
             </svg>
           )}
-          {status === "error" && <ErrorIcon />}
-          <span className="ui-tc__time">
-            {status === "error" ? "失敗" : ms != null ? formatMs(ms, status === "running") : null}
-          </span>
+          {status === 'error' && <ErrorIcon />}
+          <span className="ui-tc__time">{status === 'error' ? '失敗' : ms != null ? formatMs(ms, status === 'running') : null}</span>
         </span>
         <Chevron />
       </button>
@@ -177,10 +161,12 @@ export function ToolCallCard({
       <div className="ui-tc__body" id={`${id}-body`} inert={!open}>
         <div className="ui-tc__clip">
           <div className="ui-tc__sections">
-            {status === "error" && (
+            {status === 'error' && (
               <div className="ui-tc__error">
                 <ErrorIcon />
-                <p className="ui-tc__error-text" dir="auto">{error ?? "ツールの呼び出しに失敗しました。"}</p>
+                <p className="ui-tc__error-text" dir="auto">
+                  {error ?? 'ツールの呼び出しに失敗しました。'}
+                </p>
                 {onRetry && (
                   <button type="button" className="ui-tc__retry" onClick={onRetry}>
                     <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -195,7 +181,7 @@ export function ToolCallCard({
             {args !== undefined && <CodeSection label="引数" value={args} cap={maxCodeHeight} />}
             {result !== undefined ? (
               <CodeSection label="結果" value={result} cap={maxCodeHeight} />
-            ) : status === "running" ? (
+            ) : status === 'running' ? (
               <div className="ui-tc__section">
                 <div className="ui-tc__section-head">
                   <span className="ui-tc__label">結果</span>
@@ -203,7 +189,7 @@ export function ToolCallCard({
                 <p className="ui-tc__pending">結果を待っています…</p>
               </div>
             ) : null}
-            {args === undefined && result === undefined && status === "success" && (
+            {args === undefined && result === undefined && status === 'success' && (
               <p className="ui-tc__pending">引数と結果はありません。</p>
             )}
           </div>
@@ -218,7 +204,7 @@ export function ToolCallCard({
 export function ToolCallGroup({
   children,
   label,
-  runningLabel = "ツールを使っています…",
+  runningLabel = 'ツールを使っています…',
   duration,
   defaultOpen = false,
   open: openProp,
@@ -233,34 +219,30 @@ export function ToolCallGroup({
   const calls = Children.toArray(children)
     .filter(isValidElement)
     .map((c) => (c as ReactElement<Partial<ToolCallCardProps>>).props);
-  const running = calls.some((c) => c.status === "running");
-  const failed = calls.filter((c) => c.status === "error").length;
+  const running = calls.some((c) => c.status === 'running');
+  const failed = calls.filter((c) => c.status === 'error').length;
 
   // Time spent with tools running, added up across stretches (e.g. a pause before a retry)
   // Counts from the earliest running card that knows when it started, so the group never shows less than its cards
   const since = calls.reduce<number | undefined>(
-    (min, c) => (c.status === "running" && c.startedAt != null && (min == null || c.startedAt < min) ? c.startedAt : min),
+    (min, c) => (c.status === 'running' && c.startedAt != null && (min == null || c.startedAt < min) ? c.startedAt : min),
     undefined,
   );
   const measured = useStopwatch(running, since, true);
   const sum = calls.length && calls.every((c) => c.duration != null) ? calls.reduce((t, c) => t + (c.duration ?? 0), 0) : null;
   const ms = running ? measured : (duration ?? sum ?? measured);
 
-  const count = `${calls.length.toLocaleString("ja-JP")} 件のツールを使用`;
+  const count = `${calls.length.toLocaleString('ja-JP')} 件のツールを使用`;
   const title = running ? runningLabel : (label ?? count);
   const icons = calls.slice(-3);
 
   return (
-    <div
-      className={["ui-tc-group", className].filter(Boolean).join(" ")}
-      data-running={running || undefined}
-      data-open={open || undefined}
-    >
+    <div className={['ui-tc-group', className].filter(Boolean).join(' ')} data-running={running || undefined} data-open={open || undefined}>
       <style href="ui-tool-call" precedence="default">
         {css}
       </style>
       <span className="ui-tc-sr" role="status" aria-live="polite">
-        {running ? runningLabel : `${count}${failed ? `, ${failed} failed` : ""}`}
+        {running ? runningLabel : `${count}${failed ? `, ${failed} failed` : ''}`}
       </span>
 
       <button
@@ -280,8 +262,8 @@ export function ToolCallGroup({
             </span>
           ))}
         </span>
-        <span className="ui-tc-group__title" key={running ? "busy" : "done"}>
-          <span className={running ? "ui-tc-group__label ui-tc__shine" : "ui-tc-group__label"} data-text={title}>
+        <span className="ui-tc-group__title" key={running ? 'busy' : 'done'}>
+          <span className={running ? 'ui-tc-group__label ui-tc__shine' : 'ui-tc-group__label'} data-text={title}>
             {title}
           </span>
           {!running && failed > 0 && <span className="ui-tc-group__failed">· {failed} failed</span>}
@@ -341,7 +323,7 @@ function CodeSection({ label, value, cap }: { label: string; value: unknown; cap
       </pre>
       {capped && (
         <button type="button" className="ui-tc__more" aria-expanded={full} onClick={() => setFull(!full)}>
-          {full ? "折りたたむ" : "すべて表示"}
+          {full ? '折りたたむ' : 'すべて表示'}
         </button>
       )}
     </div>
@@ -361,8 +343,8 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       type="button"
       className="ui-tc__copy"
       data-copied={copied || undefined}
-      aria-label={copied ? "コピーしました" : `${label}をコピー`}
-      title={copied ? "コピーしました" : `${label}をコピー`}
+      aria-label={copied ? 'コピーしました' : `${label}をコピー`}
+      title={copied ? 'コピーしました' : `${label}をコピー`}
       onClick={() => copyText(text).then((ok) => ok && setCopied(true))}
     >
       <svg className="ui-tc__copy-icon" viewBox="0 0 16 16" aria-hidden="true">
@@ -441,16 +423,16 @@ function formatMs(ms: number, live: boolean) {
   if (!live && ms < 1000) return `${Math.max(1, Math.round(ms))}ms`;
   if (ms < 60_000) return `${(Math.floor(ms / 100) / 10).toFixed(1)}秒`;
   const s = Math.floor(ms / 1000);
-  if (s < 3600) return `${Math.floor(s / 60)}分${String(s % 60).padStart(2, "0")}秒`;
+  if (s < 3600) return `${Math.floor(s / 60)}分${String(s % 60).padStart(2, '0')}秒`;
   const h = Math.floor(s / 3600);
-  if (h < 24) return `${h}h ${String(Math.floor(s / 60) % 60).padStart(2, "0")}m`;
+  if (h < 24) return `${h}h ${String(Math.floor(s / 60) % 60).padStart(2, '0')}m`;
   return `${Math.floor(h / 24)}d ${h % 24}h`;
 }
 
 function toText(value: unknown): { text: string; json: boolean } {
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     const t = value.trim();
-    if (t.startsWith("{") || t.startsWith("[")) {
+    if (t.startsWith('{') || t.startsWith('[')) {
       try {
         return { text: JSON.stringify(JSON.parse(t), null, 2), json: true };
       } catch {
@@ -472,7 +454,7 @@ const TOKEN = /("(?:[^"\\]|\\.)*")(\s*:)?|\b(?:true|false|null)\b|-?\d+(?:\.\d+)
 
 function highlight(text: string): ReactNode[] {
   const out: ReactNode[] = [];
-  const re = new RegExp(TOKEN.source, "g");
+  const re = new RegExp(TOKEN.source, 'g');
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text))) {
@@ -485,7 +467,7 @@ function highlight(text: string): ReactNode[] {
         m[2],
       );
     } else {
-      const kind = m[1] ? "str" : /^[tfn]/.test(m[0]) ? "lit" : "num";
+      const kind = m[1] ? 'str' : /^[tfn]/.test(m[0]) ? 'lit' : 'num';
       out.push(
         <span key={m.index} className={`ui-tc__t-${kind}`}>
           {m[0]}
@@ -504,12 +486,12 @@ async function copyText(text: string) {
     return true;
   } catch {
     // Older browsers and non-secure contexts
-    const area = document.createElement("textarea");
+    const area = document.createElement('textarea');
     area.value = text;
-    area.style.cssText = "position:fixed;opacity:0";
+    area.style.cssText = 'position:fixed;opacity:0';
     document.body.appendChild(area);
     area.select();
-    const ok = document.execCommand("copy");
+    const ok = document.execCommand('copy');
     area.remove();
     return ok;
   }

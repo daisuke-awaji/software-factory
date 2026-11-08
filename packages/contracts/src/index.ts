@@ -18,7 +18,9 @@ export const WorkflowRef = z.string().regex(/^[a-z0-9-]+@\d+$/); // 例: chat@1
 // ---------------------------------------------------------------- ワークフロー
 export const StepId = z.string().regex(/^[a-z][a-z0-9-]{1,31}$/, '英小文字で始まる、英小文字・数字・ハイフンの 2〜32 文字にしてください');
 /** cases のラベル（エージェントが StepResult.label で返す） */
-export const CaseLabel = z.string().regex(/^[a-z][a-z0-9-]{0,31}$/, '英小文字で始まる、英小文字・数字・ハイフンの 32 文字までにしてください');
+export const CaseLabel = z
+  .string()
+  .regex(/^[a-z][a-z0-9-]{0,31}$/, '英小文字で始まる、英小文字・数字・ハイフンの 32 文字までにしてください');
 
 export const StepDef = z.object({
   id: StepId,
@@ -61,13 +63,23 @@ export const Workflow = WorkflowShape.superRefine((wf, ctx) => {
 export type Workflow = z.infer<typeof Workflow>;
 
 /** 管理者が登録する YAML と、それを検証した結果 */
-export const WorkflowDefinition = z.object({ name: z.string(), version: z.number().int().positive(), yaml: z.string(), workflow: Workflow, updatedAt: IsoTime });
+export const WorkflowDefinition = z.object({
+  name: z.string(),
+  version: z.number().int().positive(),
+  yaml: z.string(),
+  workflow: Workflow,
+  updatedAt: IsoTime,
+});
 export type WorkflowDefinition = z.infer<typeof WorkflowDefinition>;
 
 // ---------------------------------------------------------------- タスク
 export const RepoRef = z.object({ owner: z.string().min(1), name: z.string().min(1), baseBranch: z.string().default('main') });
 
-export const Usage = z.object({ inputTokens: z.number().int().nonnegative(), outputTokens: z.number().int().nonnegative(), vmSeconds: z.number().nonnegative() });
+export const Usage = z.object({
+  inputTokens: z.number().int().nonnegative(),
+  outputTokens: z.number().int().nonnegative(),
+  vmSeconds: z.number().nonnegative(),
+});
 export type Usage = z.infer<typeof Usage>;
 
 export const Task = z.object({
@@ -107,7 +119,12 @@ export type CreateTaskRequest = z.infer<typeof CreateTaskRequest>;
 
 /** タスクの本文からタイトルを作る: 最初の行の最初の文を、60字までにする */
 export function titleFromMessage(message: string): string {
-  const first = message.trim().split(/\n|。/).find((x) => x.trim())?.trim() ?? '';
+  const first =
+    message
+      .trim()
+      .split(/\n|。/)
+      .find((x) => x.trim())
+      ?.trim() ?? '';
   const chars = Array.from(first || message.trim());
   return chars.length > 60 ? `${chars.slice(0, 59).join('')}…` : chars.join('');
 }
@@ -171,23 +188,68 @@ export const RequestChangesBody = z.object({ comment: z.string().min(1).max(4_00
 // ---------------------------------------------------------------- イベント（WebSocket と Callback API）
 export const FactoryEvent = z.discriminatedUnion('type', [
   // 提案: ユーザーの発言も履歴に残す（再読み込みしたときに会話を組み立て直すため）
-  z.object({ type: z.literal('message.user'), taskId: Ulid, messageId: z.string(), text: z.string(), author: z.string(), attachments: z.array(z.string()).optional() }),
+  z.object({
+    type: z.literal('message.user'),
+    taskId: Ulid,
+    messageId: z.string(),
+    text: z.string(),
+    author: z.string(),
+    attachments: z.array(z.string()).optional(),
+  }),
   z.object({ type: z.literal('message.delta'), taskId: Ulid, messageId: z.string(), text: z.string() }),
   z.object({ type: z.literal('message.completed'), taskId: Ulid, messageId: z.string() }),
   // 提案: stepId（並列で動いているとき、どのステップの作業か）
-  z.object({ type: z.literal('tool.started'), taskId: Ulid, toolUseId: z.string(), tool: z.string(), summary: z.string().max(2_000), stepId: z.string().optional() }),
+  z.object({
+    type: z.literal('tool.started'),
+    taskId: Ulid,
+    toolUseId: z.string(),
+    tool: z.string(),
+    summary: z.string().max(2_000),
+    stepId: z.string().optional(),
+  }),
   // 提案: summary（結果の要約。例: 「12 件のテストが通過」）
-  z.object({ type: z.literal('tool.finished'), taskId: Ulid, toolUseId: z.string(), ok: z.boolean(), summary: z.string().max(2_000).optional() }),
+  z.object({
+    type: z.literal('tool.finished'),
+    taskId: Ulid,
+    toolUseId: z.string(),
+    ok: z.boolean(),
+    summary: z.string().max(2_000).optional(),
+  }),
   z.object({ type: z.literal('plan.proposed'), taskId: Ulid, planVersion: z.number().int().positive(), plan: Plan }),
   // 提案: 計画への回答（誰がいつ承認したかを会話に出す）
-  z.object({ type: z.literal('plan.decided'), taskId: Ulid, planVersion: z.number().int().positive(), decision: z.enum(['approved', 'changes_requested', 'rejected']), by: z.string(), comment: z.string().optional() }),
+  z.object({
+    type: z.literal('plan.decided'),
+    taskId: Ulid,
+    planVersion: z.number().int().positive(),
+    decision: z.enum(['approved', 'changes_requested', 'rejected']),
+    by: z.string(),
+    comment: z.string().optional(),
+  }),
   // 提案: approvalId（POST /approvals/{approvalId} に必要）
   z.object({ type: z.literal('approval.required'), taskId: Ulid, approvalId: z.string(), reason: ApprovalReason, detail: z.string() }),
-  z.object({ type: z.literal('approval.resolved'), taskId: Ulid, approvalId: z.string(), decision: z.enum(['approve', 'deny']), by: z.string() }),
+  z.object({
+    type: z.literal('approval.resolved'),
+    taskId: Ulid,
+    approvalId: z.string(),
+    decision: z.enum(['approve', 'deny']),
+    by: z.string(),
+  }),
   z.object({ type: z.literal('egress.blocked'), taskId: Ulid, host: z.string() }),
-  z.object({ type: z.literal('usage'), taskId: Ulid, inputTokens: z.number().int(), outputTokens: z.number().int(), vmSeconds: z.number() }),
+  z.object({
+    type: z.literal('usage'),
+    taskId: Ulid,
+    inputTokens: z.number().int(),
+    outputTokens: z.number().int(),
+    vmSeconds: z.number(),
+  }),
   // 提案: label（終わったときの StepResult.label。分岐でどちらに進んだかを画面に出す）
-  z.object({ type: z.literal('step.changed'), taskId: Ulid, stepId: z.string(), state: z.enum(['started', 'completed', 'failed']), label: CaseLabel.optional() }),
+  z.object({
+    type: z.literal('step.changed'),
+    taskId: Ulid,
+    stepId: z.string(),
+    state: z.enum(['started', 'completed', 'failed']),
+    label: CaseLabel.optional(),
+  }),
   z.object({ type: z.literal('task.state'), taskId: Ulid, state: TaskState }),
   // 提案: VM の中でアプリが待ち受けを始めた（プレビューのタブを開けるようになる）
   z.object({ type: z.literal('preview.ready'), taskId: Ulid, port: z.number().int().min(1).max(65535), path: z.string().default('/') }),
@@ -205,7 +267,12 @@ export const WsClientFrame = z.object({ action: z.enum(['subscribe', 'unsubscrib
 export type WsClientFrame = z.infer<typeof WsClientFrame>;
 
 // ---------------------------------------------------------------- ファイル・差分・成果物
-export const FileEntry = z.object({ name: z.string(), path: z.string(), type: z.enum(['file', 'dir']), size: z.number().int().nonnegative().optional() });
+export const FileEntry = z.object({
+  name: z.string(),
+  path: z.string(),
+  type: z.enum(['file', 'dir']),
+  size: z.number().int().nonnegative().optional(),
+});
 export type FileEntry = z.infer<typeof FileEntry>;
 export const FileTree = z.object({ path: z.string(), source: z.enum(['vm', 'snapshot']), entries: z.array(FileEntry) });
 export type FileTree = z.infer<typeof FileTree>;
@@ -221,7 +288,15 @@ export type DiffFile = z.infer<typeof DiffFile>;
 export const Diff = z.object({ base: z.string(), head: z.string(), files: z.array(DiffFile) });
 export type Diff = z.infer<typeof Diff>;
 
-export const AttachmentRequest = z.object({ fileName: z.string().min(1).max(255), contentType: z.string(), size: z.number().int().positive().max(100 * 1024 * 1024) });
+export const AttachmentRequest = z.object({
+  fileName: z.string().min(1).max(255),
+  contentType: z.string(),
+  size: z
+    .number()
+    .int()
+    .positive()
+    .max(100 * 1024 * 1024),
+});
 export const AttachmentTicket = z.object({ uploadUrl: z.url(), path: z.string(), expiresAt: IsoTime });
 export type AttachmentTicket = z.infer<typeof AttachmentTicket>;
 
@@ -240,10 +315,19 @@ export const PrecheckFinding = z.object({
   message: z.string(),
 });
 export type PrecheckFinding = z.infer<typeof PrecheckFinding>;
-export const PrecheckResult = z.object({ ok: z.boolean(), files: z.number().int().nonnegative(), bytes: z.number().int().nonnegative(), findings: z.array(PrecheckFinding) });
+export const PrecheckResult = z.object({
+  ok: z.boolean(),
+  files: z.number().int().nonnegative(),
+  bytes: z.number().int().nonnegative(),
+  findings: z.array(PrecheckFinding),
+});
 export type PrecheckResult = z.infer<typeof PrecheckResult>;
 
-export const Acl = z.object({ scope: z.enum(['org', 'restricted']), users: z.array(z.string()).optional(), groups: z.array(z.string()).optional() });
+export const Acl = z.object({
+  scope: z.enum(['org', 'restricted']),
+  users: z.array(z.string()).optional(),
+  groups: z.array(z.string()).optional(),
+});
 export type Acl = z.infer<typeof Acl>;
 
 export const Publication = z.object({
@@ -261,9 +345,19 @@ export const Publication = z.object({
 });
 export type Publication = z.infer<typeof Publication>;
 
-export const CreatePublicationRequest = z.object({ taskId: Ulid, path: z.string(), title: z.string().max(200).optional(), acl: Acl, expiresAt: IsoTime.optional() });
+export const CreatePublicationRequest = z.object({
+  taskId: Ulid,
+  path: z.string(),
+  title: z.string().max(200).optional(),
+  acl: Acl,
+  expiresAt: IsoTime.optional(),
+});
 export type CreatePublicationRequest = z.infer<typeof CreatePublicationRequest>;
-export const UpdatePublicationRequest = z.object({ acl: Acl.optional(), expiresAt: IsoTime.nullable().optional(), republish: z.boolean().optional() });
+export const UpdatePublicationRequest = z.object({
+  acl: Acl.optional(),
+  expiresAt: IsoTime.nullable().optional(),
+  republish: z.boolean().optional(),
+});
 export type UpdatePublicationRequest = z.infer<typeof UpdatePublicationRequest>;
 
 // ---------------------------------------------------------------- ユーザーと GitHub
@@ -277,7 +371,13 @@ export const Me = z.object({
 });
 export type Me = z.infer<typeof Me>;
 
-export const Repo = z.object({ owner: z.string(), name: z.string(), defaultBranch: z.string(), private: z.boolean(), protected: z.boolean() });
+export const Repo = z.object({
+  owner: z.string(),
+  name: z.string(),
+  defaultBranch: z.string(),
+  private: z.boolean(),
+  protected: z.boolean(),
+});
 export type Repo = z.infer<typeof Repo>;
 
 // ---------------------------------------------------------------- イメージ
@@ -322,7 +422,12 @@ export const BuildLog = z.object({ lines: z.array(z.string()), done: z.boolean()
 export type BuildLog = z.infer<typeof BuildLog>;
 
 // ---------------------------------------------------------------- 管理
-const host = z.string().regex(/^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(:\d{1,5})?$/, 'ホスト名（例: registry.npmjs.org、*.example.com）で指定してください');
+const host = z
+  .string()
+  .regex(
+    /^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(:\d{1,5})?$/,
+    'ホスト名（例: registry.npmjs.org、*.example.com）で指定してください',
+  );
 export const NetworkProfile = z.object({
   name: z.string().regex(/^[a-z0-9-]+$/),
   description: z.string().optional(),

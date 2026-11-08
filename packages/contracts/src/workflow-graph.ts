@@ -6,7 +6,9 @@ export type GraphStep = {
   id: string;
   next?: string | string[] | undefined;
   needs?: string[] | undefined;
-  on?: { pass?: string | undefined; cases?: Record<string, string> | undefined; fail?: { goto: string; maxLoops: number } | undefined } | undefined;
+  on?:
+    | { pass?: string | undefined; cases?: Record<string, string> | undefined; fail?: { goto: string; maxLoops: number } | undefined }
+    | undefined;
 };
 export type GraphWorkflow = { steps: GraphStep[] };
 
@@ -52,20 +54,25 @@ export function graphEdges(wf: GraphWorkflow): GraphEdge[] {
     const parallel = Array.isArray(s.next) && s.next.length > 1;
     for (const to of nextTargets(s)) edges.push({ id: `${s.id}->${to}`, from: s.id, to, kind: 'next', ...(parallel ? { parallel } : {}) });
     if (s.on?.pass) edges.push({ id: `${s.id}->${s.on.pass}`, from: s.id, to: s.on.pass, kind: 'next' });
-    for (const [label, to] of Object.entries(s.on?.cases ?? {})) edges.push({ id: `${s.id}=${label}->${to}`, from: s.id, to, kind: 'case', label });
-    if (s.on?.fail) edges.push({ id: `${s.id}!->${s.on.fail.goto}`, from: s.id, to: s.on.fail.goto, kind: 'fail', maxLoops: s.on.fail.maxLoops });
+    for (const [label, to] of Object.entries(s.on?.cases ?? {}))
+      edges.push({ id: `${s.id}=${label}->${to}`, from: s.id, to, kind: 'case', label });
+    if (s.on?.fail)
+      edges.push({ id: `${s.id}!->${s.on.fail.goto}`, from: s.id, to: s.on.fail.goto, kind: 'fail', maxLoops: s.on.fail.maxLoops });
   }
   return edges;
 }
 
 /** 結果から次に進むステップを決める（cases のラベルが合えばその先、なければ next / on.pass。失敗なら on.fail.goto） */
-export function resolveNext(s: GraphStep, verdict: 'pass' | 'fail', label?: string): { targets: string[]; loop?: { goto: string; maxLoops: number } } {
+export function resolveNext(
+  s: GraphStep,
+  verdict: 'pass' | 'fail',
+  label?: string,
+): { targets: string[]; loop?: { goto: string; maxLoops: number } } {
   if (verdict === 'fail') return s.on?.fail ? { targets: [s.on.fail.goto], loop: s.on.fail } : { targets: [] };
   const byCase = label !== undefined ? s.on?.cases?.[label] : undefined;
   if (byCase) return { targets: [byCase] };
   return { targets: s.on?.pass ? [s.on.pass] : nextTargets(s) };
 }
-
 
 const isFork = (s: GraphStep) => Array.isArray(s.next) && s.next.length > 1;
 
@@ -107,16 +114,19 @@ export function analyzeWorkflow(wf: GraphWorkflow): GraphAnalysis {
   wf.steps.forEach((s, i) => {
     const ref = (to: string, path: (string | number)[]) => {
       if (!index.has(to)) issues.push({ path: ['steps', i, ...path], message: `存在しないステップ「${to}」を指しています` });
-      else if (to === s.id && path[1] !== 'fail') issues.push({ path: ['steps', i, ...path], message: '自分自身には進めません（やり直すときは on.fail.goto を使ってください）' });
+      else if (to === s.id && path[1] !== 'fail')
+        issues.push({ path: ['steps', i, ...path], message: '自分自身には進めません（やり直すときは on.fail.goto を使ってください）' });
     };
     if (Array.isArray(s.next)) {
       if (s.next.length < 2) issues.push({ path: ['steps', i, 'next'], message: '並列にするときは、2つ以上のステップを並べてください' });
       if (s.next.length > MAX_PARALLEL) issues.push({ path: ['steps', i, 'next'], message: `並列にできるのは ${MAX_PARALLEL} つまでです` });
       if (new Set(s.next).size !== s.next.length) issues.push({ path: ['steps', i, 'next'], message: '同じステップが2回並んでいます' });
-      if (s.on?.pass || (s.on?.cases && Object.keys(s.on.cases).length)) issues.push({ path: ['steps', i, 'on'], message: '並列で始めるステップには、on.pass と on.cases は書けません' });
+      if (s.on?.pass || (s.on?.cases && Object.keys(s.on.cases).length))
+        issues.push({ path: ['steps', i, 'on'], message: '並列で始めるステップには、on.pass と on.cases は書けません' });
       s.next.forEach((to, j) => ref(to, ['next', j]));
     } else if (s.next !== undefined) ref(s.next, ['next']);
-    if (s.next !== undefined && s.on?.pass) issues.push({ path: ['steps', i, 'on', 'pass'], message: 'next と on.pass は、どちらか一方だけにしてください' });
+    if (s.next !== undefined && s.on?.pass)
+      issues.push({ path: ['steps', i, 'on', 'pass'], message: 'next と on.pass は、どちらか一方だけにしてください' });
     if (s.on?.pass) ref(s.on.pass, ['on', 'pass']);
     for (const [label, to] of Object.entries(s.on?.cases ?? {})) ref(to, ['on', 'cases', label]);
     if (s.on?.fail) ref(s.on.fail.goto, ['on', 'fail', 'goto']);
@@ -129,7 +139,10 @@ export function analyzeWorkflow(wf: GraphWorkflow): GraphAnalysis {
   // 前へ進む矢印だけで輪にしない
   const { order, cycle } = topoOrder(wf, (id) => (index.has(id) ? step(id) : undefined));
   if (cycle) {
-    issues.push({ path: ['steps', at(cycle)], message: `「${cycle}」を通る輪になっています。前のステップに戻るときは on.fail.goto（回数の上限付き）を使ってください` });
+    issues.push({
+      path: ['steps', at(cycle)],
+      message: `「${cycle}」を通る輪になっています。前のステップに戻るときは on.fail.goto（回数の上限付き）を使ってください`,
+    });
     return result;
   }
 
@@ -173,7 +186,10 @@ export function analyzeWorkflow(wf: GraphWorkflow): GraphAnalysis {
         if (nodes.includes(id)) continue;
         const other = branchOf.get(id);
         if (other !== undefined) {
-          issues.push({ path: ['steps', at(id)], message: `並列の枝「${other}」と「${start}」が、needs で待たずに「${id}」で合わさっています` });
+          issues.push({
+            path: ['steps', at(id)],
+            message: `並列の枝「${other}」と「${start}」が、needs で待たずに「${id}」で合わさっています`,
+          });
           ok = false;
           continue;
         }
@@ -187,7 +203,7 @@ export function analyzeWorkflow(wf: GraphWorkflow): GraphAnalysis {
             ok = false;
             continue;
           }
-          for (const ns of Object.values(forks[id]!.branches)) for (const n of ns) branchOf.set(n, start), nodes.push(n);
+          for (const ns of Object.values(forks[id]!.branches)) for (const n of ns) (branchOf.set(n, start), nodes.push(n));
           todo.push(inner);
           continue;
         }
@@ -208,13 +224,18 @@ export function analyzeWorkflow(wf: GraphWorkflow): GraphAnalysis {
     }
     const joins = new Set(Object.values(hits).flatMap((h) => [...h]));
     if (joins.size !== 1 || Object.values(hits).some((h) => h.size !== 1)) {
-      if (ok) issues.push({ path: ['steps', fi, 'next'], message: `「${fork}」から並列で始めた枝が、1つのステップで合流していません。合流するステップに needs を書いてください` });
+      if (ok)
+        issues.push({
+          path: ['steps', fi, 'next'],
+          message: `「${fork}」から並列で始めた枝が、1つのステップで合流していません。合流するステップに needs を書いてください`,
+        });
       return null;
     }
     const join = [...joins][0]!;
     const want = [...tails].sort();
     const have = [...(step(join).needs ?? [])].sort();
-    if (want.join() !== have.join()) issues.push({ path: ['steps', at(join), 'needs'], message: `needs は [${want.join(', ')}] にしてください（合流の直前のステップ）` });
+    if (want.join() !== have.join())
+      issues.push({ path: ['steps', at(join), 'needs'], message: `needs は [${want.join(', ')}] にしてください（合流の直前のステップ）` });
     if (owner.has(join)) issues.push({ path: ['steps', at(join), 'needs'], message: `「${join}」が、2つの並列の合流になっています` });
     owner.set(join, fork);
     forks[fork] = { join, branches };
@@ -224,7 +245,8 @@ export function analyzeWorkflow(wf: GraphWorkflow): GraphAnalysis {
   for (const id of order) if (isFork(step(id))) resolveFork(id);
   for (const id of order) regionOf[id] ??= null;
   wf.steps.forEach((s, i) => {
-    if (s.needs?.length && !owner.has(s.id)) issues.push({ path: ['steps', i, 'needs'], message: `「${s.id}」に needs がありますが、並列で始めた枝の合流になっていません` });
+    if (s.needs?.length && !owner.has(s.id))
+      issues.push({ path: ['steps', i, 'needs'], message: `「${s.id}」に needs がありますが、並列で始めた枝の合流になっていません` });
   });
 
   // 並列の枝の途中には、外から入れない。失敗したときの戻り先は、同じ枝の中だけ
@@ -233,12 +255,16 @@ export function analyzeWorkflow(wf: GraphWorkflow): GraphAnalysis {
     const to = regionOf[e.to] ?? null;
     if (from === to) continue;
     if (e.kind === 'fail') {
-      issues.push({ path: ['steps', at(e.from), 'on', 'fail', 'goto'], message: `失敗したときの戻り先「${e.to}」は、「${e.from}」と同じ並列の枝の中にしてください` });
+      issues.push({
+        path: ['steps', at(e.from), 'on', 'fail', 'goto'],
+        message: `失敗したときの戻り先「${e.to}」は、「${e.from}」と同じ並列の枝の中にしてください`,
+      });
       continue;
     }
     const enters = to === `${e.from}/${e.to}`;
     const exits = from !== null && forks[from.split('/')[0]!]?.join === e.to;
-    if (!enters && !exits) issues.push({ path: ['steps', at(e.from)], message: `「${e.from}」から、並列の枝の途中の「${e.to}」に入っています` });
+    if (!enters && !exits)
+      issues.push({ path: ['steps', at(e.from)], message: `「${e.from}」から、並列の枝の途中の「${e.to}」に入っています` });
   }
   return result;
 }
@@ -264,7 +290,9 @@ export function inferNeeds<T extends GraphWorkflow>(wf: T): T {
   };
   const needs = new Map<string, Set<string>>();
   for (const f of wf.steps.filter(isFork)) {
-    const sets = nextTargets(f).filter((b) => byId.has(b)).map(reachFrom);
+    const sets = nextTargets(f)
+      .filter((b) => byId.has(b))
+      .map(reachFrom);
     if (sets.length < 2) continue;
     const common = [...sets[0]!].filter((n) => sets.every((r) => r.has(n)));
     const join = common.sort((a, b) => pos.get(a)! - pos.get(b)!)[0];

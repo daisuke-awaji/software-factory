@@ -14,7 +14,10 @@ describe('trackVisualViewport', () => {
     const vv = new FakeViewport();
     vi.stubGlobal('visualViewport', vv);
     vi.stubGlobal('innerHeight', 800);
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { cb(0); return 0; });
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      cb(0);
+      return 0;
+    });
     const root = document.createElement('div');
     const stop = trackVisualViewport(root);
     return { vv, root, stop };

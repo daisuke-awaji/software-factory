@@ -32,7 +32,8 @@ export function Conversation(p: ConversationProps) {
   const lastAssistant = [...session.timeline].reverse().find((e) => e.k === 'assistant');
   const streaming = last?.k === 'assistant' && !session.messages[last.id]?.done;
   const toolRunning = Object.values(session.tools).some((t) => t.endedAt === undefined);
-  const thinking = !streaming && !toolRunning && (session.state === 'queued' || session.state === 'planning' || session.state === 'running');
+  const thinking =
+    !streaming && !toolRunning && (session.state === 'queued' || session.state === 'planning' || session.state === 'running');
   const terminal = session.state === 'completed' || session.state === 'failed' || session.state === 'cancelled';
 
   return (
@@ -47,7 +48,11 @@ export function Conversation(p: ConversationProps) {
             variant="plain"
             loop
             interval={1200}
-            phases={session.state === 'running' ? ['次の手順を考えています', '結果を確かめています'] : ['タスクを読んでいます', '関係するファイルを確かめています', '計画を立てています']}
+            phases={
+              session.state === 'running'
+                ? ['次の手順を考えています', '結果を確かめています']
+                : ['タスクを読んでいます', '関係するファイルを確かめています', '計画を立てています']
+            }
           />
         </div>
       )}
@@ -73,7 +78,9 @@ function EntryView({ entry, showActions, ...p }: ConversationProps & { entry: En
           {m.attachments && m.attachments.length > 0 && (
             <ul className={s.attachments} aria-label="添付">
               {m.attachments.map((a) => (
-                <li key={a}><IconClip /> {a}</li>
+                <li key={a}>
+                  <IconClip /> {a}
+                </li>
               ))}
             </ul>
           )}
@@ -105,14 +112,21 @@ function EntryView({ entry, showActions, ...p }: ConversationProps & { entry: En
       const a = session.approvals[entry.id]!;
       return (
         <div style={{ marginLeft: 38 }}>
-          <ApprovalCard approval={a} actionable={session.state === 'awaiting_approval' && !a.resolved} onAnswer={(d) => p.answerApproval(a.id, d)} />
+          <ApprovalCard
+            approval={a}
+            actionable={session.state === 'awaiting_approval' && !a.resolved}
+            onAnswer={(d) => p.answerApproval(a.id, d)}
+          />
         </div>
       );
     }
     case 'egress':
       return (
         <div className={s.event} data-tone="alert">
-          <IconBlock /> <span><code>{entry.host}</code> への通信を、許可リストで止めました · {time(entry.at)}</span>
+          <IconBlock />{' '}
+          <span>
+            <code>{entry.host}</code> への通信を、許可リストで止めました · {time(entry.at)}
+          </span>
         </div>
       );
     case 'work':
@@ -128,7 +142,19 @@ function EntryView({ entry, showActions, ...p }: ConversationProps & { entry: En
   }
 }
 
-function Msg({ who, name, at, children, actions }: { who: 'user' | 'agent'; name?: string; at: number; children: ReactNode; actions?: string | undefined }) {
+function Msg({
+  who,
+  name,
+  at,
+  children,
+  actions,
+}: {
+  who: 'user' | 'agent';
+  name?: string;
+  at: number;
+  children: ReactNode;
+  actions?: string | undefined;
+}) {
   const toast = useUi((u) => u.toast);
   return (
     <div className={s.msg} data-ui-message="">
@@ -164,7 +190,12 @@ function WorkRows({ tools, session, workflow, openTab }: ConversationProps & { t
     if (!g) {
       const stepId = run?.stepId ?? '';
       const n = run ? Number(run.runId.split('#')[1]) : 1;
-      g = { key, label: planning ? '計画のための確認' : `${stepLabel(stepId)}${n > 1 ? `（${n} 回目）` : ''}`, image: planning ? undefined : workflow?.steps.find((st) => st.id === stepId)?.image, tools: [] };
+      g = {
+        key,
+        label: planning ? '計画のための確認' : `${stepLabel(stepId)}${n > 1 ? `（${n} 回目）` : ''}`,
+        image: planning ? undefined : workflow?.steps.find((st) => st.id === stepId)?.image,
+        tools: [],
+      };
       groups.push(g);
     }
     g.tools.push(t);
@@ -185,7 +216,11 @@ function WorkRows({ tools, session, workflow, openTab }: ConversationProps & { t
             {running ? (
               <ThinkingLoader size="sm" variant="plain" phases={[running.summary]} />
             ) : (
-              <span className={s.workText} data-tone={failed && failed === lastDone ? 'err' : undefined} title={lastDone?.result ?? lastDone?.summary}>
+              <span
+                className={s.workText}
+                data-tone={failed && failed === lastDone ? 'err' : undefined}
+                title={lastDone?.result ?? lastDone?.summary}
+              >
                 {g.tools.length} 件の作業 · {lastDone?.result ?? lastDone?.summary}
               </span>
             )}
@@ -202,21 +237,56 @@ function WorkRows({ tools, session, workflow, openTab }: ConversationProps & { t
 function Deliverables({ item, session, workflow, openTab, onPublish, onDownload }: ConversationProps) {
   const publishable = workflow?.steps.some((st) => st.action === 'propose-publish') || Object.keys(session.tools).length > 0;
   const rows: { icon: ReactNode; title: string; detail: string; action: ReactNode }[] = [];
-  if (session.preview) rows.push({ icon: <IconEye />, title: 'プレビュー', detail: `VM の中で動いているアプリ（ポート ${session.preview.port}）を開けます`, action: <Button size="sm" variant="secondary" onClick={() => openTab('preview')}>開く</Button> });
+  if (session.preview)
+    rows.push({
+      icon: <IconEye />,
+      title: 'プレビュー',
+      detail: `VM の中で動いているアプリ（ポート ${session.preview.port}）を開けます`,
+      action: (
+        <Button size="sm" variant="secondary" onClick={() => openTab('preview')}>
+          開く
+        </Button>
+      ),
+    });
   if (item.pullRequest)
     rows.push({
-      icon: <IconPR />, title: `プルリクエスト #${item.pullRequest.number}`, detail: `${item.branch ?? ''} → ${item.repo?.baseBranch ?? 'main'}`,
-      action: <a className={s.workMore} href={item.pullRequest.url} target="_blank" rel="noreferrer">GitHub で開く <IconExternal /></a>,
+      icon: <IconPR />,
+      title: `プルリクエスト #${item.pullRequest.number}`,
+      detail: `${item.branch ?? ''} → ${item.repo?.baseBranch ?? 'main'}`,
+      action: (
+        <a className={s.workMore} href={item.pullRequest.url} target="_blank" rel="noreferrer">
+          GitHub で開く <IconExternal />
+        </a>
+      ),
     });
-  if (publishable) rows.push({ icon: <IconGlobe />, title: '社内に公開', detail: '公開の前のチェックをしてから、範囲と期限を選んで公開します', action: <Button size="sm" variant="secondary" onClick={onPublish}>公開する</Button> });
-  rows.push({ icon: <IconDownload />, title: 'ダウンロード', detail: 'ワークスペースのファイル一式（zip）', action: <DownloadButton onDownload={onDownload} /> });
+  if (publishable)
+    rows.push({
+      icon: <IconGlobe />,
+      title: '社内に公開',
+      detail: '公開の前のチェックをしてから、範囲と期限を選んで公開します',
+      action: (
+        <Button size="sm" variant="secondary" onClick={onPublish}>
+          公開する
+        </Button>
+      ),
+    });
+  rows.push({
+    icon: <IconDownload />,
+    title: 'ダウンロード',
+    detail: 'ワークスペースのファイル一式（zip）',
+    action: <DownloadButton onDownload={onDownload} />,
+  });
   return (
     <div style={{ marginLeft: 38 }}>
       <section className={s.tray} aria-label="成果物">
         <header className={s.trayHead}>
-          <span className={s.badge} data-tone="ok">完了</span>
+          <span className={s.badge} data-tone="ok">
+            完了
+          </span>
           <span>成果物</span>
-          <span className={s.trayRight}>所要 {duration(Date.parse(item.updatedAt) - Date.parse(item.createdAt))} · {usd(item.costUsd)}</span>
+          <span className={s.trayRight}>
+            所要 {duration(Date.parse(item.updatedAt) - Date.parse(item.createdAt))} · {usd(item.costUsd)}
+          </span>
         </header>
         <div className={s.card}>
           {rows.map((r) => (
@@ -259,17 +329,36 @@ function Failure({ session, openTab, onRetry }: ConversationProps) {
     <div style={{ marginLeft: 38 }}>
       <section className={s.tray} aria-label="失敗">
         <header className={s.trayHead}>
-          <span className={s.badge} data-tone="err">失敗</span>
+          <span className={s.badge} data-tone="err">
+            失敗
+          </span>
           <span>ワークフローが止まりました</span>
-          {failedRun && <span className={s.trayRight}>{stepLabel(failedRun.stepId)} · {failedRun.runId}</span>}
+          {failedRun && (
+            <span className={s.trayRight}>
+              {stepLabel(failedRun.stepId)} · {failedRun.runId}
+            </span>
+          )}
         </header>
         <div className={s.card}>
-          <p className={s.failText}>{failedRun ? `${stepLabel(failedRun.stepId)}のステップが失敗しました。` : '作業が止まりました。'}原因を直してから、やり直せます。</p>
-          {failedTool && <div className={s.failReason}>{failedTool.summary} → {failedTool.result}</div>}
+          <p className={s.failText}>
+            {failedRun ? `${stepLabel(failedRun.stepId)}のステップが失敗しました。` : '作業が止まりました。'}
+            原因を直してから、やり直せます。
+          </p>
+          {failedTool && (
+            <div className={s.failReason}>
+              {failedTool.summary} → {failedTool.result}
+            </div>
+          )}
           <div className={s.actions}>
             <span className={s.actionsHint}>やり直すと、同じステップを新しい VM で実行します</span>
-            <Button size="sm" variant="secondary" onClick={() => openTab('log')}>実行ログを見る</Button>
-            {failedRun && <Button size="sm" onClick={() => void onRetry(failedRun.runId)}>やり直す</Button>}
+            <Button size="sm" variant="secondary" onClick={() => openTab('log')}>
+              実行ログを見る
+            </Button>
+            {failedRun && (
+              <Button size="sm" onClick={() => void onRetry(failedRun.runId)}>
+                やり直す
+              </Button>
+            )}
           </div>
         </div>
       </section>
@@ -289,7 +378,12 @@ export function useStickToBottom<T extends HTMLElement>(dep: unknown) {
     };
     el.addEventListener('scroll', onScroll);
     // キーボードが出て会話の高さが縮んだときも、一番下を見ていたなら一番下のままにする
-    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => { if (stick.current) el.scrollTop = el.scrollHeight; }) : null;
+    const ro =
+      typeof ResizeObserver === 'function'
+        ? new ResizeObserver(() => {
+            if (stick.current) el.scrollTop = el.scrollHeight;
+          })
+        : null;
     ro?.observe(el);
     return () => {
       el.removeEventListener('scroll', onScroll);

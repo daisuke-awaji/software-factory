@@ -4,7 +4,20 @@ import { Link, NavLink, useNavigate, useParams } from 'react-router';
 import { ProfileMenu } from '../components/ui/profile-menu';
 import { Avatar, Dot, FactoryMark } from '../components/kit';
 import { Busy, ListRowSkeleton, Skeleton, SkeletonText } from '../components/skeletons';
-import { IconClose, IconCompose, IconGlobe, IconImage, IconWorkflow, IconList, IconMoon, IconSearch, IconSettings, IconShield, IconSidebar, IconSun } from '../components/icons';
+import {
+  IconClose,
+  IconCompose,
+  IconGlobe,
+  IconImage,
+  IconWorkflow,
+  IconList,
+  IconMoon,
+  IconSearch,
+  IconSettings,
+  IconShield,
+  IconSidebar,
+  IconSun,
+} from '../components/icons';
 import type { ConnectionState } from '../lib/events';
 import { relative, stateLabel, stateTone } from '../lib/format';
 import { isAdmin, useMe } from '../stores/me';
@@ -82,10 +95,19 @@ export function Sidebar({ expanded, floating = false, feed, conn, mock, onToggle
         {expanded ? (
           <>
             <Link to="/" className={s.brand} aria-label="Software Factory（ホーム）">
-              <span className={s.mark}><FactoryMark size={14} /></span>
+              <span className={s.mark}>
+                <FactoryMark size={14} />
+              </span>
               <span>Software Factory</span>
             </Link>
-            <button type="button" className={s.iconButton} aria-label={toggleLabel} title={`${toggleLabel}（${sidebarShortcut()}）`} aria-keyshortcuts="Meta+B Control+B" onClick={onToggle}>
+            <button
+              type="button"
+              className={s.iconButton}
+              aria-label={toggleLabel}
+              title={`${toggleLabel}（${sidebarShortcut()}）`}
+              aria-keyshortcuts="Meta+B Control+B"
+              onClick={onToggle}
+            >
               {floating ? <IconClose /> : <IconSidebar />}
             </button>
           </>
@@ -95,7 +117,12 @@ export function Sidebar({ expanded, floating = false, feed, conn, mock, onToggle
       </div>
 
       <nav className={s.nav} aria-label="メイン">
-        <NavLink to="/" end className={({ isActive }) => `${s.newTask} ${isActive ? s.active : ''}`} title={expanded ? undefined : '新しいタスク'}>
+        <NavLink
+          to="/"
+          end
+          className={({ isActive }) => `${s.newTask} ${isActive ? s.active : ''}`}
+          title={expanded ? undefined : '新しいタスク'}
+        >
           <IconCompose />
           {expanded ? <span>新しいタスク</span> : <span className="sr-only">新しいタスク</span>}
         </NavLink>
@@ -103,7 +130,11 @@ export function Sidebar({ expanded, floating = false, feed, conn, mock, onToggle
           <NavLink key={l.to} to={l.to} className={navClass} title={expanded ? undefined : l.label}>
             {l.icon}
             {expanded ? <span className={s.label}>{l.label}</span> : <span className="sr-only">{l.label}</span>}
-            {l.badge ? <span className={s.badge} aria-label={`対応が必要 ${l.badge} 件`}>{l.badge}</span> : null}
+            {l.badge ? (
+              <span className={s.badge} aria-label={`対応が必要 ${l.badge} 件`}>
+                {l.badge}
+              </span>
+            ) : null}
           </NavLink>
         ))}
         {!me && adminHint && (
@@ -119,8 +150,16 @@ export function Sidebar({ expanded, floating = false, feed, conn, mock, onToggle
       <div className={s.foot}>
         {expanded && (conn === 'reconnecting' || mock) && (
           <div className={s.badges}>
-            {conn === 'reconnecting' && <span className={s.conn} role="status">再接続しています…</span>}
-            {mock && <span className={s.mock} title="MSW がすべての API と WebSocket に応答しています">モック</span>}
+            {conn === 'reconnecting' && (
+              <span className={s.conn} role="status">
+                再接続しています…
+              </span>
+            )}
+            {mock && (
+              <span className={s.mock} title="MSW がすべての API と WebSocket に応答しています">
+                モック
+              </span>
+            )}
           </div>
         )}
         {me ? <Profile expanded={expanded} /> : <ProfileSkeleton expanded={expanded} />}
@@ -173,7 +212,12 @@ function Sessions({ feed }: { feed: TaskFeed }) {
       <nav ref={scroller} className={s.scroll} aria-label="タスク">
         {!items ? (
           error ? (
-            <p className={s.empty}>読み込めませんでした。<button type="button" className={s.retry} onClick={() => void reload()}>もう一度</button></p>
+            <p className={s.empty}>
+              読み込めませんでした。
+              <button type="button" className={s.retry} onClick={() => void reload()}>
+                もう一度
+              </button>
+            </p>
           ) : (
             <SessionsSkeleton />
           )
@@ -182,7 +226,9 @@ function Sessions({ feed }: { feed: TaskFeed }) {
         ) : (
           groups.map((g) => (
             <section key={g.key} className={s.group} aria-labelledby={`sb-${g.key}`}>
-              <h2 className={s.groupTitle} id={`sb-${g.key}`}>{g.title}</h2>
+              <h2 className={s.groupTitle} id={`sb-${g.key}`}>
+                {g.title}
+              </h2>
               <ul className={s.list}>
                 {g.items.map((i) => (
                   <li key={i.id}>
@@ -199,7 +245,13 @@ function Sessions({ feed }: { feed: TaskFeed }) {
         )}
         {items && hasMore && (
           <div ref={sentinel} className={s.loadMore}>
-            {loadingMore ? <span role="status">読み込んでいます…</span> : <button type="button" className={s.retry} onClick={() => void loadMore()}>続きを読み込む</button>}
+            {loadingMore ? (
+              <span role="status">読み込んでいます…</span>
+            ) : (
+              <button type="button" className={s.retry} onClick={() => void loadMore()}>
+                続きを読み込む
+              </button>
+            )}
           </div>
         )}
       </nav>
@@ -213,7 +265,9 @@ function SessionsSkeleton() {
     <Busy label="タスクを読み込んでいます">
       {[3, 6].map((n, g) => (
         <div key={g} className={s.group}>
-          <div className={s.groupTitle}><SkeletonText size={11.5} width={g ? 40 : 56} /></div>
+          <div className={s.groupTitle}>
+            <SkeletonText size={11.5} width={g ? 40 : 56} />
+          </div>
           <div className={s.list}>
             {Array.from({ length: n }, (_, i) => (
               <ListRowSkeleton key={i} seed={g * 3 + i} className={s.item} />
@@ -229,7 +283,11 @@ function ProfileSkeleton({ expanded }: { expanded: boolean }) {
   return (
     <div className={s.account} aria-hidden="true">
       <Skeleton width={28} circle />
-      {expanded && <span className={s.accountName} style={{ flex: 1 }}><SkeletonText size={13.5} width="55%" /></span>}
+      {expanded && (
+        <span className={s.accountName} style={{ flex: 1 }}>
+          <SkeletonText size={13.5} width="55%" />
+        </span>
+      )}
     </div>
   );
 }
@@ -257,7 +315,14 @@ function Profile({ expanded }: { expanded: boolean }) {
   }, [open]);
   return (
     <div className={s.profile} ref={root}>
-      <button type="button" className={s.account} aria-label="アカウント" aria-expanded={open} title={expanded ? undefined : me.name} onClick={() => setOpen((o) => !o)}>
+      <button
+        type="button"
+        className={s.account}
+        aria-label="アカウント"
+        aria-expanded={open}
+        title={expanded ? undefined : me.name}
+        onClick={() => setOpen((o) => !o)}
+      >
         <Avatar name={me.name} size={28} />
         {expanded && <span className={s.accountName}>{me.name}</span>}
       </button>

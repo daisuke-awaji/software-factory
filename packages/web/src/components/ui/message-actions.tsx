@@ -1,7 +1,7 @@
-"use client";
+'use client';
 // AffectUI（無料の部品）を取り込んだもの（ADR-0008）
 
-import { Fragment, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode, type Ref } from "react";
+import { Fragment, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode, type Ref } from 'react';
 
 /*
  * Message Actions – the small bar under an AI chat message, in one self-contained file.
@@ -14,8 +14,8 @@ import { Fragment, useEffect, useId, useRef, useState, type KeyboardEvent, type 
  * The styles are injected below, so no extra files are needed.
  */
 
-export type MessageActionKey = "copy" | "regenerate" | "feedback" | "speak";
-export type FeedbackKind = "up" | "down";
+export type MessageActionKey = 'copy' | 'regenerate' | 'feedback' | 'speak';
+export type FeedbackKind = 'up' | 'down';
 
 export type MessageActionsProps = {
   /** The message text – copied to the clipboard by Copy and used to time Read aloud */
@@ -55,8 +55,7 @@ export type MessageActionsProps = {
 
 /* ---------- Helpers ---------- */
 
-const reduced = () =>
-  typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+const reduced = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 /** Text that changes without a jump: the old one fades out underneath while the new one fades in */
 function Swap({ id, children, className }: { id: string; children: ReactNode; className?: string }) {
@@ -75,7 +74,7 @@ function Swap({ id, children, className }: { id: string; children: ReactNode; cl
     return () => window.clearTimeout(timer);
   }, [out]);
   return (
-    <span className={["ui-ma__swap", className].filter(Boolean).join(" ")}>
+    <span className={['ui-ma__swap', className].filter(Boolean).join(' ')}>
       {out && (
         <span key={`out-${out.id}`} className="ui-ma__swap-item" data-out="" aria-hidden="true">
           {out.node}
@@ -97,13 +96,13 @@ export function MessageText({ version, children, className }: { version: string 
   const [height, setHeight] = useState<number | undefined>(undefined);
   useEffect(() => {
     const el = inner.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
+    if (!el || typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(() => setHeight(el.offsetHeight));
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
   return (
-    <div className={["ui-ma-text", className].filter(Boolean).join(" ")} style={{ height }}>
+    <div className={['ui-ma-text', className].filter(Boolean).join(' ')} style={{ height }}>
       <style href="ui-message-actions" precedence="default">
         {css}
       </style>
@@ -124,24 +123,25 @@ const Glyph = ({ d }: { d: string }) => (
   </svg>
 );
 const icons = {
-  copy: "M9 9.5A1.5 1.5 0 0 1 10.5 8h8A1.5 1.5 0 0 1 20 9.5v9a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 9 18.5zM15 8V5.5A1.5 1.5 0 0 0 13.5 4h-8A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H9",
-  check: "M5.5 12.5l4.2 4.2L18.5 7.8",
-  redo: "M19.5 12a7.5 7.5 0 1 1-2.2-5.3L19.5 9M19.5 4.5V9H15",
-  thumb: "M7.5 10.5v9M7.5 10.5l3.3-6a1.8 1.8 0 0 1 3.3 1.2l-.6 3.8H18a2 2 0 0 1 2 2.3l-1.2 6.4a2 2 0 0 1-2 1.8H5a1 1 0 0 1-1-1v-7.5a1 1 0 0 1 1-1z",
-  speaker: "M11 5.5 6.8 9H4v6h2.8l4.2 3.5zM15.2 9.2a4 4 0 0 1 0 5.6M17.9 6.6a7.8 7.8 0 0 1 0 10.8",
-  prev: "m14.5 7-5 5 5 5",
-  next: "m9.5 7 5 5-5 5",
-  close: "m7.5 7.5 9 9m0-9-9 9",
+  copy: 'M9 9.5A1.5 1.5 0 0 1 10.5 8h8A1.5 1.5 0 0 1 20 9.5v9a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 9 18.5zM15 8V5.5A1.5 1.5 0 0 0 13.5 4h-8A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H9',
+  check: 'M5.5 12.5l4.2 4.2L18.5 7.8',
+  redo: 'M19.5 12a7.5 7.5 0 1 1-2.2-5.3L19.5 9M19.5 4.5V9H15',
+  thumb:
+    'M7.5 10.5v9M7.5 10.5l3.3-6a1.8 1.8 0 0 1 3.3 1.2l-.6 3.8H18a2 2 0 0 1 2 2.3l-1.2 6.4a2 2 0 0 1-2 1.8H5a1 1 0 0 1-1-1v-7.5a1 1 0 0 1 1-1z',
+  speaker: 'M11 5.5 6.8 9H4v6h2.8l4.2 3.5zM15.2 9.2a4 4 0 0 1 0 5.6M17.9 6.6a7.8 7.8 0 0 1 0 10.8',
+  prev: 'm14.5 7-5 5 5 5',
+  next: 'm9.5 7 5 5-5 5',
+  close: 'm7.5 7.5 9 9m0-9-9 9',
 };
 
-const DEFAULT_ACTIONS: MessageActionKey[] = ["copy", "regenerate", "feedback", "speak"];
+const DEFAULT_ACTIONS: MessageActionKey[] = ['copy', 'regenerate', 'feedback', 'speak'];
 /** Known actions only, each once – an unknown key or a repeat would render a stray or doubled button */
 const cleanActions = (list: unknown): MessageActionKey[] =>
   Array.isArray(list) ? [...new Set(list)].filter((k): k is MessageActionKey => DEFAULT_ACTIONS.includes(k)) : DEFAULT_ACTIONS;
 /** A whole, finite number or the fallback */
-const whole = (n: unknown, fallback: number) => (typeof n === "number" && Number.isFinite(n) ? Math.floor(n) : fallback);
-const fmt = (n: number) => n.toLocaleString("en-US");
-const DEFAULT_REASONS = ["内容が正しくない", "長すぎる", "依頼どおりではない", "Other"];
+const whole = (n: unknown, fallback: number) => (typeof n === 'number' && Number.isFinite(n) ? Math.floor(n) : fallback);
+const fmt = (n: number) => n.toLocaleString('en-US');
+const DEFAULT_REASONS = ['内容が正しくない', '長すぎる', '依頼どおりではない', 'Other'];
 
 export function MessageActions({
   text,
@@ -159,12 +159,12 @@ export function MessageActions({
   speaking,
   speakDuration,
   quiet = true,
-  label = "メッセージの操作",
+  label = 'メッセージの操作',
   className,
 }: MessageActionsProps) {
   const uid = useId();
   const actions = cleanActions(actionsProp);
-  const count = Math.max(1, whole(typeof versions === "number" ? versions : Array.isArray(versions) ? versions.length : 1, 1));
+  const count = Math.max(1, whole(typeof versions === 'number' ? versions : Array.isArray(versions) ? versions.length : 1, 1));
 
   /* ----- Versions ----- */
   const [inner, setInner] = useState(() => Math.min(count - 1, Math.max(0, whole(defaultVersion, count - 1))));
@@ -172,7 +172,7 @@ export function MessageActions({
   const [vote, setVote] = useState<FeedbackKind | null>(null);
   const [panel, setPanel] = useState(false);
   const [reason, setReason] = useState<string | null>(null);
-  const [other, setOther] = useState("");
+  const [other, setOther] = useState('');
   const [sent, setSent] = useState(false);
   if (seenCount !== count) {
     // A new version arrived: show it, and its vote starts fresh
@@ -193,7 +193,7 @@ export function MessageActions({
   };
 
   /* ----- Status line for screen readers ----- */
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState('');
   const announce = (s: string) => setStatus((old) => (old === s ? `${s} ` : s));
 
   /* ----- Copy ----- */
@@ -211,7 +211,7 @@ export function MessageActions({
     }
     onCopy?.(text);
     setCopied(Date.now());
-    announce("コピーしました");
+    announce('コピーしました');
   };
 
   /* ----- Regenerate ----- */
@@ -219,41 +219,41 @@ export function MessageActions({
   const regenerate = () => {
     setSpin((s) => s + 1);
     onRegenerate?.();
-    announce("Regenerating");
+    announce('Regenerating');
   };
 
   /* ----- Feedback ----- */
   const thumbsUp = () => {
-    if (vote === "up") {
+    if (vote === 'up') {
       setVote(null);
       onFeedback?.(null);
       return;
     }
-    setVote("up");
+    setVote('up');
     setPanel(false);
-    onFeedback?.("up");
-    announce("良い回答として記録しました");
+    onFeedback?.('up');
+    announce('良い回答として記録しました');
   };
   const thumbsDown = () => {
-    if (vote === "down") {
+    if (vote === 'down') {
       setVote(null);
       setPanel(false);
       onFeedback?.(null);
       return;
     }
-    setVote("down");
+    setVote('down');
     setPanel(true);
     setSent(false);
     setReason(null);
-    setOther("");
-    onFeedback?.("down");
-    announce("悪い回答として記録しました。理由を選んでください");
+    setOther('');
+    onFeedback?.('down');
+    announce('悪い回答として記録しました。理由を選んでください');
   };
   const send = () => {
     if (!reason || sent) return;
-    onFeedback?.("down", reason === "Other" ? other.trim() || "Other" : reason);
+    onFeedback?.('down', reason === 'Other' ? other.trim() || 'Other' : reason);
     setSent(true);
-    announce("フィードバックを送信しました");
+    announce('フィードバックを送信しました');
   };
   useEffect(() => {
     if (!sent) return;
@@ -270,13 +270,13 @@ export function MessageActions({
   const [innerSpeaking, setInnerSpeaking] = useState(false);
   const playing = speaking ?? innerSpeaking;
   const words = text ? text.trim().split(/\s+/).length : 0;
-  const duration = typeof speakDuration === "number" && speakDuration > 0 ? speakDuration : Math.max(2600, words * 380);
+  const duration = typeof speakDuration === 'number' && speakDuration > 0 ? speakDuration : Math.max(2600, words * 380);
   useEffect(() => {
     if (speaking !== undefined || !innerSpeaking) return;
     const t = window.setTimeout(() => {
       setInnerSpeaking(false);
       onSpeak?.(false);
-      announce("読み上げが終わりました");
+      announce('読み上げが終わりました');
     }, duration);
     return () => window.clearTimeout(t);
     // onSpeak is read when the timer ends – a new function each render must not restart it
@@ -286,7 +286,7 @@ export function MessageActions({
     const next = !playing;
     if (speaking === undefined) setInnerSpeaking(next);
     onSpeak?.(next);
-    announce(next ? "読み上げています" : "読み上げを止めました");
+    announce(next ? '読み上げています' : '読み上げを止めました');
   };
 
   const active = Boolean(copied) || panel || playing || regenerating;
@@ -305,7 +305,7 @@ export function MessageActions({
     controls?: string;
     refEl?: Ref<HTMLButtonElement>;
   }) => (
-    <span className="ui-ma__item" key={o.key} data-flash={o.flash ? "" : undefined}>
+    <span className="ui-ma__item" key={o.key} data-flash={o.flash ? '' : undefined}>
       <button
         ref={o.refEl}
         type="button"
@@ -326,43 +326,43 @@ export function MessageActions({
   );
 
   const parts: ReactNode[] = actions.map((key) => {
-    if (key === "copy")
+    if (key === 'copy')
       return button({
-        key: "copy",
-        tip: copied ? "コピーしました" : "コピー",
-        labelText: copied ? "コピーしました" : "メッセージをコピー",
+        key: 'copy',
+        tip: copied ? 'コピーしました' : 'コピー',
+        labelText: copied ? 'コピーしました' : 'メッセージをコピー',
         onClick: copy,
         flash: Boolean(copied),
-        extra: { "data-done": copied ? "" : undefined },
+        extra: { 'data-done': copied ? '' : undefined },
         children: (
           <span className="ui-ma__icon ui-ma__morph">
-            <span className="ui-ma__layer" data-on={copied ? undefined : ""}>
+            <span className="ui-ma__layer" data-on={copied ? undefined : ''}>
               <Glyph d={icons.copy} />
             </span>
-            <span className="ui-ma__layer ui-ma__layer--check" data-on={copied ? "" : undefined}>
+            <span className="ui-ma__layer ui-ma__layer--check" data-on={copied ? '' : undefined}>
               <Glyph d={icons.check} />
             </span>
           </span>
         ),
       });
-    if (key === "regenerate")
+    if (key === 'regenerate')
       return (
         <span className="ui-ma__regen" key="regenerate">
           {button({
-            key: "regenerate",
-            tip: regenerating ? "Writing…" : "Regenerate",
-            labelText: "もう一度生成",
+            key: 'regenerate',
+            tip: regenerating ? 'Writing…' : 'Regenerate',
+            labelText: 'もう一度生成',
             onClick: regenerate,
-            extra: { "data-busy": regenerating ? "" : undefined },
+            extra: { 'data-busy': regenerating ? '' : undefined },
             children: (
               <span className="ui-ma__icon">
-                <span className="ui-ma__spin" key={spin} data-spin={spin ? "" : undefined}>
+                <span className="ui-ma__spin" key={spin} data-spin={spin ? '' : undefined}>
                   <Glyph d={icons.redo} />
                 </span>
               </span>
             ),
           })}
-          <span className="ui-ma__versions" data-open={count > 1 ? "" : undefined} inert={count < 2}>
+          <span className="ui-ma__versions" data-open={count > 1 ? '' : undefined} inert={count < 2}>
             <span className="ui-ma__versions-clip" role="group" aria-label="Versions">
               <button
                 type="button"
@@ -395,50 +395,50 @@ export function MessageActions({
           </span>
         </span>
       );
-    if (key === "feedback")
+    if (key === 'feedback')
       return (
         <Fragment key="feedback">
           {button({
-          key: "up",
-          tip: vote === "up" ? "ありがとうございます" : "良い回答",
-          labelText: "良い回答",
-          pressed: vote === "up",
-          onClick: thumbsUp,
-          children: (
-            <span className="ui-ma__icon ui-ma__thumb">
-              <Glyph d={icons.thumb} />
-            </span>
-          ),
-        })}
-        {button({
-          key: "down",
-          tip: "悪い回答",
-          labelText: "悪い回答",
-          pressed: vote === "down",
-          expanded: panel,
-          controls: `${uid}-feedback`,
-          onClick: thumbsDown,
-          refEl: downRef,
-          children: (
-            <span className="ui-ma__icon ui-ma__thumb">
-              <Glyph d={icons.thumb} />
-            </span>
-          ),
-        })}
+            key: 'up',
+            tip: vote === 'up' ? 'ありがとうございます' : '良い回答',
+            labelText: '良い回答',
+            pressed: vote === 'up',
+            onClick: thumbsUp,
+            children: (
+              <span className="ui-ma__icon ui-ma__thumb">
+                <Glyph d={icons.thumb} />
+              </span>
+            ),
+          })}
+          {button({
+            key: 'down',
+            tip: '悪い回答',
+            labelText: '悪い回答',
+            pressed: vote === 'down',
+            expanded: panel,
+            controls: `${uid}-feedback`,
+            onClick: thumbsDown,
+            refEl: downRef,
+            children: (
+              <span className="ui-ma__icon ui-ma__thumb">
+                <Glyph d={icons.thumb} />
+              </span>
+            ),
+          })}
         </Fragment>
       );
     return button({
-      key: "speak",
-      tip: playing ? "停止" : "読み上げ",
-      labelText: playing ? "読み上げを止める" : "読み上げる",
+      key: 'speak',
+      tip: playing ? '停止' : '読み上げ',
+      labelText: playing ? '読み上げを止める' : '読み上げる',
       pressed: playing,
       onClick: speak,
       children: (
         <span className="ui-ma__icon ui-ma__morph">
-          <span className="ui-ma__layer" data-on={playing ? undefined : ""}>
+          <span className="ui-ma__layer" data-on={playing ? undefined : ''}>
             <Glyph d={icons.speaker} />
           </span>
-          <span className="ui-ma__layer ui-ma__eq" data-on={playing ? "" : undefined}>
+          <span className="ui-ma__layer ui-ma__eq" data-on={playing ? '' : undefined}>
             <i />
             <i />
             <i />
@@ -450,7 +450,7 @@ export function MessageActions({
   });
 
   const onPanelKey = (e: KeyboardEvent) => {
-    if (e.key === "Escape") {
+    if (e.key === 'Escape') {
       e.stopPropagation();
       closePanel();
     }
@@ -458,9 +458,9 @@ export function MessageActions({
 
   return (
     <div
-      className={["ui-ma", className].filter(Boolean).join(" ")}
-      data-quiet={quiet ? "" : undefined}
-      data-active={active ? "" : undefined}
+      className={['ui-ma', className].filter(Boolean).join(' ')}
+      data-quiet={quiet ? '' : undefined}
+      data-active={active ? '' : undefined}
     >
       <style href="ui-message-actions" precedence="default">
         {css}
@@ -470,8 +470,8 @@ export function MessageActions({
         {parts}
       </div>
 
-      {actions.includes("feedback") && (
-        <div id={`${uid}-feedback`} className="ui-ma__fold" data-open={panel ? "" : undefined} inert={!panel}>
+      {actions.includes('feedback') && (
+        <div id={`${uid}-feedback`} className="ui-ma__fold" data-open={panel ? '' : undefined} inert={!panel}>
           <div className="ui-ma__clip">
             <div className="ui-ma__panel" role="group" aria-labelledby={`${uid}-ask`} onKeyDown={onPanelKey}>
               <div className="ui-ma__panel-head">
@@ -494,31 +494,31 @@ export function MessageActions({
                     title={r}
                     dir="auto"
                   >
-                    {r === "Other" ? "その他" : r}
+                    {r === 'Other' ? 'その他' : r}
                   </button>
                 ))}
                 <button
                   type="button"
                   className="ui-ma__send"
-                  data-sent={sent ? "" : undefined}
+                  data-sent={sent ? '' : undefined}
                   disabled={!reason}
                   aria-disabled={sent || undefined}
                   onClick={send}
                 >
-                  <Swap id={sent ? "sent" : "send"}>
+                  <Swap id={sent ? 'sent' : 'send'}>
                     {sent ? (
                       <>
                         <Glyph d={icons.check} />
                         送信しました
                       </>
                     ) : (
-                      "送信"
+                      '送信'
                     )}
                   </Swap>
                 </button>
               </div>
-              {Array.isArray(reasons) && reasons.includes("Other") && (
-                <div className="ui-ma__fold" data-open={reason === "Other" && !sent ? "" : undefined} inert={reason !== "Other" || sent}>
+              {Array.isArray(reasons) && reasons.includes('Other') && (
+                <div className="ui-ma__fold" data-open={reason === 'Other' && !sent ? '' : undefined} inert={reason !== 'Other' || sent}>
                   <div className="ui-ma__clip">
                     <input
                       className="ui-ma__input"
@@ -528,7 +528,7 @@ export function MessageActions({
                       aria-label="よくなかった点（自由記述）"
                       onChange={(e) => setOther(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") send();
+                        if (e.key === 'Enter') send();
                       }}
                     />
                   </div>

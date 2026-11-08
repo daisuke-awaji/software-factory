@@ -1,7 +1,7 @@
-"use client";
+'use client';
 // AffectUI（無料の部品）を取り込んだもの。noUncheckedIndexedAccess と exactOptionalPropertyTypes に合わせて最小限だけ直した（ADR-0008）
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 /*
  * Number Ticker – animated numbers like an odometer, in a single self-contained file.
@@ -33,8 +33,8 @@ function split(text: string): Part[] {
   let d = 0;
   let s = 0;
   for (let i = chars.length - 1; i >= 0; i--) {
-    const c = chars[i] ?? "";
-    if (c >= "0" && c <= "9") parts.unshift({ key: `d${d++}`, digit: c.charCodeAt(0) - 48 });
+    const c = chars[i] ?? '';
+    if (c >= '0' && c <= '9') parts.unshift({ key: `d${d++}`, digit: c.charCodeAt(0) - 48 });
     else parts.unshift({ key: `s${s++}`, char: c });
   }
   return parts;
@@ -53,7 +53,7 @@ export function NumberTicker({ value, format, locale, duration = 900, delay = 0,
   const fmtKey = JSON.stringify(format ?? {});
   const text = useMemo(
     // NaN or ∞ (no data yet, a division by zero) shows a dash instead of the raw word
-    () => (Number.isFinite(value) ? new Intl.NumberFormat(locale, format).format(value) : "–"),
+    () => (Number.isFinite(value) ? new Intl.NumberFormat(locale, format).format(value) : '–'),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [value, locale, fmtKey],
   );
@@ -70,7 +70,7 @@ export function NumberTicker({ value, format, locale, duration = 900, delay = 0,
   const [started, setStarted] = useState(false);
 
   // Columns that show up after the first render slide in (e.g. 9,999 → 10,000)
-  const keysNow = new Set(parts.filter((p) => "digit" in p).map((p) => p.key));
+  const keysNow = new Set(parts.filter((p) => 'digit' in p).map((p) => p.key));
   for (const k of keysNow) if (mounted.current && !seen.current.has(k)) entering.current.add(k);
   for (const k of entering.current) if (!keysNow.has(k)) entering.current.delete(k);
   seen.current = keysNow;
@@ -79,7 +79,7 @@ export function NumberTicker({ value, format, locale, duration = 900, delay = 0,
   useEffect(() => {
     mounted.current = true;
     const el = root.current;
-    if (!el || typeof IntersectionObserver === "undefined") {
+    if (!el || typeof IntersectionObserver === 'undefined') {
       setStarted(true);
       return;
     }
@@ -106,11 +106,11 @@ export function NumberTicker({ value, format, locale, duration = 900, delay = 0,
     // Same value again (e.g. a format change) keeps the last direction
     if (value !== prev.current) up.current = value > prev.current;
     prev.current = value;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const keys = new Set<string>();
 
     for (const p of parts) {
-      if (!("digit" in p)) continue;
+      if (!('digit' in p)) continue;
       keys.add(p.key);
       const r = rolls.current.get(p.key) ?? { pos: 0, from: 0, to: 0 };
       const delta = up.current ? mod10(p.digit - r.pos) : -mod10(r.pos - p.digit);
@@ -147,11 +147,11 @@ export function NumberTicker({ value, format, locale, duration = 900, delay = 0,
       <style href="ui-number-ticker" precedence="default">
         {css}
       </style>
-      <span ref={root} className={["ui-nt", className].filter(Boolean).join(" ")} aria-live="polite">
+      <span ref={root} className={['ui-nt', className].filter(Boolean).join(' ')} aria-live="polite">
         <span className="ui-nt__sr">{text}</span>
         <span className="ui-nt__track" aria-hidden="true">
           {parts.map((p) =>
-            "digit" in p ? (
+            'digit' in p ? (
               <span key={p.key} className="ui-nt__col" data-enter={entering.current.has(p.key) || undefined}>
                 <span
                   className="ui-nt__stack"

@@ -1,6 +1,14 @@
 // ワークフローの実行のシミュレーター。台本（SimStep の列）を時間をかけて流し、イベントを出す。
 // 本物と同じく「計画 → 承認 → ステップごとの VM → PR」の順に進み、承認や中断で止まる
-import { type CreateTaskRequest, type FactoryEvent, type Workflow, type Task, resolveNext, titleFromMessage, ulid } from '@factory/contracts';
+import {
+  type CreateTaskRequest,
+  type FactoryEvent,
+  type Workflow,
+  type Task,
+  resolveNext,
+  titleFromMessage,
+  ulid,
+} from '@factory/contracts';
 import { emit as rawEmit, getDb, save, task, type DistributiveOmit, type Sim, type SimStep } from './db';
 import { repoFiles } from './fixtures';
 import { finalSummary, pickScenario, planning, stepWork } from './scenarios';
@@ -52,13 +60,24 @@ function ev(id: string, event: DistributiveOmit<FactoryEvent, 'taskId'>) {
     if (event.state === 'started') {
       const n = runs.filter((r) => r.stepId === event.stepId).length + 1;
       const image = workflowOf(task(id)!).steps.find((s) => s.id === event.stepId)?.image;
-      runs.push({ runId: `${event.stepId}#${n}`, stepId: event.stepId, state: 'running', startedAt: new Date(at).toISOString(), ...(image ? { image } : {}) });
+      runs.push({
+        runId: `${event.stepId}#${n}`,
+        stepId: event.stepId,
+        state: 'running',
+        startedAt: new Date(at).toISOString(),
+        ...(image ? { image } : {}),
+      });
     } else {
       const run = runs.findLast((r) => r.stepId === event.stepId && r.state === 'running');
       if (run) {
         run.state = event.state;
         run.endedAt = new Date(at).toISOString();
-        run.result = { verdict: event.state === 'completed' ? 'pass' : 'fail', summary: event.state === 'completed' ? '完了しました' : '失敗しました', outputs: {}, ...(event.label ? { label: event.label } : {}) };
+        run.result = {
+          verdict: event.state === 'completed' ? 'pass' : 'fail',
+          summary: event.state === 'completed' ? '完了しました' : '失敗しました',
+          outputs: {},
+          ...(event.label ? { label: event.label } : {}),
+        };
       }
     }
   }
@@ -108,7 +127,8 @@ function applyStep(id: string, step: SimStep) {
       if (step.approvalId) sim.approvalId = step.approvalId;
       break;
     case 'pr': {
-      const number = nextPr?.() ?? Math.max(127, ...d.tasks.filter((w) => w.pullRequest && w.id !== id).map((w) => w.pullRequest!.number)) + 1;
+      const number =
+        nextPr?.() ?? Math.max(127, ...d.tasks.filter((w) => w.pullRequest && w.id !== id).map((w) => w.pullRequest!.number)) + 1;
       item.pullRequest = { number, url: `https://github.com/${item.repo?.owner}/${item.repo?.name}/pull/${number}` };
       break;
     }
@@ -117,9 +137,14 @@ function applyStep(id: string, step: SimStep) {
       sim.queue = interleave([...nextStep(id, sim, step.outcome, step.from ?? sim.step, step.label), sim.queue]);
       break;
     case 'finish':
-      if (step.state === 'completed') sim.queue.unshift({ t: 'say', delay: 300, text: finalSummary(sim.scenario, item.pullRequest?.number) }, { t: 'emit', delay: 200, event: { type: 'task.state', state: 'completed' } });
+      if (step.state === 'completed')
+        sim.queue.unshift(
+          { t: 'say', delay: 300, text: finalSummary(sim.scenario, item.pullRequest?.number) },
+          { t: 'emit', delay: 200, event: { type: 'task.state', state: 'completed' } },
+        );
       else {
-        for (const r of d.stepRuns[id] ?? []) if (r.state === 'running') Object.assign(r, { state: 'cancelled', endedAt: new Date(now()).toISOString() });
+        for (const r of d.stepRuns[id] ?? [])
+          if (r.state === 'running') Object.assign(r, { state: 'cancelled', endedAt: new Date(now()).toISOString() });
         sim.queue.unshift({ t: 'emit', delay: 200, event: { type: 'task.state', state: 'failed' } });
       }
       break;
@@ -153,10 +178,16 @@ function nextStep(id: string, sim: Sim, outcome: 'pass' | 'fail', from: string, 
     const loops = sim.attempts[cur.id] ?? 1;
     if (!loop || loops > loop.maxLoops) {
       sim.queue = [];
-      return [[
-        { t: 'say', delay: 300, text: `${cur.id === 'verify' ? '検証' : 'ステップ'}が ${loops} 回続けて失敗したため、ワークフローを止めました。実行ログで原因を確かめて、「やり直す」で再開できます。` },
-        { t: 'finish', delay: 100, state: 'failed' },
-      ]];
+      return [
+        [
+          {
+            t: 'say',
+            delay: 300,
+            text: `${cur.id === 'verify' ? '検証' : 'ステップ'}が ${loops} 回続けて失敗したため、ワークフローを止めました。実行ログで原因を確かめて、「やり直す」で再開できます。`,
+          },
+          { t: 'finish', delay: 100, state: 'failed' },
+        ],
+      ];
     }
   }
   if (targets.length === 0) return sim.queue.some((s) => s.t === 'next') ? [] : [[{ t: 'finish', delay: 300, state: 'completed' }]];
@@ -261,7 +292,14 @@ export function createTask(req: CreateTaskRequest, ownerId: string, author: stri
   const iso = new Date(at).toISOString();
   const title = req.title ?? titleFromMessage(req.message);
   const item: Task = {
-    id, ownerId, title, workflowRef: req.workflowRef, state: 'queued', createdAt: iso, updatedAt: iso, archived: false,
+    id,
+    ownerId,
+    title,
+    workflowRef: req.workflowRef,
+    state: 'queued',
+    createdAt: iso,
+    updatedAt: iso,
+    archived: false,
     ...(req.projectId ? { projectId: req.projectId } : {}),
     ...(req.repo ? { repo: req.repo, branch: `factory/${id.slice(-6).toLowerCase()}` } : {}),
     usage: { inputTokens: 0, outputTokens: 0, vmSeconds: 0 },
@@ -278,11 +316,24 @@ export function createTask(req: CreateTaskRequest, ownerId: string, author: stri
   const workflow = workflowOf(item);
   const first = workflow.steps[0]!.id;
   d.sim[id] = {
-    scenario: pickScenario(title, req.message), queue: [], waiting: null, attempts: { [first]: 1 }, step: first,
-    planVersion: 1, comments: [], flags: {}, interrupted: false,
+    scenario: pickScenario(title, req.message),
+    queue: [],
+    waiting: null,
+    attempts: { [first]: 1 },
+    step: first,
+    planVersion: 1,
+    comments: [],
+    flags: {},
+    interrupted: false,
   };
   d.events[id] = [];
-  ev(id, { type: 'message.user', messageId: `msg_${ulid(now())}`, text: req.message, author, ...(req.attachments?.length ? { attachments: req.attachments.map((p) => d.attachments[p]?.fileName ?? p) } : {}) });
+  ev(id, {
+    type: 'message.user',
+    messageId: `msg_${ulid(now())}`,
+    text: req.message,
+    author,
+    ...(req.attachments?.length ? { attachments: req.attachments.map((p) => d.attachments[p]?.fileName ?? p) } : {}),
+  });
   d.sim[id].queue = planning(d.sim[id].scenario, item, first, 1, []);
   d.plans[id] = [];
   save();
@@ -345,8 +396,14 @@ export function answerApproval(id: string, approvalId: string, decision: 'approv
   sim.waiting = null;
   delete sim.approvalId;
   ev(id, { type: 'task.state', state: 'running' });
-  if (decision === 'deny') sim.queue.unshift({ t: 'say', delay: 300, text: '許可されなかったので、外部のライブラリを使わずに SVG でグラフを描きます。' });
-  else sim.queue.unshift({ t: 'say', delay: 300, text: 'ありがとうございます。この作業の間だけ cdn.jsdelivr.net への通信を許可しました（許可リストの本体は変わりません）。' });
+  if (decision === 'deny')
+    sim.queue.unshift({ t: 'say', delay: 300, text: '許可されなかったので、外部のライブラリを使わずに SVG でグラフを描きます。' });
+  else
+    sim.queue.unshift({
+      t: 'say',
+      delay: 300,
+      text: 'ありがとうございます。この作業の間だけ cdn.jsdelivr.net への通信を許可しました（許可リストの本体は変わりません）。',
+    });
   save();
   tick(id);
 }
@@ -372,7 +429,12 @@ export function postMessage(id: string, text: string, attachments: string[], by:
   } else if (sim.waiting === 'approval') {
     sayNow(id, '承知しました。承認への回答をいただいてから、反映します。');
   } else {
-    sayNow(id, item.state === 'completed' ? 'ありがとうございます。続けて手を加える場合は、内容を書いて新しいタスクにしてください（このタスクの成果物を引き継げます）。' : 'このタスクは終了しています。必要なら「やり直す」から再開してください。');
+    sayNow(
+      id,
+      item.state === 'completed'
+        ? 'ありがとうございます。続けて手を加える場合は、内容を書いて新しいタスクにしてください（このタスクの成果物を引き継げます）。'
+        : 'このタスクは終了しています。必要なら「やり直す」から再開してください。',
+    );
   }
   save();
   tick(id);
@@ -389,7 +451,11 @@ export function interrupt(id: string) {
   save();
 }
 
-export function cancel(id: string, reason = 'ワークフローを中止しました。VM は停止しています。', state: 'cancelled' | 'failed' = 'cancelled') {
+export function cancel(
+  id: string,
+  reason = 'ワークフローを中止しました。VM は停止しています。',
+  state: 'cancelled' | 'failed' = 'cancelled',
+) {
   const d = getDb();
   const sim = d.sim[id];
   const item = task(id);
@@ -398,7 +464,8 @@ export function cancel(id: string, reason = 'ワークフローを中止しま�
   sim.queue = [];
   sim.waiting = null;
   sim.interrupted = false;
-  for (const r of d.stepRuns[id] ?? []) if (r.state === 'running') Object.assign(r, { state: 'cancelled', endedAt: new Date(now()).toISOString() });
+  for (const r of d.stepRuns[id] ?? [])
+    if (r.state === 'running') Object.assign(r, { state: 'cancelled', endedAt: new Date(now()).toISOString() });
   sayNow(id, reason);
   ev(id, { type: 'task.state', state });
   save();
@@ -416,7 +483,10 @@ export function retry(id: string, runId: string) {
   const attempt = (sim.attempts[run.stepId] ?? 0) + 1;
   sim.attempts[run.stepId] = attempt;
   ev(id, { type: 'task.state', state: 'running' });
-  sim.queue = [{ t: 'say', delay: 300, text: `${run.stepId === 'verify' ? '検証' : 'ステップ'}をやり直します。` }, ...work(sim.scenario, run.stepId, attempt, sim, false)];
+  sim.queue = [
+    { t: 'say', delay: 300, text: `${run.stepId === 'verify' ? '検証' : 'ステップ'}をやり直します。` },
+    ...work(sim.scenario, run.stepId, attempt, sim, false),
+  ];
   save();
   tick(id);
 }

@@ -1,37 +1,146 @@
-.main { max-width: 760px; margin: 8vh auto 0; }
-.greeting { margin: 0 0 14px; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+.main {
+  max-width: 760px;
+  margin: 8vh auto 0;
+}
+.greeting {
+  margin: 0 0 14px;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
 
 /* ---------- 新しいタスク ---------- */
-.newTask { display: grid; gap: 10px; margin-bottom: 16px; }
-.newCard { background: var(--tray); border-radius: var(--radius-tray); padding: 6px; }
+.newTask {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.newCard {
+  background: var(--tray);
+  border-radius: var(--radius-tray);
+  padding: 6px;
+}
 .newInput {
-  display: block; width: 100%; min-height: 92px; padding: 14px 16px;
-  border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--card); box-shadow: var(--shadow-sm);
-  resize: vertical; font-size: max(15px, var(--fs-input-min)); line-height: 1.6;
+  display: block;
+  width: 100%;
+  min-height: 92px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  resize: vertical;
+  font-size: max(15px, var(--fs-input-min));
+  line-height: 1.6;
 }
-.newInput:focus { outline: none; border-color: var(--line-strong); box-shadow: var(--shadow-sm), 0 0 0 3px var(--active); }
-.newBar { display: flex; align-items: center; gap: 6px; padding: 8px 6px 4px; flex-wrap: wrap; }
-.chip, .chipSelect {
-  display: inline-flex; align-items: center; gap: 6px; height: max(30px, var(--tap-min)); padding: 0 10px;
-  border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--text); font-size: 13px;
+.newInput:focus {
+  outline: none;
+  border-color: var(--line-strong);
+  box-shadow:
+    var(--shadow-sm),
+    0 0 0 3px var(--active);
 }
-.chip:hover, .chipSelect:hover { border-color: var(--line-strong); }
-.chipSelect select { align-self: stretch; border: 0; background: none; font-size: max(13px, var(--fs-input-min)); padding: 0 2px; max-width: 220px; cursor: pointer; }
-.chipSelect select:focus { outline: none; }
-.chipSelect:focus-within { border-color: var(--muted); }
-.spacer { flex: 1; }
-.files { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 6px 0; padding: 0; list-style: none; }
-.fileChip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 4px 3px 10px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); font-size: 12.5px; }
-.fileChip[data-error] { color: var(--err); }
-.fileChip button { display: inline-grid; place-items: center; border: 0; background: none; padding: 2px; border-radius: 50%; color: var(--muted); }
-.fileChip button:hover { background: var(--hover); }
-.fileChip :global(.icon) { width: 13px; height: 13px; }
+.newBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 6px 4px;
+  flex-wrap: wrap;
+}
+.chip,
+.chipSelect {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: max(30px, var(--tap-min));
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 13px;
+}
+.chip:hover,
+.chipSelect:hover {
+  border-color: var(--line-strong);
+}
+.chipSelect select {
+  align-self: stretch;
+  border: 0;
+  background: none;
+  font-size: max(13px, var(--fs-input-min));
+  padding: 0 2px;
+  max-width: 220px;
+  cursor: pointer;
+}
+.chipSelect select:focus {
+  outline: none;
+}
+.chipSelect:focus-within {
+  border-color: var(--muted);
+}
+.spacer {
+  flex: 1;
+}
+.files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 6px 0;
+  padding: 0;
+  list-style: none;
+}
+.fileChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px 3px 10px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+}
+.fileChip[data-error] {
+  color: var(--err);
+}
+.fileChip button {
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  padding: 2px;
+  border-radius: 50%;
+  color: var(--muted);
+}
+.fileChip button:hover {
+  background: var(--hover);
+}
+.fileChip :global(.icon) {
+  width: 13px;
+  height: 13px;
+}
 
 @media (max-width: 719px) {
-  .main { margin-top: 0; }
-  .greeting { font-size: 20px; margin-bottom: 10px; }
-  .newInput { min-height: 76px; padding: 12px 14px; }
-  .newBar .chipSelect { min-width: 0; max-width: 100%; }
-  .newBar .chipSelect select { min-width: 0; max-width: 100%; }
-  .newBar :global(.ui-button) { margin-left: auto; }
+  .main {
+    margin-top: 0;
+  }
+  .greeting {
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
+  .newInput {
+    min-height: 76px;
+    padding: 12px 14px;
+  }
+  .newBar .chipSelect {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .newBar .chipSelect select {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .newBar :global(.ui-button) {
+    margin-left: auto;
+  }
 }

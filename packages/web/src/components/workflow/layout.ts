@@ -38,7 +38,9 @@ export async function layout(model: Model, direction: Direction): Promise<Positi
     },
     // 矢印は、ノードの辺の真ん中（React Flow の点と同じ位置）から出入りさせる
     children: model.nodes.map((n) => ({
-      id: n.id, width: n.width, height: n.height,
+      id: n.id,
+      width: n.width,
+      height: n.height,
       layoutOptions: { 'elk.portConstraints': 'FIXED_POS' },
       ports: [
         { id: `${n.id}:in`, width: 0, height: 0, ...(right ? { x: 0, y: n.height / 2 } : { x: n.width / 2, y: 0 }) },
@@ -46,10 +48,16 @@ export async function layout(model: Model, direction: Direction): Promise<Positi
       ],
     })),
     // 分岐のラベルは ELK に大きさを伝えて、段の間をその分だけ広げる（ラベルがノードに重ならないように）
-    edges: model.edges.filter((e) => e.data.kind !== 'fail').map((e) => ({
-      id: e.id, sources: [`${e.source}:out`], targets: [`${e.target}:in`],
-      ...(e.data.kind === 'case' && e.data.label ? { labels: [{ id: `${e.id}:label`, text: e.data.label, width: labelWidth(e.data.label), height: 18 }] } : {}),
-    })),
+    edges: model.edges
+      .filter((e) => e.data.kind !== 'fail')
+      .map((e) => ({
+        id: e.id,
+        sources: [`${e.source}:out`],
+        targets: [`${e.target}:in`],
+        ...(e.data.kind === 'case' && e.data.label
+          ? { labels: [{ id: `${e.id}:label`, text: e.data.label, width: labelWidth(e.data.label), height: 18 }] }
+          : {}),
+      })),
   };
   const out = await engine.layout(graph);
   const positions: Positioned['positions'] = {};

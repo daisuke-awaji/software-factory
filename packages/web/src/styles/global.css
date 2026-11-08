@@ -1,10 +1,22 @@
 /* グローバルに置くのは、リセットと数個のユーティリティだけ（ADR-0008）。それ以外は CSS Modules に書く */
 @import './tokens.css';
 
-*, *::before, *::after { box-sizing: border-box; }
-html, body, #root { height: 100%; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+}
 /* 文書全体はスクロールさせない。スクロールするのは、ページの中身・会話・成果物などの内側だけ */
-html, body { overflow: hidden; overscroll-behavior: none; }
+html,
+body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
 body {
   margin: 0;
   background: var(--bg);
@@ -14,39 +26,134 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
-button, input, textarea, select { font: inherit; color: inherit; }
-button { cursor: pointer; }
-button, a, input, select, textarea, summary, [role="tab"] { touch-action: manipulation; }
-body { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-a { color: inherit; }
-:focus-visible { outline: 2px solid var(--run); outline-offset: 2px; }
-code { font-family: var(--mono); font-size: 0.92em; padding: 1px 5px; border-radius: 6px; background: var(--active); }
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+}
+button,
+a,
+input,
+select,
+textarea,
+summary,
+[role='tab'] {
+  touch-action: manipulation;
+}
+body {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+a {
+  color: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--run);
+  outline-offset: 2px;
+}
+code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: var(--active);
+}
 
 .sr-only {
-  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
-.icon { flex: none; }
-.mono { font-family: var(--mono); font-size: 12.5px; }
-.muted { color: var(--muted); }
-.faint { color: var(--faint); }
-.scroll { overflow: auto; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.icon {
+  flex: none;
+}
+.mono {
+  font-family: var(--mono);
+  font-size: 12.5px;
+}
+.muted {
+  color: var(--muted);
+}
+.faint {
+  color: var(--faint);
+}
+.scroll {
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
 
-@keyframes pulse { 50% { opacity: 0.35; } }
-@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes blink { 50% { opacity: 0; } }
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
 
 /* タッチの画面では、AffectUI の小さいボタンも指で押せる高さにする（部品のファイルは変えない: ADR-0008） */
 @media (pointer: coarse) {
-  :root .ui-button[data-size="sm"] { --h: max(32px, var(--tap-min)); }
-  :root .ui-seg[data-size="sm"] { --ui-seg-h: 34px; --ui-seg-fs: 13.5px; }
-  :is(input, textarea).mono { font-size: max(12.5px, var(--fs-input-min)); }
-  :root .ui-ma__input { height: 36px; font-size: max(12.5px, var(--fs-input-min)); }
-  :root .ui-ma__chip, :root .ui-ma__send { height: 32px; }
-  input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; }
+  :root .ui-button[data-size='sm'] {
+    --h: max(32px, var(--tap-min));
+  }
+  :root .ui-seg[data-size='sm'] {
+    --ui-seg-h: 34px;
+    --ui-seg-fs: 13.5px;
+  }
+  :is(input, textarea).mono {
+    font-size: max(12.5px, var(--fs-input-min));
+  }
+  :root .ui-ma__input {
+    height: 36px;
+    font-size: max(12.5px, var(--fs-input-min));
+  }
+  :root .ui-ma__chip,
+  :root .ui-ma__send {
+    height: 32px;
+  }
+  input[type='checkbox'],
+  input[type='radio'] {
+    width: 20px;
+    height: 20px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
 }

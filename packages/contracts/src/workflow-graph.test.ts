@@ -10,19 +10,26 @@ const parallel: GraphStep[] = [
   { id: 'implement', next: ['unit-test', 'e2e'] },
   { id: 'unit-test', next: 'triage' },
   { id: 'e2e', next: 'triage' },
-  { id: 'triage', needs: ['e2e', 'unit-test'], next: 'deliver', on: { cases: { large: 'security-review' }, fail: { goto: 'implement', maxLoops: 2 } } },
+  {
+    id: 'triage',
+    needs: ['e2e', 'unit-test'],
+    next: 'deliver',
+    on: { cases: { large: 'security-review' }, fail: { goto: 'implement', maxLoops: 2 } },
+  },
   { id: 'security-review', next: 'deliver' },
   { id: 'deliver' },
 ];
 
 describe('ワークフローのグラフ', () => {
   it('一列と戻りだけのワークフローは、そのまま通る', () => {
-    const a = analyzeWorkflow(wf([
-      { id: 'implement', next: 'verify' },
-      { id: 'verify', on: { pass: 'review', fail: { goto: 'implement', maxLoops: 2 } } },
-      { id: 'review', next: 'deliver' },
-      { id: 'deliver' },
-    ]));
+    const a = analyzeWorkflow(
+      wf([
+        { id: 'implement', next: 'verify' },
+        { id: 'verify', on: { pass: 'review', fail: { goto: 'implement', maxLoops: 2 } } },
+        { id: 'review', next: 'deliver' },
+        { id: 'deliver' },
+      ]),
+    );
     expect(a.issues).toEqual([]);
     expect(a.layer).toEqual({ implement: 0, verify: 1, review: 2, deliver: 3 });
     expect(a.edges.map((e) => [e.from, e.to, e.kind])).toContainEqual(['verify', 'implement', 'fail']);
@@ -98,14 +105,23 @@ describe('ワークフローのグラフ', () => {
   });
 
   it('前へ進む矢印の輪・たどり着けないステップ・存在しない参照・自分自身への矢印を知らせる', () => {
-    expect(messages([{ id: 'a', next: 'b' }, { id: 'b', next: 'a' }])[0]).toMatch(/輪になっています/);
+    expect(
+      messages([
+        { id: 'a', next: 'b' },
+        { id: 'b', next: 'a' },
+      ])[0],
+    ).toMatch(/輪になっています/);
     expect(messages([{ id: 'a' }, { id: 'b' }])).toEqual(['「b」には、最初のステップからたどり着けません']);
     expect(messages([{ id: 'a', next: 'zz' }])).toEqual(['存在しないステップ「zz」を指しています']);
     expect(messages([{ id: 'a', next: 'a' }])[0]).toMatch(/自分自身には進めません/);
     expect(messages([{ id: 'a', on: { fail: { goto: 'a', maxLoops: 1 } } }])).toEqual([]);
-    expect(messages([{ id: 'a', next: 'b', on: { pass: 'b' } }, { id: 'b' }])).toEqual(['next と on.pass は、どちらか一方だけにしてください']);
+    expect(messages([{ id: 'a', next: 'b', on: { pass: 'b' } }, { id: 'b' }])).toEqual([
+      'next と on.pass は、どちらか一方だけにしてください',
+    ]);
     expect(messages([{ id: 'a', next: ['b'] }, { id: 'b' }])).toEqual(['並列にするときは、2つ以上のステップを並べてください']);
-    expect(messages([{ id: 'a', needs: ['b', 'c'], next: 'b' }, { id: 'b', next: 'c' }, { id: 'c' }])).toEqual(['「a」に needs がありますが、並列で始めた枝の合流になっていません']);
+    expect(messages([{ id: 'a', needs: ['b', 'c'], next: 'b' }, { id: 'b', next: 'c' }, { id: 'c' }])).toEqual([
+      '「a」に needs がありますが、並列で始めた枝の合流になっていません',
+    ]);
   });
 
   it('結果から次のステップを決める', () => {

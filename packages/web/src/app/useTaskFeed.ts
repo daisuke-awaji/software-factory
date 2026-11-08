@@ -55,7 +55,11 @@ export function useTaskFeed(deps: unknown[], opts: { enabled: boolean; pollMs: n
       const page = await api.listTasks({ limit: PAGE, cursor: at });
       setState((prev) => {
         const have = new Set((prev.items ?? []).map((i) => i.id));
-        return { items: [...(prev.items ?? []), ...page.items.filter((i) => !have.has(i.id))], cursor: page.nextCursor, pages: prev.pages + 1 };
+        return {
+          items: [...(prev.items ?? []), ...page.items.filter((i) => !have.has(i.id))],
+          cursor: page.nextCursor,
+          pages: prev.pages + 1,
+        };
       });
     } catch (e) {
       setError(errorMessage(e));
