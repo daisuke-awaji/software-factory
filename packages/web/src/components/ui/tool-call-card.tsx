@@ -13,7 +13,7 @@ import { Children, isValidElement, useEffect, useId, useLayoutEffect, useRef, us
  * The styles are injected below, so no extra files are needed.
  */
 
-export type ToolCallStatus = 'running' | 'success' | 'error';
+type ToolCallStatus = 'running' | 'success' | 'error';
 
 export type ToolCallCardProps = {
   /** Tool name as the agent calls it, shown in mono – e.g. "search_web" */

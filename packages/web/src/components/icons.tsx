@@ -42,16 +42,6 @@ export const IconChevron = () => (
     <path d="M9 6l6 6-6 6" />
   </Svg>
 );
-export const IconBack = () => (
-  <Svg>
-    <path d="M15 6l-6 6 6 6" />
-  </Svg>
-);
-export const IconMenu = () => (
-  <Svg>
-    <path d="M4 7h16M4 12h16M4 17h16" />
-  </Svg>
-);
 export const IconChevronDown = () => (
   <Svg>
     <path d="M6 9l6 6 6-6" />
@@ -100,14 +90,9 @@ export const IconEye = () => (
     <circle cx="12" cy="12" r="2.8" />
   </Svg>
 );
-export const IconBox = () => (
+const IconBox = () => (
   <Svg>
     <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM4 7.5l8 4.5 8-4.5M12 12v9" />
-  </Svg>
-);
-export const IconChat = () => (
-  <Svg>
-    <path d="M5 18.5V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H8l-3 2.5z" />
   </Svg>
 );
 export const IconList = () => (
@@ -153,11 +138,6 @@ export const IconTerminal = () => (
     <path d="M7 9.5l3 2.5-3 2.5M12.5 15H17" />
   </Svg>
 );
-export const IconFactory = () => (
-  <Svg>
-    <path d="M3 20V10l5 3V10l5 3V10l5 3V5h3v15H3zM7 17h2M12 17h2M17 17h1" />
-  </Svg>
-);
 export const IconSidebar = () => (
   <Svg>
     <rect x="3" y="4" width="18" height="16" rx="2" />
@@ -170,30 +150,14 @@ export const IconCompose = () => (
     <path d="M17.5 3.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 8.5-8.5z" />
   </Svg>
 );
-export const IconPanel = () => (
-  <Svg>
-    <rect x="3" y="4" width="18" height="16" rx="2" />
-    <path d="M15 4v16" />
-  </Svg>
-);
 export const IconClose = () => (
   <Svg>
     <path d="M6 6l12 12M18 6L6 18" />
   </Svg>
 );
-export const IconFilter = () => (
-  <Svg>
-    <path d="M4 6h16M7 12h10M10 18h4" />
-  </Svg>
-);
 export const IconInbox = () => (
   <Svg>
     <path d="M3 13l3-8h12l3 8v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5zM3 13h5l1.5 2.5h5L16 13h5" />
-  </Svg>
-);
-export const IconHome = () => (
-  <Svg>
-    <path d="M4 10.5L12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1v-8.5z" />
   </Svg>
 );
 export const IconSettings = () => (
@@ -255,12 +219,6 @@ export const IconWorkflow = () => (
     <circle cx="12" cy="12" r="2" />
     <circle cx="19" cy="12" r="2" />
     <path d="M7 12h3M14 12h3" />
-  </Svg>
-);
-export const IconUsers = () => (
-  <Svg>
-    <circle cx="9" cy="8" r="3.5" />
-    <path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.2a6.5 6.5 0 0 1 3.5 5.8" />
   </Svg>
 );
 export const IconSpark = () => (

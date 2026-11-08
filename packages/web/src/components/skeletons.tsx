@@ -56,7 +56,7 @@ export function SkeletonLines({ lines = 3, size = 13, last = '60%' }: { lines?: 
 }
 
 /** PageHeader と同じ高さの見出し */
-export function PageHeaderSkeleton({ description = true }: { description?: boolean }) {
+function PageHeaderSkeleton({ description = true }: { description?: boolean }) {
   return (
     <div className={k.pageHead}>
       <div className={s.pageHeadText}>
@@ -101,7 +101,7 @@ const WIDTHS = ['78%', '56%', '64%', '42%', '70%', '50%'];
 const widthAt = (i: number) => WIDTHS[i % WIDTHS.length] ?? '60%';
 
 /** 表の1行。最初の列は2行（タイトルと補足）にする */
-export function SkeletonRow({ cols, seed = 0, className }: { cols: number; seed?: number; className?: string | undefined }) {
+function SkeletonRow({ cols, seed = 0, className }: { cols: number; seed?: number; className?: string | undefined }) {
   return (
     <tr className={className} aria-hidden="true">
       {Array.from({ length: cols }, (_, c) => (

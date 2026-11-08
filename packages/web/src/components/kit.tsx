@@ -50,32 +50,6 @@ export function Avatar({ name, kind = 'user', size = 28 }: { name?: string | und
   );
 }
 
-export function Tray({
-  head,
-  right,
-  children,
-  className,
-  label,
-}: {
-  head?: ReactNode;
-  right?: ReactNode;
-  children: ReactNode;
-  className?: string;
-  label?: string;
-}) {
-  return (
-    <section className={cx(s.tray, className)} aria-label={label}>
-      {(head || right) && (
-        <header className={s.trayHead}>
-          {head}
-          {right && <span className={s.trayRight}>{right}</span>}
-        </header>
-      )}
-      <div className={s.card}>{children}</div>
-    </section>
-  );
-}
-
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={cx(s.card, className)}>{children}</div>;
 }
@@ -87,15 +61,6 @@ export function Empty({ title, children, icon }: { title: string; children?: Rea
       <p className={s.emptyTitle}>{title}</p>
       {children && <div className={s.emptyBody}>{children}</div>}
     </div>
-  );
-}
-
-export function Spinner({ label = '読み込んでいます' }: { label?: string }) {
-  return (
-    <span className={s.spinnerWrap} role="status">
-      <span className={s.spinner} aria-hidden="true" />
-      <span className="sr-only">{label}</span>
-    </span>
   );
 }
 
@@ -132,14 +97,6 @@ export function ErrorBanner({ error, onRetry }: { error: string | null; onRetry?
     >
       {error}
     </Banner>
-  );
-}
-
-export function LinkButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
-  return (
-    <button type="button" className={s.linkButton} onClick={onClick}>
-      {children}
-    </button>
   );
 }
 

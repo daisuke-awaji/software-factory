@@ -1,5 +1,5 @@
 // ワークフローを図のノードと矢印にする（純粋な関数。位置は layout.ts で決める）
-import { analyzeWorkflow, graphEdges, nextTargets, type GraphIssue, type StepDef, type Workflow } from '@factory/contracts';
+import { analyzeWorkflow, graphEdges, type GraphIssue, type StepDef, type Workflow } from '@factory/contracts';
 import { stepLabel } from '../../lib/format';
 import type { ProgressStatus, StepStatus } from '../../lib/workflow';
 
@@ -32,21 +32,21 @@ export type GraphEdgeData = {
   state?: 'taken' | 'skipped';
 };
 
-export type ModelNode = { id: string; width: number; height: number; data: GraphNodeData };
-export type ModelEdge = { id: string; source: string; target: string; data: GraphEdgeData };
+type ModelNode = { id: string; width: number; height: number; data: GraphNodeData };
+type ModelEdge = { id: string; source: string; target: string; data: GraphEdgeData };
 export type Model = { nodes: ModelNode[]; edges: ModelEdge[]; issues: GraphIssue[] };
 
-export const NODE = { width: 168, height: 72 };
+const NODE = { width: 168, height: 72 };
 /** 縦に並べるとき（狭い画面）は、横に2つ並んでも入るように細くする */
-export const NODE_NARROW = { width: 150, height: 72 };
-export const START_NODE = { width: 72, height: 40 };
+const NODE_NARROW = { width: 150, height: 72 };
+const START_NODE = { width: 72, height: 40 };
 
 const actionText: Record<NonNullable<StepDef['action']>, string> = {
   'create-pull-request': 'PR を作る（VM なし）',
   'propose-publish': '公開を提案（VM なし）',
 };
 
-export function subOf(st: StepDef): string | undefined {
+function subOf(st: StepDef): string | undefined {
   if (st.type === 'system') return st.action ? actionText[st.action] : '処理を選んでください';
   if (st.type === 'approval') return '人が承認する';
   return st.image;
@@ -125,9 +125,4 @@ export function buildModel(
     edges.push({ id: e.id, source: e.from, target: e.to, data });
   }
   return { nodes, edges, issues };
-}
-
-/** 前へ進む矢印の先がない（ここで終わる）ステップ */
-export function isTerminal(st: StepDef) {
-  return nextTargets(st).length === 0 && !st.on?.pass && !Object.keys(st.on?.cases ?? {}).length;
 }

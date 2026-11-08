@@ -16,7 +16,7 @@ export type ProgressStep = {
 };
 export type StepStatus = { status: ProgressStatus; attempts: number; caseLabel?: string };
 
-export function workflowName(ref: string) {
+function workflowName(ref: string) {
   return ref.split('@')[0] ?? ref;
 }
 
@@ -25,7 +25,7 @@ export function findWorkflow(workflows: Workflow[] | undefined, ref: string) {
 }
 
 /** ステップの列（前へ進む矢印でいちばん長く辿ったときの段 + 1）。定義に誤りがあっても、並び順で出す */
-export function columnsOf(workflow: Workflow): Record<string, number> {
+function columnsOf(workflow: Workflow): Record<string, number> {
   const { layer } = analyzeWorkflow(workflow);
   return Object.fromEntries(workflow.steps.map((st, i) => [st.id, (layer[st.id] ?? i) + 1]));
 }

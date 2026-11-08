@@ -44,7 +44,7 @@ function edit(path: string, content: string, summary: string, result = '保存�
 }
 
 // ---------------------------------------------------------------- 計画
-export function planFor(sc: Scenario, item: Task, comments: string[]): Plan {
+function planFor(sc: Scenario, item: Task, comments: string[]): Plan {
   const repo = item.repo ? `${item.repo.owner}/${item.repo.name}` : undefined;
   const base: Record<Scenario, Omit<Plan, 'repos'>> = {
     'web-form': {
@@ -285,7 +285,7 @@ def normalize(name: str) -> str:
     return s
 `;
 
-export const reportHtml = `<!doctype html>
+const reportHtml = `<!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><title>部署別の売上レポート</title>
 <style>body{font-family:system-ui,sans-serif;margin:32px;color:#171717}h1{font-size:22px}table{border-collapse:collapse;margin-top:16px}td,th{padding:6px 12px;border-bottom:1px solid #eee;text-align:right}th:first-child,td:first-child{text-align:left}</style></head>
 <body><h1>部署別の売上レポート（2026年10月）</h1><p>添付のデータ（1,284 件）を部署ごとに集計しました。</p>

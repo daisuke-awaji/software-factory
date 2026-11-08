@@ -1,7 +1,7 @@
 // イベントを畳み込んで、ワークスペースに出す状態を作る（純粋な関数。ストアとホームの受け箱で共有する）
 import { type ApprovalReason, type FactoryEventEnvelope, type Plan, ulidTime, type TaskState } from '@factory/contracts';
 
-export type ChatMessage = {
+type ChatMessage = {
   id: string;
   role: 'user' | 'assistant';
   text: string;
@@ -33,7 +33,7 @@ export type ToolState = {
   endedAt?: number;
   runId?: string;
 };
-export type RunState = {
+type RunState = {
   runId: string;
   stepId: string;
   state: 'running' | 'completed' | 'failed';
@@ -238,9 +238,4 @@ export function pendingOf(s: Session): Pending | null {
   const latest = s.latestPlan ? s.plans[s.latestPlan] : undefined;
   if (latest && !latest.decision) return { kind: 'plan', version: latest.version, plan: latest.plan, at: latest.at };
   return null;
-}
-
-/** いま動いている（または最後に動いた）ステップの実行 */
-export function currentRun(s: Session): RunState | undefined {
-  return s.runs.findLast((r) => r.state === 'running') ?? s.runs.at(-1);
 }

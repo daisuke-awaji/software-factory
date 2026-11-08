@@ -199,7 +199,7 @@ steps:
 `,
 };
 
-export function parseWorkflowYaml(yaml: string): ReturnType<typeof Workflow.parse> {
+function parseWorkflowYaml(yaml: string): ReturnType<typeof Workflow.parse> {
   return Workflow.parse(parse(yaml));
 }
 

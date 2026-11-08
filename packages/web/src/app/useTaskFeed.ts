@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { errorMessage } from '../lib/api';
 import { useServices } from '../lib/services';
 
-export const PAGE = 30;
+const PAGE = 30;
 
 export type TaskFeed = {
   items: Task[] | undefined;

@@ -32,7 +32,7 @@ export const reasonLabel: Record<ApprovalReason, string> = {
   time: '作業時間',
 };
 
-export const terminalStates: TaskState[] = ['completed', 'failed', 'cancelled'];
+const terminalStates: TaskState[] = ['completed', 'failed', 'cancelled'];
 export const isTerminal = (s: TaskState | null | undefined) => !!s && terminalStates.includes(s);
 
 const stepNames: Record<string, string> = {
@@ -51,10 +51,6 @@ export const stepLabel = (id: string) => stepNames[id] ?? id;
 
 export function time(t: number | string) {
   return new Date(t).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-}
-
-export function dateTime(t: number | string) {
-  return new Date(t).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 export function date(t: number | string) {

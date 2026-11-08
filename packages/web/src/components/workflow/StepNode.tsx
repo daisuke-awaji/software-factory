@@ -18,7 +18,7 @@ import type { Direction } from './layout';
 import type { GraphNodeData } from './model';
 import s from './WorkflowGraph.module.css';
 
-export type FlowNodeData = GraphNodeData & { direction: Direction; editable: boolean };
+type FlowNodeData = GraphNodeData & { direction: Direction; editable: boolean };
 export type FlowNode = Node<FlowNodeData, 'step' | 'start'>;
 
 const typeIcon: Record<NonNullable<GraphNodeData['type']>, ReactNode> = {
@@ -27,7 +27,7 @@ const typeIcon: Record<NonNullable<GraphNodeData['type']>, ReactNode> = {
   approval: <IconPersonCheck />,
   system: <IconSettings />,
 };
-export const typeText: Record<NonNullable<GraphNodeData['type']>, string> = {
+const typeText: Record<NonNullable<GraphNodeData['type']>, string> = {
   agent: 'エージェント',
   command: 'コマンド',
   approval: '人の承認',

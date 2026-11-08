@@ -3,7 +3,7 @@ import { create } from 'zustand';
 
 export type Theme = 'light' | 'dark' | 'system';
 export type Tab = 'preview' | 'changes' | 'files' | 'plan' | 'log';
-export type Toast = { id: number; text: string; tone?: 'ok' | 'err' };
+type Toast = { id: number; text: string; tone?: 'ok' | 'err' };
 
 type UiState = {
   theme: Theme;

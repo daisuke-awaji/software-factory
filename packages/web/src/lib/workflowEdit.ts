@@ -42,7 +42,7 @@ export function branchMode(s: StepDef): BranchMode {
   return forwardTargets(s).length ? 'single' : 'end';
 }
 
-export function newStepId(wf: Draft, base: string): string {
+function newStepId(wf: Draft, base: string): string {
   const ids = new Set(wf.steps.map((s) => s.id));
   if (!ids.has(base)) return base;
   for (let n = 2; ; n++) if (!ids.has(`${base}-${n}`)) return `${base}-${n}`;
@@ -252,7 +252,7 @@ export function parseDraft(yaml: string, version: number): ParsedYaml {
 }
 
 /** YAML に書く形（既定値の項目は省く。キーの順をそろえる） */
-export function toPlainStep(s: StepDef): Record<string, unknown> {
+function toPlainStep(s: StepDef): Record<string, unknown> {
   const out: Record<string, unknown> = { id: s.id, type: s.type };
   if (s.image) out['image'] = s.image;
   if (s.network) out['network'] = s.network;

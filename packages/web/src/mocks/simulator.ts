@@ -17,7 +17,7 @@ const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
 // シードを作るときは、時計を進めながら一気に流す（タイマーを使わない）
 let virtualNow: number | null = null;
-export function now() {
+function now() {
   if (virtualNow === null) return Date.now();
   return virtualNow++;
 }
@@ -45,7 +45,7 @@ export function atTime<T>(t: number, fn: () => T): T {
   }
 }
 
-export function workflowOf(item: Task): Workflow {
+function workflowOf(item: Task): Workflow {
   const name = item.workflowRef.split('@')[0];
   const def = getDb().workflows.find((l) => l.name === name);
   if (!def) throw new Error(`ワークフローが見つかりません: ${item.workflowRef}`);

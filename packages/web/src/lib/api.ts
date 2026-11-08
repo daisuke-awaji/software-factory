@@ -36,7 +36,7 @@ import {
 } from '@factory/contracts';
 import { z } from 'zod';
 
-export class ApiRequestError extends Error {
+class ApiRequestError extends Error {
   constructor(
     public readonly status: number,
     public readonly body: ApiError,

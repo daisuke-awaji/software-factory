@@ -77,28 +77,6 @@
   color: var(--bg);
 }
 
-.tray {
-  background: var(--tray);
-  border-radius: var(--radius-tray);
-  padding: 6px;
-}
-.trayHead {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px 9px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--muted);
-}
-.trayRight {
-  margin-left: auto;
-  font-weight: 400;
-  color: var(--faint);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
 .card {
   background: var(--card);
   border: 1px solid var(--line);
@@ -129,19 +107,6 @@
 .emptyBody {
   font-size: 13px;
   max-width: 420px;
-}
-
-.spinnerWrap {
-  display: inline-flex;
-}
-.spinner {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid var(--line-strong);
-  border-top-color: var(--muted);
-  animation: spin 0.8s linear infinite;
 }
 
 .banner {

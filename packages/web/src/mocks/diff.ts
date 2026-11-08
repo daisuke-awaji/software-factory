@@ -22,7 +22,7 @@ function ops(a: string[], b: string[]): Op[] {
 
 const split = (s: string) => (s === '' ? [] : s.replace(/\n$/, '').split('\n'));
 
-export function unifiedPatch(before: string, after: string, context = 3): { patch: string; additions: number; deletions: number } {
+function unifiedPatch(before: string, after: string, context = 3): { patch: string; additions: number; deletions: number } {
   const list = ops(split(before), split(after));
   const changed = list.map((o, idx) => (o.k !== ' ' ? idx : -1)).filter((x) => x >= 0);
   if (changed.length === 0) return { patch: '', additions: 0, deletions: 0 };
