@@ -105,7 +105,7 @@ software-factory/
 - ルールは ESLint の `no-restricted-imports` で機械的に守らせる
 
 ### 3.2 TypeScript の設定
-- `tsconfig.base.json`: `strict`、`noUncheckedIndexedAccess`、`exactOptionalPropertyTypes`、`verbatimModuleSyntax`、`module: NodeNext`
+- `tsconfig.base.json`: `strict`、`noUncheckedIndexedAccess`、`exactOptionalPropertyTypes`、`noImplicitReturns`、`noFallthroughCasesInSwitch`、`verbatimModuleSyntax`、`module: NodeNext`
 - `infra/tsconfig.json` だけ `exactOptionalPropertyTypes: false`（N3）
 - `web` は `module: ESNext` / `moduleResolution: Bundler`、`jsx: react-jsx`
 
