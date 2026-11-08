@@ -1,0 +1,6 @@
+# 文書と参考コードは整形しない（docs/samples は ADR-0011 で変えないことにしている）
+docs/
+*.md
+pnpm-lock.yaml
+# MSW が生成するファイル
+packages/web/public/mockServiceWorker.js
