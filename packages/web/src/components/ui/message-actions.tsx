@@ -649,15 +649,7 @@ const css = /* css */ `
 .ui-ma__input { display: block; width: 100%; height: 30px; margin-top: 8px; padding: 0 10px; border: 0; border-radius: 8px; background: var(--ui-ma-well); font: inherit; font-size: 12.5px; color: var(--ui-ma-ink); outline: none; }
 .ui-ma__input::placeholder { color: var(--ui-ma-muted); }
 
-/* ----- Message text that crossfades between versions (MessageText) ----- */
-.ui-ma-text { overflow: hidden; transition: height 360ms var(--ui-ma-ease, cubic-bezier(0.32, 0.72, 0.24, 1)); }
-.ui-ma-text__swap { display: grid; }
-.ui-ma-text__inner { min-width: 0; overflow-wrap: anywhere; }
-.ui-ma-text__swap > .ui-ma__swap-item { display: block; animation: ui-ma-text-in 420ms ease both; }
-.ui-ma-text__swap > .ui-ma__swap-item[data-out] { animation: ui-ma-out 260ms ease both; }
-
 @keyframes ui-ma-in { from { opacity: 0; filter: blur(2px); } }
-@keyframes ui-ma-text-in { from { opacity: 0; filter: blur(3px); } }
 @keyframes ui-ma-out { from { opacity: 1; } to { opacity: 0; filter: blur(2px); } }
 @keyframes ui-ma-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes ui-ma-pop { 0% { transform: scale(1); } 40% { transform: scale(1.28) rotate(-8deg); } 100% { transform: scale(1); } }
@@ -678,7 +670,7 @@ const css = /* css */ `
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ui-ma *, .ui-ma *::before, .ui-ma *::after, .ui-ma-text, .ui-ma-text * { animation: none !important; transition: none !important; }
+  .ui-ma *, .ui-ma *::before, .ui-ma *::after { animation: none !important; transition: none !important; }
   .ui-ma__eq[data-on] i:nth-child(odd) { transform: scaleY(0.8); }
   .ui-ma__eq[data-on] i:nth-child(even) { transform: scaleY(0.5); }
 }
