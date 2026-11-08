@@ -68,7 +68,9 @@ export function NewTask({ workflows }: { workflows: Workflow[] | undefined }) {
   return (
     <section className={s.newTask} aria-label="新しいタスク">
       <div className={s.newCard}>
-        <label htmlFor={ids.text} className="sr-only">タスクの内容</label>
+        <label htmlFor={ids.text} className="sr-only">
+          タスクの内容
+        </label>
         <textarea
           id={ids.text}
           className={s.newInput}
@@ -101,7 +103,14 @@ export function NewTask({ workflows }: { workflows: Workflow[] | undefined }) {
           <button type="button" className={s.chip} onClick={() => fileInput.current?.click()}>
             <IconClip /> 添付
           </button>
-          <input ref={fileInput} type="file" multiple hidden aria-label="添付するファイル" onChange={(e) => void attach(e.target.files).then(() => (e.target.value = ''))} />
+          <input
+            ref={fileInput}
+            type="file"
+            multiple
+            hidden
+            aria-label="添付するファイル"
+            onChange={(e) => void attach(e.target.files).then(() => (e.target.value = ''))}
+          />
           {!repos.data && !repos.error && (
             <span className={s.chipSelect} aria-hidden="true">
               <IconRepo />
@@ -111,11 +120,15 @@ export function NewTask({ workflows }: { workflows: Workflow[] | undefined }) {
           {repos.data && (
             <span className={s.chipSelect}>
               <IconRepo />
-              <label htmlFor={ids.repo} className="sr-only">リポジトリ</label>
+              <label htmlFor={ids.repo} className="sr-only">
+                リポジトリ
+              </label>
               <select id={ids.repo} value={repo} onChange={(e) => setRepo(e.target.value)}>
                 <option value="">リポジトリを使わない</option>
                 {repos.data.map((r) => (
-                  <option key={`${r.owner}/${r.name}`} value={`${r.owner}/${r.name}`}>{r.owner}/{r.name}</option>
+                  <option key={`${r.owner}/${r.name}`} value={`${r.owner}/${r.name}`}>
+                    {r.owner}/{r.name}
+                  </option>
                 ))}
               </select>
             </span>
@@ -128,7 +141,8 @@ export function NewTask({ workflows }: { workflows: Workflow[] | undefined }) {
       </div>
       {selectedRepo && !selectedRepo.protected && (
         <Banner tone="warn">
-          {repo} の {selectedRepo.defaultBranch} ブランチには保護がありません。変更はプルリクエストで届きますが、レビューを必須にする設定をおすすめします。
+          {repo} の {selectedRepo.defaultBranch}{' '}
+          ブランチには保護がありません。変更はプルリクエストで届きますが、レビューを必須にする設定をおすすめします。
         </Banner>
       )}
       {error && <Banner tone="err">{error}</Banner>}

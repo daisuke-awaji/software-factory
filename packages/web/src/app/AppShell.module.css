@@ -1,49 +1,152 @@
 /* アプリの枠（ADR-0010）: 左にサイドパネル、右にページ。1280px 未満はアイコンの列にして、広げるときは左から重ねる。720px 未満は上の細いバーの左上のロゴで開く */
 /* 見えている範囲（キーボードを除く）に枠を置く。--app-h / --app-top は lib/viewport.ts が入れる */
 .app {
-  --sidebar-w: 264px; --sidebar-rail: 56px; display: flex;
-  position: fixed; left: 0; right: 0; top: var(--app-top, 0px);
-  height: 100%; height: var(--app-h, 100dvh);
+  --sidebar-w: 264px;
+  --sidebar-rail: 56px;
+  display: flex;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--app-top, 0px);
+  height: 100%;
+  height: var(--app-h, 100dvh);
 }
-.skip { position: absolute; left: -9999px; top: 8px; z-index: 100; padding: 6px 12px; border-radius: 8px; background: var(--ink); color: var(--bg); }
-.skip:focus { left: 8px; }
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  z-index: 100;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--bg);
+}
+.skip:focus {
+  left: 8px;
+}
 
-.side { flex: none; height: 100%; min-height: 0; }
-.content { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
-.main { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
-.app[data-full] .main { overflow: hidden; display: flex; flex-direction: column; }
-.page { max-width: 1240px; margin: 0 auto; padding: calc(28px + var(--safe-top)) max(28px, var(--safe-right)) calc(64px + var(--safe-bottom)) 28px; }
-.page[data-wide] { max-width: 1440px; }
+.side {
+  flex: none;
+  height: 100%;
+  min-height: 0;
+}
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.main {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.app[data-full] .main {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.page {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: calc(28px + var(--safe-top)) max(28px, var(--safe-right)) calc(64px + var(--safe-bottom)) 28px;
+}
+.page[data-wide] {
+  max-width: 1440px;
+}
 
 /* 左から滑り込むサイドパネル。閉じているときも置いておき、画面の外に出して隠す */
-.drawerRoot { position: fixed; inset: 0; z-index: 45; pointer-events: none; }
-.drawerRoot[data-open] { pointer-events: auto; }
-.backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.32); opacity: 0; transition: opacity 240ms ease; }
-.drawerRoot[data-open] .backdrop { opacity: 1; }
-.drawer {
-  position: absolute; top: 0; bottom: 0; left: 0; max-width: calc(100vw - 48px);
-  transform: translateX(-100%); visibility: hidden;
-  transition: transform 280ms var(--ease), visibility 0s linear 280ms;
-  will-change: transform; touch-action: pan-y;
+.drawerRoot {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
 }
-.drawerRoot[data-open] .drawer { transform: none; visibility: visible; transition: transform 280ms var(--ease), visibility 0s; }
-.drawer > * { max-width: 100%; }
+.drawerRoot[data-open] {
+  pointer-events: auto;
+}
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.32);
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+.drawerRoot[data-open] .backdrop {
+  opacity: 1;
+}
+.drawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  max-width: calc(100vw - 48px);
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition:
+    transform 280ms var(--ease),
+    visibility 0s linear 280ms;
+  will-change: transform;
+  touch-action: pan-y;
+}
+.drawerRoot[data-open] .drawer {
+  transform: none;
+  visibility: visible;
+  transition:
+    transform 280ms var(--ease),
+    visibility 0s;
+}
+.drawer > * {
+  max-width: 100%;
+}
 @media (prefers-reduced-motion: reduce) {
-  .backdrop, .drawer, .drawerRoot[data-open] .drawer { transition: none; }
+  .backdrop,
+  .drawer,
+  .drawerRoot[data-open] .drawer {
+    transition: none;
+  }
 }
 
 /* スマホの上の細いバー */
 .bar {
-  flex: none; display: flex; align-items: center; gap: 8px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   height: calc(48px + var(--safe-top));
   padding: var(--safe-top) max(12px, var(--safe-right)) 0 max(8px, var(--safe-left));
-  border-bottom: 1px solid var(--line); background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
 }
-.brand { text-decoration: none; font-weight: 600; font-size: 14px; letter-spacing: -0.01em; color: var(--ink); white-space: nowrap; }
-.mock { margin-left: auto; font-size: 11px; padding: 1px 7px; border-radius: 99px; border: 1px dashed var(--line-strong); color: var(--muted); }
-.conn { margin-left: auto; font-size: 12px; color: var(--alert); }
-.conn + .mock { margin-left: 0; }
+.brand {
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.mock {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  border: 1px dashed var(--line-strong);
+  color: var(--muted);
+}
+.conn {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--alert);
+}
+.conn + .mock {
+  margin-left: 0;
+}
 
 @media (max-width: 719px) {
-  .page { padding: 20px max(16px, var(--safe-right)) calc(48px + var(--safe-bottom)) max(16px, var(--safe-left)); }
+  .page {
+    padding: 20px max(16px, var(--safe-right)) calc(48px + var(--safe-bottom)) max(16px, var(--safe-left));
+  }
 }

@@ -8,7 +8,9 @@ const fresh = async (page: Page, path = '/') => {
 
 test('タスクを作って、計画を承認すると、検証のやり直しを経て PR とプレビューが届く', async ({ page }) => {
   await fresh(page);
-  await page.getByLabel('タスクの内容').fill('問い合わせフォームで、メールアドレスが正しくなくても送信できます。入力チェックを直してください。');
+  await page
+    .getByLabel('タスクの内容')
+    .fill('問い合わせフォームで、メールアドレスが正しくなくても送信できます。入力チェックを直してください。');
   await page.getByLabel('リポジトリ').selectOption('acme/support-site');
   await page.getByRole('button', { name: '開始する' }).click();
   await expect(page).toHaveURL(/\/t\//);

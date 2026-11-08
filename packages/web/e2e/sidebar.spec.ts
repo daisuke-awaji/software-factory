@@ -61,7 +61,8 @@ test('読み込んでいる間は、一覧の形だけを先に出す', async ({
   await page.addInitScript(() => {
     const original = window.fetch.bind(window);
     window.fetch = async (...args: Parameters<typeof fetch>) => {
-      if (String(args[0] instanceof Request ? args[0].url : args[0]).includes('/api/v1/tasks')) await new Promise((r) => setTimeout(r, 1500));
+      if (String(args[0] instanceof Request ? args[0].url : args[0]).includes('/api/v1/tasks'))
+        await new Promise((r) => setTimeout(r, 1500));
       return original(...args);
     };
   });

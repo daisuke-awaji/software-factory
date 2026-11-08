@@ -1,5 +1,14 @@
 // アプリで共通に使う小さな部品（AffectUI にないもの）。見た目は AffectUI のトレーとカードに揃える
-import { useEffect, useRef, useState, type CSSProperties, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+} from 'react';
 import type { Tone } from '../lib/format';
 import { useUi } from '../stores/ui';
 import { IconClose, IconWarning } from './icons';
@@ -16,7 +25,9 @@ export function Tag({ tone, children, pulse = tone === 'run' }: { tone?: Tone; c
 }
 
 export function Dot({ tone, label }: { tone?: Tone; label?: string }) {
-  return <span className={s.dot} data-tone={tone} role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true} />;
+  return (
+    <span className={s.dot} data-tone={tone} role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true} />
+  );
 }
 
 /** エージェントの印。AI らしさを抑えるため、きらきらではなく単純な幾何形にする（UI モックから引き継いだ） */
@@ -39,20 +50,6 @@ export function Avatar({ name, kind = 'user', size = 28 }: { name?: string | und
   );
 }
 
-export function Tray({ head, right, children, className, label }: { head?: ReactNode; right?: ReactNode; children: ReactNode; className?: string; label?: string }) {
-  return (
-    <section className={cx(s.tray, className)} aria-label={label}>
-      {(head || right) && (
-        <header className={s.trayHead}>
-          {head}
-          {right && <span className={s.trayRight}>{right}</span>}
-        </header>
-      )}
-      <div className={s.card}>{children}</div>
-    </section>
-  );
-}
-
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={cx(s.card, className)}>{children}</div>;
 }
@@ -67,16 +64,15 @@ export function Empty({ title, children, icon }: { title: string; children?: Rea
   );
 }
 
-export function Spinner({ label = '読み込んでいます' }: { label?: string }) {
-  return (
-    <span className={s.spinnerWrap} role="status">
-      <span className={s.spinner} aria-hidden="true" />
-      <span className="sr-only">{label}</span>
-    </span>
-  );
-}
-
-export function Banner({ tone = 'info', children, action }: { tone?: 'info' | 'warn' | 'err' | 'ok'; children: ReactNode; action?: ReactNode }) {
+export function Banner({
+  tone = 'info',
+  children,
+  action,
+}: {
+  tone?: 'info' | 'warn' | 'err' | 'ok';
+  children: ReactNode;
+  action?: ReactNode;
+}) {
   return (
     <div className={s.banner} data-tone={tone} role={tone === 'err' ? 'alert' : 'status'}>
       {(tone === 'warn' || tone === 'err') && <IconWarning />}
@@ -89,29 +85,48 @@ export function Banner({ tone = 'info', children, action }: { tone?: 'info' | 'w
 export function ErrorBanner({ error, onRetry }: { error: string | null; onRetry?: () => void }) {
   if (!error) return null;
   return (
-    <Banner tone="err" action={onRetry && <button type="button" className={s.linkButton} onClick={onRetry}>再読み込み</button>}>
+    <Banner
+      tone="err"
+      action={
+        onRetry && (
+          <button type="button" className={s.linkButton} onClick={onRetry}>
+            再読み込み
+          </button>
+        )
+      }
+    >
       {error}
     </Banner>
   );
 }
 
-export function LinkButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
-  return (
-    <button type="button" className={s.linkButton} onClick={onClick}>
-      {children}
-    </button>
-  );
-}
-
 // ---------- フォーム ----------
-export function Field({ label, hint, error, children, htmlFor }: { label: string; hint?: ReactNode; error?: string | undefined; children: ReactNode; htmlFor?: string }) {
+export function Field({
+  label,
+  hint,
+  error,
+  children,
+  htmlFor,
+}: {
+  label: string;
+  hint?: ReactNode;
+  error?: string | undefined;
+  children: ReactNode;
+  htmlFor?: string;
+}) {
   return (
     <div className={s.field}>
       <label className={s.label} htmlFor={htmlFor}>
         {label}
       </label>
       {children}
-      {error ? <p className={s.fieldError} role="alert">{error}</p> : hint ? <p className={s.hint}>{hint}</p> : null}
+      {error ? (
+        <p className={s.fieldError} role="alert">
+          {error}
+        </p>
+      ) : hint ? (
+        <p className={s.hint}>{hint}</p>
+      ) : null}
     </div>
   );
 }
@@ -129,7 +144,21 @@ export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
 }
 
 // ---------- ダイアログ（<dialog> を使う） ----------
-export function Dialog({ open, onClose, title, children, footer, width = 520 }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode; width?: number }) {
+export function Dialog({
+  open,
+  onClose,
+  title,
+  children,
+  footer,
+  width = 520,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  children: ReactNode;
+  footer?: ReactNode;
+  width?: number;
+}) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const d = ref.current;
@@ -174,7 +203,17 @@ export function Dialog({ open, onClose, title, children, footer, width = 520 }: 
 // ---------- メニュー ----------
 export type MenuItem = { label: string; onSelect: () => void; danger?: boolean; disabled?: boolean };
 
-export function Menu({ trigger, items, label, align = 'end' }: { trigger: ReactNode; items: MenuItem[]; label: string; align?: 'start' | 'end' }) {
+export function Menu({
+  trigger,
+  items,
+  label,
+  align = 'end',
+}: {
+  trigger: ReactNode;
+  items: MenuItem[];
+  label: string;
+  align?: 'start' | 'end';
+}) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -192,7 +231,15 @@ export function Menu({ trigger, items, label, align = 'end' }: { trigger: ReactN
   }, [open]);
   return (
     <div className={s.menuRoot} ref={root}>
-      <button type="button" className={s.iconButton} aria-haspopup="menu" aria-expanded={open} aria-label={label} title={label} onClick={() => setOpen((o) => !o)}>
+      <button
+        type="button"
+        className={s.iconButton}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={label}
+        title={label}
+        onClick={() => setOpen((o) => !o)}
+      >
         {trigger}
       </button>
       {open && (
@@ -219,7 +266,17 @@ export function Menu({ trigger, items, label, align = 'end' }: { trigger: ReactN
   );
 }
 
-export function IconButton({ label, onClick, children, disabled }: { label: string; onClick?: () => void; children: ReactNode; disabled?: boolean }) {
+export function IconButton({
+  label,
+  onClick,
+  children,
+  disabled,
+}: {
+  label: string;
+  onClick?: () => void;
+  children: ReactNode;
+  disabled?: boolean;
+}) {
   return (
     <button type="button" className={s.iconButton} aria-label={label} title={label} onClick={onClick} disabled={disabled}>
       {children}
@@ -244,7 +301,17 @@ export function Toasts() {
   );
 }
 
-export function Meter({ used, limit, label, format = (n) => n.toLocaleString('ja-JP') }: { used: number; limit: number; label: string; format?: (n: number) => string }) {
+export function Meter({
+  used,
+  limit,
+  label,
+  format = (n) => n.toLocaleString('ja-JP'),
+}: {
+  used: number;
+  limit: number;
+  label: string;
+  format?: (n: number) => string;
+}) {
   const ratio = Math.min(1, used / limit);
   const tone = ratio > 0.85 ? 'err' : ratio > 0.6 ? 'alert' : 'ok';
   return (
@@ -282,7 +349,9 @@ export function Table({ head, children, label }: { head: ReactNode[]; children: 
         <thead>
           <tr>
             {head.map((h, i) => (
-              <th key={i} scope="col">{h}</th>
+              <th key={i} scope="col">
+                {h}
+              </th>
             ))}
           </tr>
         </thead>

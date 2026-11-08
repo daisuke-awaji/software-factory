@@ -1,7 +1,14 @@
 // ワークフローの図（React Flow + ELK。ADR-0012）。見るだけ（view）・実行の様子を重ねる（run）・編集（edit）の3つで使う。
 // 位置は常に自動で決める（YAML に座標を書かない）。この部品は重いので、index.tsx から遅れて読み込む
 import {
-  ReactFlow, ReactFlowProvider, useReactFlow, useStore, type Connection, type EdgeChange, type IsValidConnection, type NodeChange,
+  ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
+  useStore,
+  type Connection,
+  type EdgeChange,
+  type IsValidConnection,
+  type NodeChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/base.css';
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
@@ -19,7 +26,14 @@ const edgeTypes = { flow: FlowEdgeView, loop: LoopEdgeView };
 /** 図のまわりの余白と、横へスクロールさせてでも保つ倍率 */
 const PAD = 16;
 const MIN_READABLE = 0.85;
-const statusText = { waiting: '未着手', running: '実行中', done: '完了', alert: '対応待ち', failed: '失敗', skipped: '通らなかった' } as const;
+const statusText = {
+  waiting: '未着手',
+  running: '実行中',
+  done: '完了',
+  alert: '対応待ち',
+  failed: '失敗',
+  skipped: '通らなかった',
+} as const;
 
 /** 戻る矢印が、間にあるノードの下（縦に並べたときは右）を通るようにする */
 function loopDip(model: Model, pos: Positioned['positions'], source: string, target: string, direction: Direction) {
@@ -30,12 +44,16 @@ function loopDip(model: Model, pos: Positioned['positions'], source: string, tar
   if (direction === 'RIGHT') {
     const lo = Math.min(pa.x, pb.x);
     const hi = Math.max(pa.x + a.width, pb.x + b.width);
-    const bottoms = model.nodes.filter((n) => pos[n.id] && pos[n.id]!.x < hi && pos[n.id]!.x + n.width > lo).map((n) => pos[n.id]!.y + n.height);
+    const bottoms = model.nodes
+      .filter((n) => pos[n.id] && pos[n.id]!.x < hi && pos[n.id]!.x + n.width > lo)
+      .map((n) => pos[n.id]!.y + n.height);
     return Math.max(...bottoms) + 22;
   }
   const lo = Math.min(pa.y, pb.y);
   const hi = Math.max(pa.y + a.height, pb.y + b.height);
-  const rights = model.nodes.filter((n) => pos[n.id] && pos[n.id]!.y < hi && pos[n.id]!.y + n.height > lo).map((n) => pos[n.id]!.x + n.width);
+  const rights = model.nodes
+    .filter((n) => pos[n.id] && pos[n.id]!.y < hi && pos[n.id]!.y + n.height > lo)
+    .map((n) => pos[n.id]!.x + n.width);
   return Math.max(...rights) + 22;
 }
 
@@ -67,11 +85,25 @@ function Canvas(props: WorkflowGraphProps) {
   const [positioned, setPositioned] = useState<(Positioned & { direction: Direction }) | null>(null);
   const flow = useReactFlow<FlowNode, FlowEdge>();
   const viewport = useStore((st) => `${st.width}x${st.height}`);
-  const layoutModel = useMemo(() => buildModel(workflow, statuses, planStatus, measured === 'DOWN'), [workflow, statuses, planStatus, measured]);
-  const shapeKey = useMemo(() => JSON.stringify([measured, layoutModel.nodes.map((n) => n.id), layoutModel.edges.filter((e) => e.data.kind !== 'fail').map((e) => [e.id, e.data.label])]), [measured, layoutModel]);
+  const layoutModel = useMemo(
+    () => buildModel(workflow, statuses, planStatus, measured === 'DOWN'),
+    [workflow, statuses, planStatus, measured],
+  );
+  const shapeKey = useMemo(
+    () =>
+      JSON.stringify([
+        measured,
+        layoutModel.nodes.map((n) => n.id),
+        layoutModel.edges.filter((e) => e.data.kind !== 'fail').map((e) => [e.id, e.data.label]),
+      ]),
+    [measured, layoutModel],
+  );
   // 描くときは、並べたときの向きにそろえる（向きが変わって並べ直している間も崩れない）
   const direction: Direction = positioned?.direction ?? measured ?? 'RIGHT';
-  const model = useMemo(() => (direction === measured ? layoutModel : buildModel(workflow, statuses, planStatus, direction === 'DOWN')), [direction, measured, layoutModel, workflow, statuses, planStatus]);
+  const model = useMemo(
+    () => (direction === measured ? layoutModel : buildModel(workflow, statuses, planStatus, direction === 'DOWN')),
+    [direction, measured, layoutModel, workflow, statuses, planStatus],
+  );
 
   useLayoutEffect(() => {
     const el = wrap.current;
@@ -132,8 +164,14 @@ function Canvas(props: WorkflowGraphProps) {
         targetHandle: loop ? 'loop-in' : 'in',
         type: loop ? 'loop' : 'flow',
         data: {
-          ...e.data, markers, direction,
-          ...(loop ? { dip: loopDip(model, positioned.positions, e.source, e.target, direction) } : positioned.routes[e.id] ? { route: positioned.routes[e.id]! } : {}),
+          ...e.data,
+          markers,
+          direction,
+          ...(loop
+            ? { dip: loopDip(model, positioned.positions, e.source, e.target, direction) }
+            : positioned.routes[e.id]
+              ? { route: positioned.routes[e.id]! }
+              : {}),
         },
         selectable: editable && e.data.kind !== 'start',
         selected: selected?.kind === 'edge' && selected.id === e.id,
@@ -170,7 +208,10 @@ function Canvas(props: WorkflowGraphProps) {
     const height = inner.current?.clientHeight ?? 0;
     if (!bounds || !width || !height) return;
     const zoom = Math.max(0.35, Math.min(1, (width - PAD * 2) / bounds.width, (height - PAD * 2) / bounds.height));
-    void flow.setViewport({ x: (width - bounds.width * zoom) / 2 - bounds.x * zoom, y: (height - bounds.height * zoom) / 2 - bounds.y * zoom, zoom }, { duration });
+    void flow.setViewport(
+      { x: (width - bounds.width * zoom) / 2 - bounds.x * zoom, y: (height - bounds.height * zoom) / 2 - bounds.y * zoom, zoom },
+      { duration },
+    );
   };
   // 位置が決まったときと、入れ物の大きさが変わったときだけ合わせる（状態が変わっただけ・選んだだけでは動かさない）
   const boundsKey = bounds ? `${bounds.x},${bounds.y},${bounds.width},${bounds.height}` : '';
@@ -198,7 +239,10 @@ function Canvas(props: WorkflowGraphProps) {
   };
   const onKeyDown = (e: KeyboardEvent) => {
     if (!editable || !selected) return;
-    if ((e.key === 'Delete' || e.key === 'Backspace') && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
+    if (
+      (e.key === 'Delete' || e.key === 'Backspace') &&
+      !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)
+    ) {
       e.preventDefault();
       onDelete?.();
     }
@@ -206,50 +250,65 @@ function Canvas(props: WorkflowGraphProps) {
   };
 
   // 縦に並べても横に入りきらないときは、小さくしすぎずに横へスクロールさせる（スマホで文字が読める大きさを保つ）
-  const scrollWidth = bounds && direction === 'DOWN' && !editable && bounds.width * MIN_READABLE + PAD * 2 > outerWidth ? Math.ceil(bounds.width * MIN_READABLE + PAD * 2) : undefined;
+  const scrollWidth =
+    bounds && direction === 'DOWN' && !editable && bounds.width * MIN_READABLE + PAD * 2 > outerWidth
+      ? Math.ceil(bounds.width * MIN_READABLE + PAD * 2)
+      : undefined;
   const zoomFor = (w: number) => (bounds ? Math.min(1, (w - PAD * 2) / bounds.width) : 1);
-  const height = props.height ?? (bounds ? Math.min(Math.max(bounds.height * zoomFor(scrollWidth ?? outerWidth) + PAD * 2, 120), direction === 'DOWN' ? 960 : 520) : 160);
+  const height =
+    props.height ??
+    (bounds
+      ? Math.min(Math.max(bounds.height * zoomFor(scrollWidth ?? outerWidth) + PAD * 2, 120), direction === 'DOWN' ? 960 : 520)
+      : 160);
   return (
     <div ref={wrap} className={s.wrap} data-mode={mode} style={{ height }} onKeyDown={onKeyDown}>
       <Markers prefix={markers} />
       <div className={s.scroller}>
-      <div ref={inner} className={s.inner} style={scrollWidth ? { width: scrollWidth } : undefined}>
-      <ReactFlow<FlowNode, FlowEdge>
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={connect}
-        isValidConnection={valid}
-        onPaneClick={() => onSelect?.(null)}
-        nodesDraggable={false}
-        nodesConnectable={editable}
-        elementsSelectable={mode !== 'view'}
-        connectionRadius={44}
-        deleteKeyCode={null}
-        selectionKeyCode={null}
-        multiSelectionKeyCode={null}
-        zoomOnScroll={false}
-        zoomOnDoubleClick={false}
-        panOnScroll={false}
-        preventScrolling={false}
-        panOnDrag={editable ? true : [1]}
-        minZoom={0.35}
-        maxZoom={1.6}
-        proOptions={{ hideAttribution: false }}
-        aria-label={label}
-      />
-      </div>
+        <div ref={inner} className={s.inner} style={scrollWidth ? { width: scrollWidth } : undefined}>
+          <ReactFlow<FlowNode, FlowEdge>
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={connect}
+            isValidConnection={valid}
+            onPaneClick={() => onSelect?.(null)}
+            nodesDraggable={false}
+            nodesConnectable={editable}
+            elementsSelectable={mode !== 'view'}
+            connectionRadius={44}
+            deleteKeyCode={null}
+            selectionKeyCode={null}
+            multiSelectionKeyCode={null}
+            zoomOnScroll={false}
+            zoomOnDoubleClick={false}
+            panOnScroll={false}
+            preventScrolling={false}
+            panOnDrag={editable ? true : [1]}
+            minZoom={0.35}
+            maxZoom={1.6}
+            proOptions={{ hideAttribution: false }}
+            aria-label={label}
+          />
+        </div>
       </div>
       <div className={s.controls}>
-        <button type="button" className={s.control} onClick={() => void flow.zoomIn({ duration: 150 })} aria-label="拡大"><IconZoomIn /></button>
-        <button type="button" className={s.control} onClick={() => void flow.zoomOut({ duration: 150 })} aria-label="縮小"><IconZoomOut /></button>
-        <button type="button" className={s.control} onClick={() => fit(200)} aria-label="全体を表示"><IconFit /></button>
+        <button type="button" className={s.control} onClick={() => void flow.zoomIn({ duration: 150 })} aria-label="拡大">
+          <IconZoomIn />
+        </button>
+        <button type="button" className={s.control} onClick={() => void flow.zoomOut({ duration: 150 })} aria-label="縮小">
+          <IconZoomOut />
+        </button>
+        <button type="button" className={s.control} onClick={() => fit(200)} aria-label="全体を表示">
+          <IconFit />
+        </button>
       </div>
       <ul className="sr-only" aria-label={`${label}（文で読む）`}>
-        {describe(props).map((d) => <li key={d.id}>{d.text}</li>)}
+        {describe(props).map((d) => (
+          <li key={d.id}>{d.text}</li>
+        ))}
       </ul>
     </div>
   );

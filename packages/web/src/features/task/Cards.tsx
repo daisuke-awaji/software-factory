@@ -13,7 +13,19 @@ export type PlanActions = {
   reject: () => Promise<void>;
 };
 
-export function PlanCard({ plan, actionable, latest, actions, defaultDetails = false }: { plan: PlanState; actionable: boolean; latest: boolean; actions?: PlanActions; defaultDetails?: boolean }) {
+export function PlanCard({
+  plan,
+  actionable,
+  latest,
+  actions,
+  defaultDetails = false,
+}: {
+  plan: PlanState;
+  actionable: boolean;
+  latest: boolean;
+  actions?: PlanActions;
+  defaultDetails?: boolean;
+}) {
   const [mode, setMode] = useState<'idle' | 'changes' | 'reject'>('idle');
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState<null | 'approve' | 'changes' | 'reject'>(null);
@@ -22,7 +34,16 @@ export function PlanCard({ plan, actionable, latest, actions, defaultDetails = f
   const d = plan.decision;
   const superseded = !latest && !d;
   const tone = d?.decision === 'approved' ? 'ok' : d?.decision === 'rejected' ? 'err' : d ? undefined : superseded ? undefined : 'alert';
-  const badge = d?.decision === 'approved' ? '承認済み' : d?.decision === 'rejected' ? '却下' : d?.decision === 'changes_requested' ? '修正を依頼' : superseded ? '古い版' : '承認待ち';
+  const badge =
+    d?.decision === 'approved'
+      ? '承認済み'
+      : d?.decision === 'rejected'
+        ? '却下'
+        : d?.decision === 'changes_requested'
+          ? '修正を依頼'
+          : superseded
+            ? '古い版'
+            : '承認待ち';
   const folded = !latest; // 古い版は要約だけを出す
 
   const run = async (kind: 'approve' | 'changes' | 'reject', fn: () => Promise<void>) => {
@@ -39,9 +60,15 @@ export function PlanCard({ plan, actionable, latest, actions, defaultDetails = f
   return (
     <section className={s.tray} data-muted={folded || undefined} aria-label={`計画 第${plan.version}版`}>
       <header className={s.trayHead}>
-        <span className={s.badge} data-tone={tone}>{badge}</span>
-        <span>計画 第{plan.version}版 · {p.steps.length} ステップ</span>
-        <span className={s.trayRight}>見積もり 約{p.estimate.minutes}分 · {usd(p.estimate.usd)}</span>
+        <span className={s.badge} data-tone={tone}>
+          {badge}
+        </span>
+        <span>
+          計画 第{plan.version}版 · {p.steps.length} ステップ
+        </span>
+        <span className={s.trayRight}>
+          見積もり 約{p.estimate.minutes}分 · {usd(p.estimate.usd)}
+        </span>
       </header>
       <div className={s.card}>
         <p className={s.summary}>{p.summaryForHumans}</p>
@@ -63,9 +90,21 @@ export function PlanCard({ plan, actionable, latest, actions, defaultDetails = f
                 <dt>目的</dt>
                 <dd>{p.goal}</dd>
                 <dt>成果物</dt>
-                <dd><ul>{p.deliverables.map((x) => <li key={x}>{x}</li>)}</ul></dd>
+                <dd>
+                  <ul>
+                    {p.deliverables.map((x) => (
+                      <li key={x}>{x}</li>
+                    ))}
+                  </ul>
+                </dd>
                 <dt>完了の条件</dt>
-                <dd><ul>{p.doneCriteria.map((x) => <li key={x}>{x}</li>)}</ul></dd>
+                <dd>
+                  <ul>
+                    {p.doneCriteria.map((x) => (
+                      <li key={x}>{x}</li>
+                    ))}
+                  </ul>
+                </dd>
                 <dt>リポジトリ</dt>
                 <dd>{p.repos.length ? p.repos.join('、') : 'なし（ワークスペースだけで作業します）'}</dd>
                 <dt>外部への通信</dt>
@@ -95,12 +134,28 @@ export function PlanCard({ plan, actionable, latest, actions, defaultDetails = f
         ) : actionable && actions ? (
           mode === 'changes' ? (
             <div className={s.changeBox}>
-              <label htmlFor={commentId} className="sr-only">直してほしい点</label>
-              <TextArea id={commentId} rows={3} autoFocus value={comment} placeholder="直してほしい点を書いてください（例: グラフは折れ線にしてください）" onChange={(e) => setComment(e.target.value)} />
+              <label htmlFor={commentId} className="sr-only">
+                直してほしい点
+              </label>
+              <TextArea
+                id={commentId}
+                rows={3}
+                autoFocus
+                value={comment}
+                placeholder="直してほしい点を書いてください（例: グラフは折れ線にしてください）"
+                onChange={(e) => setComment(e.target.value)}
+              />
               <div className={s.actions} style={{ borderTop: 0, paddingTop: 0 }}>
                 <span className={s.actionsHint}>送ると、エージェントが計画を見直します</span>
-                <Button size="sm" variant="ghost" onClick={() => setMode('idle')}>やめる</Button>
-                <Button size="sm" disabled={!comment.trim()} loading={busy === 'changes'} onClick={() => void run('changes', () => actions.requestChanges(comment.trim()))}>
+                <Button size="sm" variant="ghost" onClick={() => setMode('idle')}>
+                  やめる
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={!comment.trim()}
+                  loading={busy === 'changes'}
+                  onClick={() => void run('changes', () => actions.requestChanges(comment.trim()))}
+                >
                   修正を依頼する
                 </Button>
               </div>
@@ -108,15 +163,25 @@ export function PlanCard({ plan, actionable, latest, actions, defaultDetails = f
           ) : mode === 'reject' ? (
             <div className={s.actions}>
               <span className={s.actionsHint}>却下すると、このタスクは中止になります。よろしいですか？</span>
-              <Button size="sm" variant="ghost" onClick={() => setMode('idle')}>戻る</Button>
-              <Button size="sm" variant="destructive" loading={busy === 'reject'} onClick={() => void run('reject', actions.reject)}>却下する</Button>
+              <Button size="sm" variant="ghost" onClick={() => setMode('idle')}>
+                戻る
+              </Button>
+              <Button size="sm" variant="destructive" loading={busy === 'reject'} onClick={() => void run('reject', actions.reject)}>
+                却下する
+              </Button>
             </div>
           ) : (
             <div className={s.actions}>
               <span className={s.actionsHint}>承認すると、作業を始めます</span>
-              <Button size="sm" variant="ghost" onClick={() => setMode('reject')}>却下</Button>
-              <Button size="sm" variant="secondary" onClick={() => setMode('changes')}>修正を依頼</Button>
-              <Button size="sm" loading={busy === 'approve'} onClick={() => void run('approve', actions.approve)}>承認して開始</Button>
+              <Button size="sm" variant="ghost" onClick={() => setMode('reject')}>
+                却下
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => setMode('changes')}>
+                修正を依頼
+              </Button>
+              <Button size="sm" loading={busy === 'approve'} onClick={() => void run('approve', actions.approve)}>
+                承認して開始
+              </Button>
             </div>
           )
         ) : null}
@@ -125,7 +190,15 @@ export function PlanCard({ plan, actionable, latest, actions, defaultDetails = f
   );
 }
 
-export function ApprovalCard({ approval, actionable, onAnswer }: { approval: ApprovalState; actionable: boolean; onAnswer: (d: 'approve' | 'deny') => Promise<void> }) {
+export function ApprovalCard({
+  approval,
+  actionable,
+  onAnswer,
+}: {
+  approval: ApprovalState;
+  actionable: boolean;
+  onAnswer: (d: 'approve' | 'deny') => Promise<void>;
+}) {
   const [busy, setBusy] = useState<null | 'approve' | 'deny'>(null);
   const r = approval.resolved;
   const answer = async (d: 'approve' | 'deny') => {
@@ -139,7 +212,9 @@ export function ApprovalCard({ approval, actionable, onAnswer }: { approval: App
   return (
     <section className={s.tray} aria-label={`${reasonLabel[approval.reason]}の承認`}>
       <header className={s.trayHead}>
-        <span className={s.badge} data-tone={r ? (r.decision === 'approve' ? 'ok' : undefined) : 'alert'}>{r ? (r.decision === 'approve' ? '許可済み' : '許可しない') : '確認が必要'}</span>
+        <span className={s.badge} data-tone={r ? (r.decision === 'approve' ? 'ok' : undefined) : 'alert'}>
+          {r ? (r.decision === 'approve' ? '許可済み' : '許可しない') : '確認が必要'}
+        </span>
         <span>{reasonLabel[approval.reason]}の承認</span>
         <span className={s.trayRight}>{time(approval.at)}</span>
       </header>
@@ -153,8 +228,12 @@ export function ApprovalCard({ approval, actionable, onAnswer }: { approval: App
         ) : actionable ? (
           <div className={s.actions}>
             <span className={s.actionsHint}>回答するまで、作業は止まっています</span>
-            <Button size="sm" variant="secondary" loading={busy === 'deny'} onClick={() => void answer('deny')}>許可しない</Button>
-            <Button size="sm" loading={busy === 'approve'} onClick={() => void answer('approve')}>許可する</Button>
+            <Button size="sm" variant="secondary" loading={busy === 'deny'} onClick={() => void answer('deny')}>
+              許可しない
+            </Button>
+            <Button size="sm" loading={busy === 'approve'} onClick={() => void answer('approve')}>
+              許可する
+            </Button>
           </div>
         ) : null}
       </div>

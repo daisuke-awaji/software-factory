@@ -7,7 +7,10 @@ export type Draft = Workflow;
 export type StepType = StepDef['type'];
 
 const finish = (wf: Draft): Draft => inferNeeds(wf);
-const map = (wf: Draft, id: string, fn: (s: StepDef) => StepDef): Draft => ({ ...wf, steps: wf.steps.map((s) => (s.id === id ? fn(s) : s)) });
+const map = (wf: Draft, id: string, fn: (s: StepDef) => StepDef): Draft => ({
+  ...wf,
+  steps: wf.steps.map((s) => (s.id === id ? fn(s) : s)),
+});
 
 /** on を整える（空になったら消す） */
 function withOn(s: StepDef, on: NonNullable<StepDef['on']>): StepDef {
@@ -39,7 +42,7 @@ export function branchMode(s: StepDef): BranchMode {
   return forwardTargets(s).length ? 'single' : 'end';
 }
 
-export function newStepId(wf: Draft, base: string): string {
+function newStepId(wf: Draft, base: string): string {
   const ids = new Set(wf.steps.map((s) => s.id));
   if (!ids.has(base)) return base;
   for (let n = 2; ; n++) if (!ids.has(`${base}-${n}`)) return `${base}-${n}`;
@@ -89,20 +92,22 @@ export function removeStep(wf: Draft, id: string): Draft {
     const t = forwardTargets(gone);
     return t.length === 1 && !Object.keys(gone.on?.cases ?? {}).length ? t[0] : undefined;
   })();
-  const steps = wf.steps.filter((s) => s.id !== id).map((s) => {
-    let st = s;
-    const nexts = nextTargets(st);
-    if (nexts.includes(id)) {
-      const replaced = nexts.flatMap((n) => (n === id ? (bridge && !nexts.includes(bridge) ? [bridge] : []) : [n]));
-      st = withNext(st, replaced);
-    }
-    if (st.on?.pass === id) st = withOn(st, { ...st.on, pass: bridge });
-    if (st.on?.cases && Object.values(st.on.cases).includes(id)) {
-      st = withOn(st, { ...st.on, cases: Object.fromEntries(Object.entries(st.on.cases).filter(([, v]) => v !== id)) });
-    }
-    if (st.on?.fail?.goto === id) st = withOn(st, { ...st.on, fail: undefined });
-    return st;
-  });
+  const steps = wf.steps
+    .filter((s) => s.id !== id)
+    .map((s) => {
+      let st = s;
+      const nexts = nextTargets(st);
+      if (nexts.includes(id)) {
+        const replaced = nexts.flatMap((n) => (n === id ? (bridge && !nexts.includes(bridge) ? [bridge] : []) : [n]));
+        st = withNext(st, replaced);
+      }
+      if (st.on?.pass === id) st = withOn(st, { ...st.on, pass: bridge });
+      if (st.on?.cases && Object.values(st.on.cases).includes(id)) {
+        st = withOn(st, { ...st.on, cases: Object.fromEntries(Object.entries(st.on.cases).filter(([, v]) => v !== id)) });
+      }
+      if (st.on?.fail?.goto === id) st = withOn(st, { ...st.on, fail: undefined });
+      return st;
+    });
   return finish({ ...wf, steps });
 }
 
@@ -114,12 +119,14 @@ export function connect(wf: Draft, from: string, to: string, kind: 'forward' | '
   }
   if (kind === 'fail') return finish(map(wf, from, (s) => withOn(s, { ...s.on, fail: { goto: to, maxLoops: s.on?.fail?.maxLoops ?? 1 } })));
   if (from === to) return wf;
-  return finish(map(wf, from, (raw) => {
-    const s = normalizePass(raw);
-    if (forwardTargets(s).includes(to)) return s;
-    if (branchMode(s) === 'cases') return withOn(s, { ...s.on, cases: { ...s.on?.cases, [newCaseLabel(s)]: to } });
-    return withNext(s, [...nextTargets(s), to]);
-  }));
+  return finish(
+    map(wf, from, (raw) => {
+      const s = normalizePass(raw);
+      if (forwardTargets(s).includes(to)) return s;
+      if (branchMode(s) === 'cases') return withOn(s, { ...s.on, cases: { ...s.on?.cases, [newCaseLabel(s)]: to } });
+      return withNext(s, [...nextTargets(s), to]);
+    }),
+  );
 }
 
 /** 矢印を消す（graphEdges の id を受け取る） */
@@ -127,49 +134,66 @@ export function disconnect(wf: Draft, edgeId: string): Draft {
   const fail = /^(.+)!->(.+)$/.exec(edgeId);
   if (fail) return finish(map(wf, fail[1]!, (s) => withOn(s, { ...s.on, fail: undefined })));
   const kase = /^(.+)=(.+)->(.+)$/.exec(edgeId);
-  if (kase) return finish(map(wf, kase[1]!, (s) => withOn(s, { ...s.on, cases: Object.fromEntries(Object.entries(s.on?.cases ?? {}).filter(([k]) => k !== kase[2])) })));
+  if (kase)
+    return finish(
+      map(wf, kase[1]!, (s) =>
+        withOn(s, { ...s.on, cases: Object.fromEntries(Object.entries(s.on?.cases ?? {}).filter(([k]) => k !== kase[2])) }),
+      ),
+    );
   const fwd = /^(.+)->(.+)$/.exec(edgeId);
   if (!fwd) return wf;
   const [, from, to] = fwd as unknown as [string, string, string];
-  return finish(map(wf, from, (raw) => {
-    const s = normalizePass(raw);
-    const next = nextTargets(s).filter((n) => n !== to);
-    // 結果で分けていて「それ以外」の矢印を消したら、最初のラベルの先を「それ以外」にする
-    if (branchMode(s) === 'cases' && next.length === 0) {
-      const [first, ...rest] = Object.entries(s.on?.cases ?? {});
-      if (first) return withNext(withOn(s, { ...s.on, cases: Object.fromEntries(rest) }), [first[1]]);
-    }
-    return withNext(s, next);
-  }));
+  return finish(
+    map(wf, from, (raw) => {
+      const s = normalizePass(raw);
+      const next = nextTargets(s).filter((n) => n !== to);
+      // 結果で分けていて「それ以外」の矢印を消したら、最初のラベルの先を「それ以外」にする
+      if (branchMode(s) === 'cases' && next.length === 0) {
+        const [first, ...rest] = Object.entries(s.on?.cases ?? {});
+        if (first) return withNext(withOn(s, { ...s.on, cases: Object.fromEntries(rest) }), [first[1]]);
+      }
+      return withNext(s, next);
+    }),
+  );
 }
 
 /** 2本以上の前へ進む矢印を、並列にするか、結果のラベルで分けるか */
 export function setBranchMode(wf: Draft, id: string, mode: 'parallel' | 'cases'): Draft {
-  return finish(map(wf, id, (raw) => {
-    const s = normalizePass(raw);
-    const targets = forwardTargets(s);
-    if (targets.length < 2) return s;
-    if (mode === 'parallel') return withNext(withOn(s, { ...s.on, cases: undefined }), targets);
-    const [first, ...rest] = targets;
-    const cases = Object.fromEntries(rest.map((t, i) => [`case-${i + 1}`, t]));
-    return withOn(withNext(s, [first!]), { ...s.on, cases });
-  }));
+  return finish(
+    map(wf, id, (raw) => {
+      const s = normalizePass(raw);
+      const targets = forwardTargets(s);
+      if (targets.length < 2) return s;
+      if (mode === 'parallel') return withNext(withOn(s, { ...s.on, cases: undefined }), targets);
+      const [first, ...rest] = targets;
+      const cases = Object.fromEntries(rest.map((t, i) => [`case-${i + 1}`, t]));
+      return withOn(withNext(s, [first!]), { ...s.on, cases });
+    }),
+  );
 }
 
 export function renameCase(wf: Draft, id: string, from: string, to: string): Draft {
-  return map(wf, id, (s) => withOn(s, { ...s.on, cases: Object.fromEntries(Object.entries(s.on?.cases ?? {}).map(([k, v]) => [k === from ? to : k, v])) }));
+  return map(wf, id, (s) =>
+    withOn(s, { ...s.on, cases: Object.fromEntries(Object.entries(s.on?.cases ?? {}).map(([k, v]) => [k === from ? to : k, v])) }),
+  );
 }
 
 /** 結果で分けるとき、ラベルが合わなかったときに進む先（next）と、ラベルの付いた先を入れ替える */
 export function makeDefault(wf: Draft, id: string, label: string): Draft {
-  return finish(map(wf, id, (raw) => {
-    const s = normalizePass(raw);
-    const target = s.on?.cases?.[label];
-    const current = nextTargets(s)[0];
-    if (!target) return s;
-    const cases = Object.fromEntries(Object.entries(s.on?.cases ?? {}).map(([k, v]) => (k === label ? (current ? [k, current] : null) : [k, v])).filter((x): x is [string, string] => !!x));
-    return withOn(withNext(s, [target]), { ...s.on, cases });
-  }));
+  return finish(
+    map(wf, id, (raw) => {
+      const s = normalizePass(raw);
+      const target = s.on?.cases?.[label];
+      const current = nextTargets(s)[0];
+      if (!target) return s;
+      const cases = Object.fromEntries(
+        Object.entries(s.on?.cases ?? {})
+          .map(([k, v]) => (k === label ? (current ? [k, current] : null) : [k, v]))
+          .filter((x): x is [string, string] => !!x),
+      );
+      return withOn(withNext(s, [target]), { ...s.on, cases });
+    }),
+  );
 }
 
 export function setMaxLoops(wf: Draft, id: string, maxLoops: number): Draft {
@@ -228,7 +252,7 @@ export function parseDraft(yaml: string, version: number): ParsedYaml {
 }
 
 /** YAML に書く形（既定値の項目は省く。キーの順をそろえる） */
-export function toPlainStep(s: StepDef): Record<string, unknown> {
+function toPlainStep(s: StepDef): Record<string, unknown> {
   const out: Record<string, unknown> = { id: s.id, type: s.type };
   if (s.image) out['image'] = s.image;
   if (s.network) out['network'] = s.network;

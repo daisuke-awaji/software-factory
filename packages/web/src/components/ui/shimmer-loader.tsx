@@ -1,7 +1,7 @@
-"use client";
+'use client';
 // AffectUI（無料の部品）を取り込んだもの（ADR-0008）
 
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, ReactNode } from 'react';
 
 /*
  * Shimmer Loader – loading states with a soft light sweep, in a single self-contained file.
@@ -30,7 +30,7 @@ export type ShimmerTextProps = {
   className?: string;
 };
 
-const len = (v: number | string | undefined) => (typeof v === "number" ? `${v}px` : v);
+const len = (v: number | string | undefined) => (typeof v === 'number' ? `${v}px` : v);
 
 const Style = () => (
   <style href="ui-shimmer-loader" precedence="default">
@@ -44,13 +44,13 @@ export function Skeleton({ width, height, radius, circle, className, style }: Sk
     <>
       <Style />
       <span
-        className={["ui-shm", className].filter(Boolean).join(" ")}
+        className={['ui-shm', className].filter(Boolean).join(' ')}
         aria-hidden="true"
         style={{
-          flexShrink: circle || typeof width === "number" ? 0 : undefined,
+          flexShrink: circle || typeof width === 'number' ? 0 : undefined,
           width: w,
           height: circle ? (w ?? len(height)) : len(height),
-          borderRadius: circle ? "50%" : len(radius),
+          borderRadius: circle ? '50%' : len(radius),
           ...style,
         }}
       />
@@ -63,8 +63,8 @@ export function ShimmerText({ children, duration = 2, className }: ShimmerTextPr
     <>
       <Style />
       <span
-        className={["ui-shm-text", className].filter(Boolean).join(" ")}
-        style={{ "--ui-shm-text-dur": `${duration}s` } as CSSProperties}
+        className={['ui-shm-text', className].filter(Boolean).join(' ')}
+        style={{ '--ui-shm-text-dur': `${duration}s` } as CSSProperties}
       >
         {children}
       </span>

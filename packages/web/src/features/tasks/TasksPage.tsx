@@ -75,7 +75,11 @@ export function TasksPage() {
         <TasksSkeleton phone={phone} />
       ) : shown.length === 0 ? (
         <Empty title={query ? '見つかりませんでした' : 'この条件のタスクはありません'} icon={<IconInbox />}>
-          {filter === 'all' && !query && <><Link to="/">新しいタスク</Link>から、最初のタスクを作ってみましょう。</>}
+          {filter === 'all' && !query && (
+            <>
+              <Link to="/">新しいタスク</Link>から、最初のタスクを作ってみましょう。
+            </>
+          )}
         </Empty>
       ) : phone ? (
         <TaskCards items={shown} workflows={workflows.data} pending={pending} />
@@ -100,10 +104,16 @@ function TasksSkeleton({ phone }: { phone: boolean }) {
             <li key={i}>
               <span className={s.cardLink}>
                 <span className={s.cardTop}>
-                  <span className={s.rowTitle}><SkeletonText size={13.5} width={w} /></span>
-                  <span className={s.cardTime}><SkeletonText size={12} width={36} /></span>
+                  <span className={s.rowTitle}>
+                    <SkeletonText size={13.5} width={w} />
+                  </span>
+                  <span className={s.cardTime}>
+                    <SkeletonText size={12} width={36} />
+                  </span>
                 </span>
-                <span className={s.rowSub}><SkeletonText size={12} width="45%" /></span>
+                <span className={s.rowSub}>
+                  <SkeletonText size={12} width="45%" />
+                </span>
                 <span className={s.cardBottom}>
                   <Skeleton width={64} height={22} radius={999} />
                   <Skeleton width={72} height={10} />
@@ -121,7 +131,9 @@ function TasksSkeleton({ phone }: { phone: boolean }) {
           <thead>
             <tr>
               {HEAD.map((h, i) => (
-                <th key={h} scope="col" className={i >= 3 ? s.num : undefined}>{h}</th>
+                <th key={h} scope="col" className={i >= 3 ? s.num : undefined}>
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
@@ -129,19 +141,33 @@ function TasksSkeleton({ phone }: { phone: boolean }) {
             {rows.map((w, i) => (
               <tr key={i}>
                 <td>
-                  <span className={s.rowTitle}><SkeletonText size={13.5} width={w} /></span>
-                  <span className={s.rowSub}><SkeletonText size={12} width="34%" /></span>
+                  <span className={s.rowTitle}>
+                    <SkeletonText size={13.5} width={w} />
+                  </span>
+                  <span className={s.rowSub}>
+                    <SkeletonText size={12} width="34%" />
+                  </span>
                 </td>
-                <td><Skeleton width={64} height={22} radius={999} /></td>
+                <td>
+                  <Skeleton width={64} height={22} radius={999} />
+                </td>
                 <td>
                   <span className={s.workflowCell}>
                     <Skeleton width={84} height={10} />
-                    <span className={s.workflowName}><SkeletonText size={11.5} width={64} /></span>
+                    <span className={s.workflowName}>
+                      <SkeletonText size={11.5} width={64} />
+                    </span>
                   </span>
                 </td>
-                <td className={s.num}><SkeletonText size={13.5} width={40} end /></td>
-                <td className={s.num}><SkeletonText size={13.5} width={40} end /></td>
-                <td className={s.num}><SkeletonText size={13.5} width={44} end /></td>
+                <td className={s.num}>
+                  <SkeletonText size={13.5} width={40} end />
+                </td>
+                <td className={s.num}>
+                  <SkeletonText size={13.5} width={40} end />
+                </td>
+                <td className={s.num}>
+                  <SkeletonText size={13.5} width={44} end />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -161,9 +187,15 @@ function TaskTable({ items, workflows, pending }: { items: Task[]; workflows: Wo
             <th scope="col">タスク</th>
             <th scope="col">状態</th>
             <th scope="col">ワークフロー</th>
-            <th scope="col" className={s.num}>所要</th>
-            <th scope="col" className={s.num}>費用</th>
-            <th scope="col" className={s.num}>更新</th>
+            <th scope="col" className={s.num}>
+              所要
+            </th>
+            <th scope="col" className={s.num}>
+              費用
+            </th>
+            <th scope="col" className={s.num}>
+              更新
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -183,11 +215,17 @@ function TaskTable({ items, workflows, pending }: { items: Task[]; workflows: Wo
                   </span>
                 </td>
                 <td>
-                  <Tag tone={stateTone[i.state]}>{p?.kind === 'approval' ? `${reasonLabel[p.approval.reason]}の承認待ち` : stateLabel[i.state]}</Tag>
+                  <Tag tone={stateTone[i.state]}>
+                    {p?.kind === 'approval' ? `${reasonLabel[p.approval.reason]}の承認待ち` : stateLabel[i.state]}
+                  </Tag>
                 </td>
                 <td>
                   <span className={s.workflowCell}>
-                    <StepProgress size="xs" steps={progressFromTask(workflow, i, p?.kind)} label={`${workflow?.title ?? i.workflowRef} の進み具合`} />
+                    <StepProgress
+                      size="xs"
+                      steps={progressFromTask(workflow, i, p?.kind)}
+                      label={`${workflow?.title ?? i.workflowRef} の進み具合`}
+                    />
                     <span className={s.workflowName}>{workflow?.title ?? i.workflowRef}</span>
                   </span>
                 </td>
@@ -223,8 +261,14 @@ function TaskCards({ items, workflows, pending }: { items: Task[]; workflows: Wo
                 {i.costUsd != null && ` · ${usd(i.costUsd)}`}
               </span>
               <span className={s.cardBottom}>
-                <Tag tone={stateTone[i.state]}>{p?.kind === 'approval' ? `${reasonLabel[p.approval.reason]}の承認待ち` : stateLabel[i.state]}</Tag>
-                <StepProgress size="xs" steps={progressFromTask(workflow, i, p?.kind)} label={`${workflow?.title ?? i.workflowRef} の進み具合`} />
+                <Tag tone={stateTone[i.state]}>
+                  {p?.kind === 'approval' ? `${reasonLabel[p.approval.reason]}の承認待ち` : stateLabel[i.state]}
+                </Tag>
+                <StepProgress
+                  size="xs"
+                  steps={progressFromTask(workflow, i, p?.kind)}
+                  label={`${workflow?.title ?? i.workflowRef} の進み具合`}
+                />
               </span>
             </Link>
           </li>

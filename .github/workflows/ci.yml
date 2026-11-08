@@ -1,6 +1,6 @@
 name: ci
 
-# 型チェック・テスト・ビルド（実装計画 §8）。web の E2E は MSW のモックで動かす
+# 型チェック・lint・整形・不要コード・テスト・ビルド（実装計画 §8）。web の E2E は MSW のモックで動かす
 on:
   push:
     branches: [main]
@@ -20,6 +20,9 @@ jobs:
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm knip
       - run: pnpm test
       - run: pnpm build
 

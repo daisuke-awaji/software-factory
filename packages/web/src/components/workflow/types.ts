@@ -2,7 +2,7 @@ import type { Workflow } from '@factory/contracts';
 import type { ProgressStatus, StepStatus } from '../../lib/workflow';
 
 export type GraphSelection = { kind: 'step'; id: string } | { kind: 'edge'; id: string };
-export type ConnectKind = 'forward' | 'fail' | 'start';
+type ConnectKind = 'forward' | 'fail' | 'start';
 
 export type WorkflowGraphProps = {
   workflow: Pick<Workflow, 'steps'>;

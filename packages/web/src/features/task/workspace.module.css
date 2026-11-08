@@ -1,7 +1,13 @@
 /* ワークスペース（パターン B）: 会話と成果物を左右に並べる。UI モックの b.css / blocks.css を CSS Modules に移した */
 
 /* サイドパネルの開け閉めで幅が変わるので、ヘッダーは画面の幅ではなくワークスペースの幅（コンテナー クエリー）で出し分ける */
-.page { flex: 1; min-height: 0; display: flex; flex-direction: column; container: ws / inline-size; }
+.page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  container: ws / inline-size;
+}
 
 /* ---------- ヘッダー ---------- */
 .head {
@@ -14,172 +20,725 @@
   border-bottom: 1px solid var(--line);
   background: var(--bg);
 }
-.crumbs { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 13px; color: var(--muted); }
-.crumbs > :global(.icon) { color: var(--faint); width: 14px; height: 14px; }
-.crumb { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; min-width: 0; flex: 0 1000 auto; overflow: hidden; }
-.crumb :global(.icon) { width: 14px; height: 14px; }
-.title { flex: 0 1 auto; min-width: 96px; margin: 0; font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 360px; }
-.headRight { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-.headLine { padding: 0 6px; }
-.headTag { display: inline-flex; }
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.crumbs > :global(.icon) {
+  color: var(--faint);
+  width: 14px;
+  height: 14px;
+}
+.crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 0 1000 auto;
+  overflow: hidden;
+}
+.crumb :global(.icon) {
+  width: 14px;
+  height: 14px;
+}
+.title {
+  flex: 0 1 auto;
+  min-width: 96px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 360px;
+}
+.headRight {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.headLine {
+  padding: 0 6px;
+}
+.headTag {
+  display: inline-flex;
+}
 /* スマホで、左上のロゴ（サイドパネルを開く）を入れる場所 */
-.back { display: none; place-items: center; align-self: center; flex: none; margin-left: -2px; }
-.views { flex: none; padding: 4px max(12px, var(--safe-right)) 4px max(12px, var(--safe-left)); border-bottom: 1px solid var(--line); background: var(--bg); }
+.back {
+  display: none;
+  place-items: center;
+  align-self: center;
+  flex: none;
+  margin-left: -2px;
+}
+.views {
+  flex: none;
+  padding: 4px max(12px, var(--safe-right)) 4px max(12px, var(--safe-left));
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
 
 /* ---------- 本体 ---------- */
-.body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(380px, 1fr) minmax(0, 1.15fr); }
-.chat { min-width: 0; min-height: 0; display: flex; flex-direction: column; border-right: 1px solid var(--line); background: var(--bg); }
-.chatScroll { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 20px 22px 12px; scrollbar-width: thin; }
-.chatComposer { flex: none; padding: 8px 14px calc(14px + var(--safe-bottom)); }
-.work { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg-subtle); }
-.tabs { flex: none; padding: 6px 14px 0; border-bottom: 1px solid var(--line); background: var(--bg); display: flex; align-items: center; gap: 8px; }
-.panel { flex: 1; min-height: 0; display: flex; flex-direction: column; padding-bottom: var(--safe-bottom); }
-.skeletonPad { display: grid; gap: 14px; align-content: start; max-width: 760px; width: 100%; margin: 0 auto; padding: 18px 20px; }
+.body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(380px, 1fr) minmax(0, 1.15fr);
+}
+.chat {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+  background: var(--bg);
+}
+.chatScroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 20px 22px 12px;
+  scrollbar-width: thin;
+}
+.chatComposer {
+  flex: none;
+  padding: 8px 14px calc(14px + var(--safe-bottom));
+}
+.work {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-subtle);
+}
+.tabs {
+  flex: none;
+  padding: 6px 14px 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--safe-bottom);
+}
+.skeletonPad {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 18px 20px;
+}
 
 /* ---------- 会話 ---------- */
-.convo { display: grid; gap: 18px; max-width: 760px; margin: 0 auto; }
-.msg { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; animation: rise 260ms var(--ease) both; }
-.msgBody { min-width: 0; display: grid; gap: 6px; }
-.msgName { font-size: 12.5px; font-weight: 600; color: var(--ink); display: flex; gap: 8px; align-items: baseline; }
-.msgTime { font-weight: 400; color: var(--faint); font-size: 11.5px; }
-.msgText { font-size: 14px; line-height: 1.75; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
-.msgText p { margin: 0 0 6px; }
-.caret { display: inline-block; width: 7px; height: 15px; margin-left: 2px; vertical-align: -2px; background: var(--muted); border-radius: 1px; animation: blink 1s steps(1) infinite; }
-.attachments { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 0; padding: 0; list-style: none; }
-.attachments li { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; background: var(--active); font-size: 12px; color: var(--text); }
-.attachments :global(.icon) { width: 12px; height: 12px; }
+.convo {
+  display: grid;
+  gap: 18px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.msg {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 10px;
+  animation: rise 260ms var(--ease) both;
+}
+.msgBody {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.msgName {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.msgTime {
+  font-weight: 400;
+  color: var(--faint);
+  font-size: 11.5px;
+}
+.msgText {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.msgText p {
+  margin: 0 0 6px;
+}
+.caret {
+  display: inline-block;
+  width: 7px;
+  height: 15px;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: var(--muted);
+  border-radius: 1px;
+  animation: blink 1s steps(1) infinite;
+}
+.attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.attachments li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--active);
+  font-size: 12px;
+  color: var(--text);
+}
+.attachments :global(.icon) {
+  width: 12px;
+  height: 12px;
+}
 
-.event { display: flex; align-items: center; gap: 8px; margin-left: 38px; font-size: 12.5px; color: var(--muted); animation: rise 260ms var(--ease) both; }
-.event :global(.icon) { width: 14px; height: 14px; flex: none; }
-.event[data-tone="alert"] { color: var(--alert); }
-.event[data-tone="ok"] { color: var(--ok); }
-.thinking { margin-left: 38px; }
+.event {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 38px;
+  font-size: 12.5px;
+  color: var(--muted);
+  animation: rise 260ms var(--ease) both;
+}
+.event :global(.icon) {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.event[data-tone='alert'] {
+  color: var(--alert);
+}
+.event[data-tone='ok'] {
+  color: var(--ok);
+}
+.thinking {
+  margin-left: 38px;
+}
 
 /* ---------- トレーとカード（計画・承認・成果物） ---------- */
-.tray { background: var(--tray); border-radius: var(--radius-tray); padding: 5px; animation: rise 260ms var(--ease) both; }
-.trayHead { display: flex; align-items: center; gap: 8px; padding: 7px 10px 8px; font-size: 13px; color: var(--muted); font-weight: 500; flex-wrap: wrap; }
-.trayRight { margin-left: auto; font-weight: 400; color: var(--faint); font-size: 12.5px; }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow-sm); padding: 14px 16px; display: grid; gap: 12px; }
-.badge { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: var(--active); color: var(--muted); }
-.badge[data-tone="alert"] { background: var(--alert-bg); color: var(--alert); }
-.badge[data-tone="ok"] { background: var(--ok-bg); color: var(--ok); }
-.badge[data-tone="err"] { background: var(--err-bg); color: var(--err); }
-.badge[data-tone="run"] { background: var(--run-bg); color: var(--run); }
-.tray[data-muted] { opacity: 0.72; }
+.tray {
+  background: var(--tray);
+  border-radius: var(--radius-tray);
+  padding: 5px;
+  animation: rise 260ms var(--ease) both;
+}
+.trayHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px 8px;
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+  flex-wrap: wrap;
+}
+.trayRight {
+  margin-left: auto;
+  font-weight: 400;
+  color: var(--faint);
+  font-size: 12.5px;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+  padding: 14px 16px;
+  display: grid;
+  gap: 12px;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: var(--active);
+  color: var(--muted);
+}
+.badge[data-tone='alert'] {
+  background: var(--alert-bg);
+  color: var(--alert);
+}
+.badge[data-tone='ok'] {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.badge[data-tone='err'] {
+  background: var(--err-bg);
+  color: var(--err);
+}
+.badge[data-tone='run'] {
+  background: var(--run-bg);
+  color: var(--run);
+}
+.tray[data-muted] {
+  opacity: 0.72;
+}
 
-.summary { margin: 0; font-size: 14.5px; line-height: 1.75; color: var(--ink); }
-.steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
-.step { display: grid; grid-template-columns: 22px 1fr; gap: 8px; padding: 5px 0; font-size: 13.5px; color: var(--text); }
-.stepNum { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--active); font-size: 11px; font-weight: 600; color: var(--muted); }
-.details { font-size: 13px; color: var(--text); }
-.details summary { min-height: max(20px, var(--tap-min) - 12px); cursor: pointer; color: var(--muted); font-size: 12.5px; list-style: none; display: inline-flex; align-items: center; gap: 4px; }
-.details summary::-webkit-details-marker { display: none; }
-.details summary :global(.icon) { width: 14px; height: 14px; transition: transform 160ms; }
-.details[open] summary :global(.icon) { transform: rotate(90deg); }
-.detailGrid { display: grid; grid-template-columns: 120px 1fr; gap: 6px 12px; margin-top: 10px; }
-.detailGrid dt { color: var(--muted); font-size: 12.5px; }
-.detailGrid dd { margin: 0; }
-.detailGrid ul { margin: 0; padding-left: 16px; }
-.warnText { color: var(--alert); }
-.actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 4px; border-top: 1px solid var(--line); padding-top: 12px; }
-.actionsHint { font-size: 12.5px; color: var(--muted); margin-right: auto; }
-.resolved { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); padding-top: 10px; border-top: 1px solid var(--line); }
-.resolved :global(.icon) { width: 14px; height: 14px; }
-.resolved[data-tone="ok"] { color: var(--ok); }
-.resolved[data-tone="alert"] { color: var(--alert); }
-.resolved[data-tone="err"] { color: var(--err); }
-.changeBox { display: grid; gap: 8px; }
+.summary {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.75;
+  color: var(--ink);
+}
+.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+}
+.step {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 13.5px;
+  color: var(--text);
+}
+.stepNum {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--active);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.details {
+  font-size: 13px;
+  color: var(--text);
+}
+.details summary {
+  min-height: max(20px, var(--tap-min) - 12px);
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12.5px;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.details summary::-webkit-details-marker {
+  display: none;
+}
+.details summary :global(.icon) {
+  width: 14px;
+  height: 14px;
+  transition: transform 160ms;
+}
+.details[open] summary :global(.icon) {
+  transform: rotate(90deg);
+}
+.detailGrid {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 6px 12px;
+  margin-top: 10px;
+}
+.detailGrid dt {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.detailGrid dd {
+  margin: 0;
+}
+.detailGrid ul {
+  margin: 0;
+  padding-left: 16px;
+}
+.warnText {
+  color: var(--alert);
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.actionsHint {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-right: auto;
+}
+.resolved {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--muted);
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.resolved :global(.icon) {
+  width: 14px;
+  height: 14px;
+}
+.resolved[data-tone='ok'] {
+  color: var(--ok);
+}
+.resolved[data-tone='alert'] {
+  color: var(--alert);
+}
+.resolved[data-tone='err'] {
+  color: var(--err);
+}
+.changeBox {
+  display: grid;
+  gap: 8px;
+}
 
 /* 作業のまとめ（会話の中では、ステップごとに1行にする） */
-.workRows { display: grid; gap: 2px; margin-left: 38px; padding: 6px; border-radius: 14px; background: var(--tray); animation: rise 260ms var(--ease) both; }
-.workRow { display: grid; grid-template-columns: 10px auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); font-size: 13px; }
-.workLabel { font-weight: 500; color: var(--ink); white-space: nowrap; }
-.workLabel span { font-family: var(--mono); font-size: 11px; color: var(--faint); font-weight: 400; margin-left: 6px; }
-.workText { min-width: 0; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.workText[data-tone="err"] { color: var(--err); }
-.workMore { min-height: max(22px, var(--tap-min) - 10px); border: 0; background: none; padding: 2px 6px; border-radius: 7px; font-size: 12px; color: var(--muted); white-space: nowrap; }
-.workMore:hover { background: var(--hover); color: var(--ink); }
+.workRows {
+  display: grid;
+  gap: 2px;
+  margin-left: 38px;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--tray);
+  animation: rise 260ms var(--ease) both;
+}
+.workRow {
+  display: grid;
+  grid-template-columns: 10px auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  font-size: 13px;
+}
+.workLabel {
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.workLabel span {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+  font-weight: 400;
+  margin-left: 6px;
+}
+.workText {
+  min-width: 0;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.workText[data-tone='err'] {
+  color: var(--err);
+}
+.workMore {
+  min-height: max(22px, var(--tap-min) - 10px);
+  border: 0;
+  background: none;
+  padding: 2px 6px;
+  border-radius: 7px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.workMore:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
 
 /* 成果物 */
-.deliverRow { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 4px 0; }
-.deliverRow + .deliverRow { border-top: 1px solid var(--line); padding-top: 12px; }
-.deliverIcon { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: var(--active); color: var(--text); }
-.deliverBody { display: grid; min-width: 0; }
-.deliverTitle { font-weight: 500; font-size: 13.5px; color: var(--ink); }
-.deliverDetail { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.failText { margin: 0; font-size: 13.5px; color: var(--text); }
-.failReason { font-family: var(--mono); font-size: 12px; padding: 8px 10px; border-radius: 8px; background: var(--err-bg); color: var(--ink); }
+.deliverRow {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+.deliverRow + .deliverRow {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.deliverIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--active);
+  color: var(--text);
+}
+.deliverBody {
+  display: grid;
+  min-width: 0;
+}
+.deliverTitle {
+  font-weight: 500;
+  font-size: 13.5px;
+  color: var(--ink);
+}
+.deliverDetail {
+  font-size: 12.5px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.failText {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text);
+}
+.failReason {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--err-bg);
+  color: var(--ink);
+}
 
 /* ---------- 入力欄（Chat Composer は Pro のため、トレーの構造で自作した） ---------- */
-.composer { background: var(--tray); border-radius: var(--radius-tray); padding: 5px; }
-.composerCard { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow-sm); }
-.composerCard:focus-within { border-color: var(--line-strong); box-shadow: var(--shadow-sm), 0 0 0 3px var(--active); }
-.composerInput { display: block; width: 100%; min-height: 56px; max-height: 220px; padding: 12px 14px 4px; border: 0; background: none; resize: none; font-size: max(14px, var(--fs-input-min)); line-height: 1.6; }
-.composerInput:focus { outline: none; }
-.composerBar { display: flex; align-items: center; gap: 6px; padding: 6px 8px 8px 10px; }
-.composerHint { font-size: 12px; color: var(--muted); padding: 2px 12px 6px; }
-.composerHint[data-tone="alert"] { color: var(--alert); }
-.spacer { flex: 1; }
-.kbd { font-size: 11px; color: var(--faint); margin-right: 4px; }
+.composer {
+  background: var(--tray);
+  border-radius: var(--radius-tray);
+  padding: 5px;
+}
+.composerCard {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+}
+.composerCard:focus-within {
+  border-color: var(--line-strong);
+  box-shadow:
+    var(--shadow-sm),
+    0 0 0 3px var(--active);
+}
+.composerInput {
+  display: block;
+  width: 100%;
+  min-height: 56px;
+  max-height: 220px;
+  padding: 12px 14px 4px;
+  border: 0;
+  background: none;
+  resize: none;
+  font-size: max(14px, var(--fs-input-min));
+  line-height: 1.6;
+}
+.composerInput:focus {
+  outline: none;
+}
+.composerBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 8px 10px;
+}
+.composerHint {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 2px 12px 6px;
+}
+.composerHint[data-tone='alert'] {
+  color: var(--alert);
+}
+.spacer {
+  flex: 1;
+}
+.kbd {
+  font-size: 11px;
+  color: var(--faint);
+  margin-right: 4px;
+}
 
 @media (pointer: coarse) {
-  .kbd { display: none; }
+  .kbd {
+    display: none;
+  }
 }
 @container ws (max-width: 1099px) {
-  .headLine { display: none; }
+  .headLine {
+    display: none;
+  }
 }
 /* 狭いときは、パンくずをタイトルだけにする */
 @container ws (max-width: 899px) {
-  .crumbs .crumb, .crumbs > :global(.icon) { display: none; }
-  .title { min-width: 0; }
+  .crumbs .crumb,
+  .crumbs > :global(.icon) {
+    display: none;
+  }
+  .title {
+    min-width: 0;
+  }
 }
 /* 1024px 未満: 会話と成果物を「表示の切り替え」で出し分ける。
    どちらも同じ格子のマスに重ね、隠す側は visibility で消す（スクロールの位置とプレビューの iframe を保つため） */
 @media (max-width: 1023px) {
-  .head { padding-top: calc(8px + var(--safe-top)); padding-right: max(10px, var(--safe-right)); }
-  .body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
-  .chat, .work { grid-area: 1 / 1; }
-  .chat { border-right: 0; }
-  .body[data-view="chat"] .work, .body[data-view="work"] .chat { visibility: hidden; pointer-events: none; }
-  .title { max-width: none; }
-  .crumbs { flex: 1; }
+  .head {
+    padding-top: calc(8px + var(--safe-top));
+    padding-right: max(10px, var(--safe-right));
+  }
+  .body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .chat,
+  .work {
+    grid-area: 1 / 1;
+  }
+  .chat {
+    border-right: 0;
+  }
+  .body[data-view='chat'] .work,
+  .body[data-view='work'] .chat {
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .title {
+    max-width: none;
+  }
+  .crumbs {
+    flex: 1;
+  }
 }
 /* 横向きのスマホなど、高さが足りないとき: 入力欄の説明を隠して会話に回す */
 @media (max-width: 1023px) and (max-height: 520px) {
-  .composerHint { display: none; }
-  .composerInput { min-height: 40px; padding: 8px 12px 0; }
-  .composerBar { padding: 4px 6px 6px 8px; }
-  .chatComposer { padding-top: 4px; padding-bottom: calc(6px + var(--safe-bottom)); }
-  .head { padding-top: calc(4px + var(--safe-top)); padding-bottom: 4px; min-height: 44px; }
+  .composerHint {
+    display: none;
+  }
+  .composerInput {
+    min-height: 40px;
+    padding: 8px 12px 0;
+  }
+  .composerBar {
+    padding: 4px 6px 6px 8px;
+  }
+  .chatComposer {
+    padding-top: 4px;
+    padding-bottom: calc(6px + var(--safe-bottom));
+  }
+  .head {
+    padding-top: calc(4px + var(--safe-top));
+    padding-bottom: 4px;
+    min-height: 44px;
+  }
 }
 /* 720px 未満: ヘッダーは「サイドパネル・タイトル・状態・その他の操作」だけにする */
 @media (max-width: 719px) {
-  .back { display: inline-grid; }
+  .back {
+    display: inline-grid;
+  }
   .head {
     padding-left: max(8px, var(--safe-left));
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "back crumbs right" "back tag right";
-    column-gap: 4px; row-gap: 2px;
+    grid-template-areas: 'back crumbs right' 'back tag right';
+    column-gap: 4px;
+    row-gap: 2px;
     padding-bottom: 6px;
   }
-  .back { grid-area: back; }
-  .crumbs { grid-area: crumbs; }
-  .headTag { grid-area: tag; }
-  .headRight { grid-area: right; gap: 4px; }
-  .crumbs .crumb { display: none; }
-  .crumbs > :global(.icon) { display: none; }
-  .crumbs > :global(*:last-child) button { height: 30px; }
-  .title { margin: 0; font-size: 15px; }
-  .chatScroll { padding: 14px max(14px, var(--safe-right)) 8px max(14px, var(--safe-left)); }
-  .chatComposer { padding: 6px max(10px, var(--safe-right)) calc(8px + var(--safe-bottom)) max(10px, var(--safe-left)); }
-  .composerHint { display: none; }
-  .composerInput { min-height: 48px; padding: 10px 12px 2px; }
-  .tabs { padding: 4px 8px 0; overflow-x: auto; scrollbar-width: none; }
-  .msg { grid-template-columns: 24px minmax(0, 1fr); gap: 8px; }
-  .event, .thinking, .workRows { margin-left: 32px; }
-  .detailGrid { grid-template-columns: 1fr; gap: 2px; }
-  .detailGrid dd { margin-bottom: 8px; }
-  .actions > :global(.ui-button) { flex: 1 1 auto; }
-  .actionsHint { flex-basis: 100%; }
+  .back {
+    grid-area: back;
+  }
+  .crumbs {
+    grid-area: crumbs;
+  }
+  .headTag {
+    grid-area: tag;
+  }
+  .headRight {
+    grid-area: right;
+    gap: 4px;
+  }
+  .crumbs .crumb {
+    display: none;
+  }
+  .crumbs > :global(.icon) {
+    display: none;
+  }
+  .crumbs > :global(*:last-child) button {
+    height: 30px;
+  }
+  .title {
+    margin: 0;
+    font-size: 15px;
+  }
+  .chatScroll {
+    padding: 14px max(14px, var(--safe-right)) 8px max(14px, var(--safe-left));
+  }
+  .chatComposer {
+    padding: 6px max(10px, var(--safe-right)) calc(8px + var(--safe-bottom)) max(10px, var(--safe-left));
+  }
+  .composerHint {
+    display: none;
+  }
+  .composerInput {
+    min-height: 48px;
+    padding: 10px 12px 2px;
+  }
+  .tabs {
+    padding: 4px 8px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .msg {
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: 8px;
+  }
+  .event,
+  .thinking,
+  .workRows {
+    margin-left: 32px;
+  }
+  .detailGrid {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .detailGrid dd {
+    margin-bottom: 8px;
+  }
+  .actions > :global(.ui-button) {
+    flex: 1 1 auto;
+  }
+  .actionsHint {
+    flex-basis: 100%;
+  }
 }

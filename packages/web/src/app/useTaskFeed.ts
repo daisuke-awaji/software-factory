@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { errorMessage } from '../lib/api';
 import { useServices } from '../lib/services';
 
-export const PAGE = 30;
+const PAGE = 30;
 
 export type TaskFeed = {
   items: Task[] | undefined;
@@ -55,7 +55,11 @@ export function useTaskFeed(deps: unknown[], opts: { enabled: boolean; pollMs: n
       const page = await api.listTasks({ limit: PAGE, cursor: at });
       setState((prev) => {
         const have = new Set((prev.items ?? []).map((i) => i.id));
-        return { items: [...(prev.items ?? []), ...page.items.filter((i) => !have.has(i.id))], cursor: page.nextCursor, pages: prev.pages + 1 };
+        return {
+          items: [...(prev.items ?? []), ...page.items.filter((i) => !have.has(i.id))],
+          cursor: page.nextCursor,
+          pages: prev.pages + 1,
+        };
       });
     } catch (e) {
       setError(errorMessage(e));
@@ -70,7 +74,7 @@ export function useTaskFeed(deps: unknown[], opts: { enabled: boolean; pollMs: n
     void reload();
     const t = setInterval(() => void reload(), opts.pollMs);
     return () => clearInterval(t);
-    // eslint-disable-next-workflow react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, opts.enabled, opts.pollMs, reload]);
 
   return { items: state.items, error, hasMore: !!state.cursor, loadingMore, reload, loadMore };

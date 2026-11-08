@@ -1,7 +1,7 @@
-"use client";
+'use client';
 // AffectUI（無料の部品）を取り込んだもの（ADR-0008）
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 /*
  * Thinking Loader – a small "the model is working" pill, in a single self-contained file.
@@ -25,13 +25,13 @@ export type ThinkingLoaderProps = {
   done?: boolean;
   /** Label once done – a string, or a function that gets the seconds since the loader started */
   doneLabel?: string | ((seconds: number) => string);
-  size?: "sm" | "md";
+  size?: 'sm' | 'md';
   /** "pill" = bordered capsule, "plain" = just the spinner and the label, e.g. inside a chat bubble */
-  variant?: "pill" | "plain";
+  variant?: 'pill' | 'plain';
   className?: string;
 };
 
-const DEFAULT_PHASES = ["考えています", "調べています", "まとめています"];
+const DEFAULT_PHASES = ['考えています', '調べています', 'まとめています'];
 const RAYS = Array.from({ length: 8 }, (_, i) => i);
 // 75s reads "1m 15s", a long run "2h 05m" or "3d 4h"
 const took = (s: number) => {
@@ -39,7 +39,7 @@ const took = (s: number) => {
   const m = Math.floor(s / 60);
   if (m < 60) return `${m}m ${s % 60}s`;
   const h = Math.floor(m / 60);
-  return h < 24 ? `${h}h ${String(m % 60).padStart(2, "0")}m` : `${Math.floor(h / 24)}d ${h % 24}h`;
+  return h < 24 ? `${h}h ${String(m % 60).padStart(2, '0')}m` : `${Math.floor(h / 24)}d ${h % 24}h`;
 };
 
 export function ThinkingLoader({
@@ -49,12 +49,12 @@ export function ThinkingLoader({
   loop = false,
   done = false,
   doneLabel = (s) => `${took(s)}で完了`,
-  size = "md",
-  variant = "pill",
+  size = 'md',
+  variant = 'pill',
   className,
 }: ThinkingLoaderProps) {
   // An empty or missing list still says something; 0 or NaN never spins the timer every frame
-  const given = Array.isArray(phasesProp) ? phasesProp.map((p) => String(p ?? "")) : [];
+  const given = Array.isArray(phasesProp) ? phasesProp.map((p) => String(p ?? '')) : [];
   const phases = given.length ? given : DEFAULT_PHASES.slice(0, 1);
   const interval = Number.isFinite(intervalProp) && intervalProp > 0 ? Math.max(intervalProp, 200) : 2200;
   const [step, setStep] = useState(0);
@@ -81,7 +81,7 @@ export function ThinkingLoader({
 
   const wanted = phase !== undefined && Number.isFinite(phase) ? Math.floor(phase) : step;
   const index = Math.min(Math.max(wanted, 0), Math.max(phases.length - 1, 0));
-  const label = String((done ? (typeof doneLabel === "function" ? doneLabel(elapsed) : doneLabel) : phases[index]) ?? "");
+  const label = String((done ? (typeof doneLabel === 'function' ? doneLabel(elapsed) : doneLabel) : phases[index]) ?? '');
 
   // The label on screen and the one rolling out – swapped during render so both animate in the same frame
   const [shown, setShown] = useState({ key: 0, text: label });
@@ -109,7 +109,7 @@ export function ThinkingLoader({
     // Measured with the box at the label's full width – a parent that wraps around the pill grows with it, so only a
     // container that's really too narrow cuts the label. Without a transition, so the pill still glides from where it was.
     const was = { width: b.style.width, transition: b.style.transition };
-    b.style.transition = "none";
+    b.style.transition = 'none';
     b.style.width = `${full}px`;
     const pad = parent ? getComputedStyle(parent) : null;
     const inner = parent && pad ? parent.clientWidth - parseFloat(pad.paddingLeft) - parseFloat(pad.paddingRight) : 0;
@@ -118,24 +118,24 @@ export function ThinkingLoader({
     b.getBoundingClientRect();
     b.style.transition = was.transition;
     const cut = room > 0 && full > room;
-    r.toggleAttribute("data-cut", cut);
+    r.toggleAttribute('data-cut', cut);
     b.style.width = `${cut ? room : full}px`;
   };
   useLayoutEffect(() => {
     const b = box.current;
     if (!b) return;
-    if (!measured.current) b.style.transition = "none";
+    if (!measured.current) b.style.transition = 'none';
     fit.current();
     if (!measured.current) {
       b.getBoundingClientRect();
-      b.style.transition = "";
+      b.style.transition = '';
       measured.current = true;
     }
   }, [shown.key]);
   // A container that narrows or widens gets the label fitted again
   useEffect(() => {
     const parent = root.current?.parentElement;
-    if (!parent || typeof ResizeObserver === "undefined") return;
+    if (!parent || typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(() => fit.current());
     ro.observe(parent);
     return () => ro.disconnect();
@@ -144,7 +144,7 @@ export function ThinkingLoader({
   return (
     <span
       ref={root}
-      className={["ui-tl", className].filter(Boolean).join(" ")}
+      className={['ui-tl', className].filter(Boolean).join(' ')}
       data-size={size}
       data-variant={variant}
       data-done={done || undefined}
@@ -190,7 +190,7 @@ export function ThinkingLoader({
         <span
           key={shown.key}
           ref={current}
-          className={["ui-tl__label", shown.key > 0 && "ui-tl__label--in", !done && "ui-tl__shine"].filter(Boolean).join(" ")}
+          className={['ui-tl__label', shown.key > 0 && 'ui-tl__label--in', !done && 'ui-tl__shine'].filter(Boolean).join(' ')}
           data-text={shown.text}
           title={shown.text}
           dir="auto"

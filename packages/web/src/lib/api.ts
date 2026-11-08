@@ -1,13 +1,42 @@
 // 型付きの API クライアント。レスポンスは必ず contracts の Zod で検証する（実装計画 §5.2）
 import {
-  AdminUser, ApiError, AttachmentTicket, BuildLog, Capacity, CreatePublicationRequest, CreateTaskRequest, Diff, Download, EventPage,
-  FileTree, ImageSpec, ImageSummary, ImageVersion, Workflow, WorkflowDefinition, Me, NetworkProfile, PackageSource, PlanRecord, PrecheckResult,
-  Preview, Publication, Repo, StepRun, UpdateAdminUserRequest, UpdatePublicationRequest, UpdateTaskRequest, VmInfo, Task,
-  TaskPage, type ApprovalDecisionBody, type ImageScope,
+  AdminUser,
+  ApiError,
+  AttachmentTicket,
+  BuildLog,
+  Capacity,
+  CreatePublicationRequest,
+  CreateTaskRequest,
+  Diff,
+  Download,
+  EventPage,
+  FileTree,
+  ImageSpec,
+  ImageSummary,
+  ImageVersion,
+  Workflow,
+  WorkflowDefinition,
+  Me,
+  NetworkProfile,
+  PackageSource,
+  PlanRecord,
+  PrecheckResult,
+  Preview,
+  Publication,
+  Repo,
+  StepRun,
+  UpdateAdminUserRequest,
+  UpdatePublicationRequest,
+  UpdateTaskRequest,
+  VmInfo,
+  Task,
+  TaskPage,
+  type ApprovalDecisionBody,
+  type ImageScope,
 } from '@factory/contracts';
 import { z } from 'zod';
 
-export class ApiRequestError extends Error {
+class ApiRequestError extends Error {
   constructor(
     public readonly status: number,
     public readonly body: ApiError,
@@ -28,14 +57,11 @@ const NoContent = z.unknown();
 export function createApiClient({ baseUrl = globalThis.location?.origin ?? 'http://localhost', getToken }: ApiClientOptions) {
   async function raw(path: string, init: RequestInit = {}) {
     const token = await getToken();
-    const res = await fetch(new URL(`/api/v1${path}`, baseUrl), {
-      ...init,
-      headers: {
-        authorization: `Bearer ${token}`,
-        ...(init.body !== undefined ? { 'content-type': 'application/json' } : {}),
-        ...init.headers,
-      },
-    });
+    // init.headers は Headers や配列のこともある。オブジェクトに展開すると中身が消えるので、Headers で合わせる
+    const headers = new Headers(init.headers);
+    if (!headers.has('authorization')) headers.set('authorization', `Bearer ${token}`);
+    if (init.body !== undefined && !headers.has('content-type')) headers.set('content-type', 'application/json');
+    const res = await fetch(new URL(`/api/v1${path}`, baseUrl), { ...init, headers });
     if (!res.ok) {
       let body: ApiError = { code: 'UNKNOWN', message: `HTTP ${res.status}` };
       try {
@@ -66,11 +92,14 @@ export function createApiClient({ baseUrl = globalThis.location?.origin ?? 'http
 
     // ---- タスク ----
     listTasks: (p: { state?: string; archived?: boolean; cursor?: string; limit?: number } = {}) =>
-      request(TaskPage, `/tasks${q({ state: p.state, archived: p.archived ? 'true' : undefined, cursor: p.cursor, limit: p.limit?.toString() })}`),
-    createTask: (input: z.input<typeof CreateTaskRequest>) =>
-      request(Task, '/tasks', json('POST', CreateTaskRequest.parse(input))),
+      request(
+        TaskPage,
+        `/tasks${q({ state: p.state, archived: p.archived ? 'true' : undefined, cursor: p.cursor, limit: p.limit?.toString() })}`,
+      ),
+    createTask: (input: z.input<typeof CreateTaskRequest>) => request(Task, '/tasks', json('POST', CreateTaskRequest.parse(input))),
     getTask: (id: string) => request(Task, taskPath(id)),
-    updateTask: (id: string, patch: z.input<typeof UpdateTaskRequest>) => request(Task, taskPath(id), json('PATCH', UpdateTaskRequest.parse(patch))),
+    updateTask: (id: string, patch: z.input<typeof UpdateTaskRequest>) =>
+      request(Task, taskPath(id), json('PATCH', UpdateTaskRequest.parse(patch))),
     postMessage: (id: string, text: string, attachments: string[] = []) =>
       request(NoContent, `${taskPath(id)}/messages`, json('POST', { text, ...(attachments.length ? { attachments } : {}) })),
     interrupt: (id: string) => request(NoContent, `${taskPath(id)}/interrupt`, json('POST')),
@@ -103,16 +132,22 @@ export function createApiClient({ baseUrl = globalThis.location?.origin ?? 'http
         id ? `${taskPath(id)}/attachments` : '/attachments',
         json('POST', { fileName: file.name, contentType: file.type || 'application/octet-stream', size: file.size }),
       );
-      const put = await fetch(ticket.uploadUrl, { method: 'PUT', body: file, headers: { 'content-type': file.type || 'application/octet-stream' } });
+      const put = await fetch(ticket.uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'content-type': file.type || 'application/octet-stream' },
+      });
       if (!put.ok) throw new ApiRequestError(put.status, { code: 'UPLOAD_FAILED', message: 'アップロードに失敗しました' });
       return ticket.path;
     },
-    download: (id: string, body: { paths?: string[]; format: 'file' | 'zip' }) => request(Download, `${taskPath(id)}/downloads`, json('POST', body)),
+    download: (id: string, body: { paths?: string[]; format: 'file' | 'zip' }) =>
+      request(Download, `${taskPath(id)}/downloads`, json('POST', body)),
     preview: (id: string, port: number) => request(Preview, `${taskPath(id)}/previews`, json('POST', { port })),
 
     // ---- 社内公開 ----
     precheck: (id: string, path: string) => request(PrecheckResult, `${taskPath(id)}/publications/precheck`, json('POST', { path })),
-    publish: (input: z.input<typeof CreatePublicationRequest>) => request(Publication, '/publications', json('POST', CreatePublicationRequest.parse(input))),
+    publish: (input: z.input<typeof CreatePublicationRequest>) =>
+      request(Publication, '/publications', json('POST', CreatePublicationRequest.parse(input))),
     publications: () => request(z.array(Publication), '/publications'),
     updatePublication: (pid: string, patch: z.input<typeof UpdatePublicationRequest>) =>
       request(Publication, `/publications/${encodeURIComponent(pid)}`, json('PATCH', UpdatePublicationRequest.parse(patch))),
@@ -135,17 +170,21 @@ export function createApiClient({ baseUrl = globalThis.location?.origin ?? 'http
     // ---- 管理 ----
     admin: {
       networkProfiles: () => request(z.array(NetworkProfile), '/admin/network-profiles'),
-      putNetworkProfile: (p: Omit<NetworkProfile, 'updatedAt'>) => request(NetworkProfile, `/admin/network-profiles/${encodeURIComponent(p.name)}`, json('PUT', p)),
+      putNetworkProfile: (p: Omit<NetworkProfile, 'updatedAt'>) =>
+        request(NetworkProfile, `/admin/network-profiles/${encodeURIComponent(p.name)}`, json('PUT', p)),
       packageSources: () => request(z.array(PackageSource), '/admin/package-sources'),
-      putPackageSource: (p: Omit<PackageSource, 'updatedAt'>) => request(PackageSource, `/admin/package-sources/${encodeURIComponent(p.name)}`, json('PUT', p)),
+      putPackageSource: (p: Omit<PackageSource, 'updatedAt'>) =>
+        request(PackageSource, `/admin/package-sources/${encodeURIComponent(p.name)}`, json('PUT', p)),
       workflow: (name: string) => request(WorkflowDefinition, `/admin/workflows/${encodeURIComponent(name)}`),
-      putWorkflow: (name: string, yaml: string) => request(WorkflowDefinition, `/admin/workflows/${encodeURIComponent(name)}`, json('PUT', { yaml })),
+      putWorkflow: (name: string, yaml: string) =>
+        request(WorkflowDefinition, `/admin/workflows/${encodeURIComponent(name)}`, json('PUT', { yaml })),
       approveOrgImage: (name: string) => request(ImageSummary, `/admin/images/${encodeURIComponent(name)}/approve-org`, json('POST')),
       vms: () => request(z.array(VmInfo), '/admin/vms'),
       terminateVm: (id: string) => request(NoContent, `/admin/vms/${encodeURIComponent(id)}/terminate`, json('POST')),
       capacity: () => request(Capacity, '/admin/capacity'),
       users: () => request(z.array(AdminUser), '/admin/users'),
-      putUser: (id: string, body: z.input<typeof UpdateAdminUserRequest>) => request(AdminUser, `/admin/users/${encodeURIComponent(id)}`, json('PUT', body)),
+      putUser: (id: string, body: z.input<typeof UpdateAdminUserRequest>) =>
+        request(AdminUser, `/admin/users/${encodeURIComponent(id)}`, json('PUT', body)),
     },
   };
 }

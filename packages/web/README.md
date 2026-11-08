@@ -42,6 +42,15 @@ pnpm --filter @factory/web e2e     # Playwright: ブラウザの MSW で、作�
 
 E2E を初めて動かすときは `pnpm --filter @factory/web exec playwright install --with-deps chromium` を実行します。
 
+lint・整形・不要コードの検査は、ルートで実行します（CI と同じ）。
+
+```bash
+pnpm lint            # ESLint（typescript-eslint の strictTypeChecked と react-hooks）。既存の違反は eslint-suppressions.json に記録してある
+pnpm lint:prune      # 違反を直したら、記録を減らす（減らさないと pnpm lint が落ちる）
+pnpm format          # Prettier で整形する（CI は pnpm format:check）
+pnpm knip            # 使われていないファイル・export・依存を見つける
+```
+
 ## 構成
 
 ```

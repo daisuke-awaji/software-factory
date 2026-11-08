@@ -5,7 +5,7 @@ import type { WorkflowGraphProps } from './types';
 
 const Graph = lazy(() => import('./WorkflowGraph'));
 
-export type { GraphSelection, ConnectKind, WorkflowGraphProps } from './types';
+export type { GraphSelection, WorkflowGraphProps } from './types';
 
 export function WorkflowGraph(props: WorkflowGraphProps) {
   return (

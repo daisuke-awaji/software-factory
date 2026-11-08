@@ -27,7 +27,12 @@ export function ImagesPage() {
   const setScope = async (img: ImageSummary, scope: Exclude<ImageScope, 'default'>) => {
     try {
       const r = await api.setImageVisibility(img.name, scope);
-      toast(r.orgRequest === 'pending' ? '組織への公開を申請しました。管理者の承認を待っています。' : `公開範囲を「${scopeLabel[r.scope]}」にしました`, 'ok');
+      toast(
+        r.orgRequest === 'pending'
+          ? '組織への公開を申請しました。管理者の承認を待っています。'
+          : `公開範囲を「${scopeLabel[r.scope]}」にしました`,
+        'ok',
+      );
       await images.reload();
     } catch (e) {
       toast(errorMessage(e), 'err');
@@ -39,7 +44,11 @@ export function ImagesPage() {
       <PageHeader
         title="イメージ"
         description="ステップの VM で使う実行環境です。既定のイメージに、パッケージやコマンドを足したカスタムイメージを作れます。VM のメモリもイメージで決まります。"
-        actions={<Button size="sm" icon={<IconPlus />} onClick={() => setCreating('new')}>新しいイメージ</Button>}
+        actions={
+          <Button size="sm" icon={<IconPlus />} onClick={() => setCreating('new')}>
+            新しいイメージ
+          </Button>
+        }
       />
       <ErrorBanner error={images.error} onRetry={() => void images.reload()} />
       {!images.data ? (
@@ -77,10 +86,26 @@ export function ImagesPage() {
                               trigger={<IconMore />}
                               items={[
                                 { label: 'バージョンとビルドログ', onSelect: () => setDetail(img.name) },
-                                { label: 'この定義をもとに新しい版を作る', onSelect: () => setCreating(img), disabled: img.scope === 'default' },
-                                { label: '公開範囲: 自分だけ', onSelect: () => void setScope(img, 'personal'), disabled: img.scope === 'default' || img.scope === 'personal' },
-                                { label: '公開範囲: プロジェクト', onSelect: () => void setScope(img, 'project'), disabled: img.scope === 'default' || img.scope === 'project' },
-                                { label: '組織への公開を申請', onSelect: () => void setScope(img, 'org'), disabled: img.scope === 'default' || img.scope === 'org' || img.orgRequest === 'pending' },
+                                {
+                                  label: 'この定義をもとに新しい版を作る',
+                                  onSelect: () => setCreating(img),
+                                  disabled: img.scope === 'default',
+                                },
+                                {
+                                  label: '公開範囲: 自分だけ',
+                                  onSelect: () => void setScope(img, 'personal'),
+                                  disabled: img.scope === 'default' || img.scope === 'personal',
+                                },
+                                {
+                                  label: '公開範囲: プロジェクト',
+                                  onSelect: () => void setScope(img, 'project'),
+                                  disabled: img.scope === 'default' || img.scope === 'project',
+                                },
+                                {
+                                  label: '組織への公開を申請',
+                                  onSelect: () => void setScope(img, 'org'),
+                                  disabled: img.scope === 'default' || img.scope === 'org' || img.orgRequest === 'pending',
+                                },
                               ]}
                             />
                           </span>
@@ -112,14 +137,36 @@ export function ImagesPage() {
           }}
         />
       )}
-      {detail && <ImageDetail name={detail} onClose={() => { setDetail(null); void images.reload(); }} />}
+      {detail && (
+        <ImageDetail
+          name={detail}
+          onClose={() => {
+            setDetail(null);
+            void images.reload();
+          }}
+        />
+      )}
     </Page>
   );
 }
 
-const lines = (v: string) => v.split('\n').map((x) => x.trim()).filter(Boolean);
+const lines = (v: string) =>
+  v
+    .split('\n')
+    .map((x) => x.trim())
+    .filter(Boolean);
 
-function ImageEditor({ base, images, onClose, onBuilt }: { base: ImageSummary | null; images: ImageSummary[]; onClose: () => void; onBuilt: (name: string) => void }) {
+function ImageEditor({
+  base,
+  images,
+  onClose,
+  onBuilt,
+}: {
+  base: ImageSummary | null;
+  images: ImageSummary[];
+  onClose: () => void;
+  onBuilt: (name: string) => void;
+}) {
   const api = useApi();
   const [name, setName] = useState(base?.name ?? '');
   const [description, setDescription] = useState(base?.description ?? '');
@@ -132,7 +179,17 @@ function ImageEditor({ base, images, onClose, onBuilt }: { base: ImageSummary | 
   const [warmup, setWarmup] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const ids = { name: useId(), desc: useId(), base: useId(), mem: useId(), apt: useId(), npm: useId(), pip: useId(), run: useId(), warm: useId() };
+  const ids = {
+    name: useId(),
+    desc: useId(),
+    base: useId(),
+    mem: useId(),
+    apt: useId(),
+    npm: useId(),
+    pip: useId(),
+    run: useId(),
+    warm: useId(),
+  };
 
   // 既存のイメージの新しい版を作るときは、最新の定義を読み込む
   useEffect(() => {
@@ -150,7 +207,15 @@ function ImageEditor({ base, images, onClose, onBuilt }: { base: ImageSummary | 
     });
   }, [api, base]);
 
-  const spec = { name, ...(description ? { description } : {}), base: from, memoryMiB: memory, packages: { apt: lines(apt), npm: lines(npm), pip: lines(pip) }, run: lines(run), warmup: lines(warmup) };
+  const spec = {
+    name,
+    ...(description ? { description } : {}),
+    base: from,
+    memoryMiB: memory,
+    packages: { apt: lines(apt), npm: lines(npm), pip: lines(pip) },
+    run: lines(run),
+    warmup: lines(warmup),
+  };
   const parsed = ImageSpec.safeParse(spec);
   const issues = parsed.success ? {} : Object.fromEntries(parsed.error.issues.map((i) => [String(i.path[0]), i.message]));
   const yaml = useMemo(() => stringify(spec), [JSON.stringify(spec)]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -177,45 +242,92 @@ function ImageEditor({ base, images, onClose, onBuilt }: { base: ImageSummary | 
       width={880}
       footer={
         <>
-          <Button variant="ghost" size="sm" onClick={onClose}>やめる</Button>
-          <Button size="sm" disabled={!parsed.success} loading={busy} onClick={() => void submit()}>登録してビルドする</Button>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            やめる
+          </Button>
+          <Button size="sm" disabled={!parsed.success} loading={busy} onClick={() => void submit()}>
+            登録してビルドする
+          </Button>
         </>
       }
     >
       <div className={p.twoCols}>
         <div className={p.formGrid}>
           <Field label="名前" htmlFor={ids.name} error={name ? issues['name'] : undefined} hint="英小文字・数字・ハイフン">
-            <TextInput id={ids.name} value={name} disabled={!!base} onChange={(e) => setName(e.target.value)} placeholder="web-playwright" aria-invalid={!!(name && issues['name'])} />
+            <TextInput
+              id={ids.name}
+              value={name}
+              disabled={!!base}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="web-playwright"
+              aria-invalid={!!(name && issues['name'])}
+            />
           </Field>
           <Field label="ベース" htmlFor={ids.base}>
             <Select id={ids.base} value={from} onChange={(e) => setFrom(e.target.value)}>
-              {bases.map((b) => <option key={b} value={b}>{b}</option>)}
+              {bases.map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
             </Select>
           </Field>
           <div className={p.full}>
-            <Field label="説明" htmlFor={ids.desc}><TextInput id={ids.desc} value={description} onChange={(e) => setDescription(e.target.value)} /></Field>
+            <Field label="説明" htmlFor={ids.desc}>
+              <TextInput id={ids.desc} value={description} onChange={(e) => setDescription(e.target.value)} />
+            </Field>
           </div>
           <Field label="VM のメモリ" htmlFor={ids.mem} hint="RunMicrovm では指定できないため、イメージで決める（N6）">
             <Select id={ids.mem} value={memory} onChange={(e) => setMemory(Number(e.target.value))}>
-              {[2048, 4096, 8192].map((m) => <option key={m} value={m}>{mib(m)}</option>)}
+              {[2048, 4096, 8192].map((m) => (
+                <option key={m} value={m}>
+                  {mib(m)}
+                </option>
+              ))}
             </Select>
           </Field>
           <Field label="apt のパッケージ" htmlFor={ids.apt} error={issues['packages']} hint="1行に1つ">
             <TextArea id={ids.apt} rows={3} value={apt} onChange={(e) => setApt(e.target.value)} placeholder="poppler-utils" />
           </Field>
-          <Field label="npm のパッケージ" htmlFor={ids.npm}><TextArea id={ids.npm} rows={3} value={npm} onChange={(e) => setNpm(e.target.value)} placeholder="@playwright/test@1.65" /></Field>
-          <Field label="pip のパッケージ" htmlFor={ids.pip}><TextArea id={ids.pip} rows={3} value={pip} onChange={(e) => setPip(e.target.value)} placeholder="pandas==2.3" /></Field>
+          <Field label="npm のパッケージ" htmlFor={ids.npm}>
+            <TextArea id={ids.npm} rows={3} value={npm} onChange={(e) => setNpm(e.target.value)} placeholder="@playwright/test@1.65" />
+          </Field>
+          <Field label="pip のパッケージ" htmlFor={ids.pip}>
+            <TextArea id={ids.pip} rows={3} value={pip} onChange={(e) => setPip(e.target.value)} placeholder="pandas==2.3" />
+          </Field>
           <div className={p.full}>
-            <Field label="追加のコマンド（ビルド時）" htmlFor={ids.run} hint="パッケージの取得は許可リストの範囲だけ（D9）"><TextArea id={ids.run} rows={2} value={run} onChange={(e) => setRun(e.target.value)} placeholder="npx playwright install --with-deps chromium" /></Field>
+            <Field label="追加のコマンド（ビルド時）" htmlFor={ids.run} hint="パッケージの取得は許可リストの範囲だけ（D9）">
+              <TextArea
+                id={ids.run}
+                rows={2}
+                value={run}
+                onChange={(e) => setRun(e.target.value)}
+                placeholder="npx playwright install --with-deps chromium"
+              />
+            </Field>
           </div>
           <div className={p.full}>
-            <Field label="warmup（/validate で実行）" htmlFor={ids.warm}><TextArea id={ids.warm} rows={2} value={warmup} onChange={(e) => setWarmup(e.target.value)} placeholder="npx playwright --version" /></Field>
+            <Field label="warmup（/validate で実行）" htmlFor={ids.warm}>
+              <TextArea
+                id={ids.warm}
+                rows={2}
+                value={warmup}
+                onChange={(e) => setWarmup(e.target.value)}
+                placeholder="npx playwright --version"
+              />
+            </Field>
           </div>
         </div>
         <div className={p.section}>
-          <span className={p.sectionDesc} style={{ margin: 0 }}>イメージ定義（YAML）</span>
-          <pre className={p.code} aria-label="イメージ定義の YAML">{yaml}</pre>
-          <Banner>ビルドでは、L1（factory-base）の上にこの定義を重ねた Dockerfile を合成し、自己テスト（/validate）が通ったら登録します。</Banner>
+          <span className={p.sectionDesc} style={{ margin: 0 }}>
+            イメージ定義（YAML）
+          </span>
+          <pre className={p.code} aria-label="イメージ定義の YAML">
+            {yaml}
+          </pre>
+          <Banner>
+            ビルドでは、L1（factory-base）の上にこの定義を重ねた Dockerfile を合成し、自己テスト（/validate）が通ったら登録します。
+          </Banner>
         </div>
       </div>
       {error && <Banner tone="err">{error}</Banner>}
@@ -230,7 +342,9 @@ function ImageDetail({ name, onClose }: { name: string; onClose: () => void }) {
   const latest = versions.data?.at(-1);
   const v = versions.data?.find((x) => x.version === sel) ?? latest;
   const building = v && (v.state === 'building' || v.state === 'validating');
-  const log = useResource(() => (v ? api.buildLog(name, v.version) : Promise.resolve(null)), [name, v?.version, v?.state], { ...(building ? { pollMs: 700 } : {}) });
+  const log = useResource(() => (v ? api.buildLog(name, v.version) : Promise.resolve(null)), [name, v?.version, v?.state], {
+    ...(building ? { pollMs: 700 } : {}),
+  });
   const stateLabel = { building: 'ビルド中', validating: '自己テスト中', ready: '使えます', failed: '失敗' } as const;
   const tone = { building: 'run', validating: 'run', ready: 'ok', failed: 'err' } as const;
   return (
@@ -241,21 +355,38 @@ function ImageDetail({ name, onClose }: { name: string; onClose: () => void }) {
             <Skeleton width={96} height={32} radius={10} />
             <Skeleton width={96} height={32} radius={10} />
           </div>
-          <div className={p.code}><CodeSkeleton lines={10} /></div>
+          <div className={p.code}>
+            <CodeSkeleton lines={10} />
+          </div>
         </Busy>
       ) : (
         <>
           <div className={p.row} role="group" aria-label="バージョン">
             {versions.data.map((x) => (
-              <Button key={x.version} size="sm" variant={x.version === v?.version ? 'primary' : 'secondary'} onClick={() => setSel(x.version)}>
+              <Button
+                key={x.version}
+                size="sm"
+                variant={x.version === v?.version ? 'primary' : 'secondary'}
+                onClick={() => setSel(x.version)}
+              >
                 {name}@{x.version}
               </Button>
             ))}
-            {v && <span className={p.right}><Tag tone={tone[v.state]}>{stateLabel[v.state]}</Tag></span>}
+            {v && (
+              <span className={p.right}>
+                <Tag tone={tone[v.state]}>{stateLabel[v.state]}</Tag>
+              </span>
+            )}
           </div>
           {v?.error && <Banner tone="err">{v.error}</Banner>}
-          <pre className={p.code} aria-label="ビルドログ" aria-live="polite">{log.data?.lines.join('\n') || 'ログを待っています…'}</pre>
-          {v && <pre className={p.code} aria-label="定義">{stringify(v.spec)}</pre>}
+          <pre className={p.code} aria-label="ビルドログ" aria-live="polite">
+            {log.data?.lines.join('\n') || 'ログを待っています…'}
+          </pre>
+          {v && (
+            <pre className={p.code} aria-label="定義">
+              {stringify(v.spec)}
+            </pre>
+          )}
         </>
       )}
     </Dialog>

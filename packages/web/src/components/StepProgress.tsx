@@ -4,7 +4,14 @@ import type { ProgressStatus, ProgressStep } from '../lib/workflow';
 import { IconCheck, IconClose } from './icons';
 import s from './StepProgress.module.css';
 
-const statusText: Record<ProgressStatus, string> = { waiting: '未着手', running: '実行中', done: '完了', alert: '対応待ち', failed: '失敗', skipped: '通らなかった' };
+const statusText: Record<ProgressStatus, string> = {
+  waiting: '未着手',
+  running: '実行中',
+  done: '完了',
+  alert: '対応待ち',
+  failed: '失敗',
+  skipped: '通らなかった',
+};
 const priority: ProgressStatus[] = ['alert', 'failed', 'running', 'done', 'waiting', 'skipped'];
 
 /** 列の状態: 対応待ち・失敗・実行中があればそれ、なければ完了（飛ばしたものは数えない） */
@@ -33,7 +40,17 @@ function Node({ status }: { status: ProgressStatus }) {
   );
 }
 
-export function StepProgress({ steps, size = 'md', showSub = false, label = 'ワークフローの進み具合' }: { steps: ProgressStep[]; size?: 'xs' | 'sm' | 'md'; showSub?: boolean; label?: string }) {
+export function StepProgress({
+  steps,
+  size = 'md',
+  showSub = false,
+  label = 'ワークフローの進み具合',
+}: {
+  steps: ProgressStep[];
+  size?: 'xs' | 'sm' | 'md';
+  showSub?: boolean;
+  label?: string;
+}) {
   return (
     <ol className={s.line} data-size={size} aria-label={label}>
       {group(steps).map((col, i) => {
@@ -44,11 +61,18 @@ export function StepProgress({ steps, size = 'md', showSub = false, label = 'ワ
         const visible = col.filter((x) => x.status !== 'skipped');
         const shown = (focus.length ? focus : visible.length ? visible : col).map((x) => x.label).join('・');
         return (
-          <li key={col[0]!.id} className={s.item} data-status={status} title={col.map((x) => `${x.label}: ${statusText[x.status]}`).join('\n')}>
+          <li
+            key={col[0]!.id}
+            className={s.item}
+            data-status={status}
+            title={col.map((x) => `${x.label}: ${statusText[x.status]}`).join('\n')}
+          >
             {i > 0 && <span className={s.bar} aria-hidden="true" />}
             {many ? (
               <span className={s.stack} aria-hidden="true">
-                {col.map((x) => <Node key={x.id} status={x.status} />)}
+                {col.map((x) => (
+                  <Node key={x.id} status={x.status} />
+                ))}
               </span>
             ) : (
               <Node status={col[0]!.status} />

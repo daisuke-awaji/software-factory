@@ -8,17 +8,35 @@ import s from './skeletons.module.css';
 export { Skeleton };
 
 /** 読み込み中の入れ物。読み上げには「読み込んでいます」とだけ伝える（枠そのものは aria-hidden） */
-export function Busy({ label = '読み込んでいます', className, children }: { label?: string; className?: string | undefined; children: ReactNode }) {
+export function Busy({
+  label = '読み込んでいます',
+  className,
+  children,
+}: {
+  label?: string;
+  className?: string | undefined;
+  children: ReactNode;
+}) {
   return (
     <div className={className} aria-busy="true">
-      <span className="sr-only" role="status">{label}</span>
+      <span className="sr-only" role="status">
+        {label}
+      </span>
       {children}
     </div>
   );
 }
 
 /** 1行の文字の代わり。行の高さ（1lh）は本物の文字と同じにし、帯はその中で上下の中央に置く */
-export function SkeletonText({ size, width = '100%', end = false }: { /** 省略すると親の文字の大きさに合わせる */ size?: number; width?: number | string; end?: boolean }) {
+export function SkeletonText({
+  size,
+  width = '100%',
+  end = false,
+}: {
+  /** 省略すると親の文字の大きさに合わせる */ size?: number;
+  width?: number | string;
+  end?: boolean;
+}) {
   return (
     <span className={s.line} style={{ fontSize: size, justifyContent: end ? 'flex-end' : undefined }}>
       <Skeleton height="0.72em" width={width} />
@@ -38,12 +56,16 @@ export function SkeletonLines({ lines = 3, size = 13, last = '60%' }: { lines?: 
 }
 
 /** PageHeader と同じ高さの見出し */
-export function PageHeaderSkeleton({ description = true }: { description?: boolean }) {
+function PageHeaderSkeleton({ description = true }: { description?: boolean }) {
   return (
     <div className={k.pageHead}>
       <div className={s.pageHeadText}>
         <SkeletonText size={22} width={160} />
-        {description && <span className={s.desc}><SkeletonText size={13.5} width="min(520px, 100%)" /></span>}
+        {description && (
+          <span className={s.desc}>
+            <SkeletonText size={13.5} width="min(520px, 100%)" />
+          </span>
+        )}
       </div>
     </div>
   );
@@ -58,7 +80,9 @@ export function TableSkeleton({ head, rows = 5, label }: { head: ReactNode[]; ro
           <thead>
             <tr>
               {head.map((h, i) => (
-                <th key={i} scope="col">{h}</th>
+                <th key={i} scope="col">
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
@@ -77,7 +101,7 @@ const WIDTHS = ['78%', '56%', '64%', '42%', '70%', '50%'];
 const widthAt = (i: number) => WIDTHS[i % WIDTHS.length] ?? '60%';
 
 /** 表の1行。最初の列は2行（タイトルと補足）にする */
-export function SkeletonRow({ cols, seed = 0, className }: { cols: number; seed?: number; className?: string | undefined }) {
+function SkeletonRow({ cols, seed = 0, className }: { cols: number; seed?: number; className?: string | undefined }) {
   return (
     <tr className={className} aria-hidden="true">
       {Array.from({ length: cols }, (_, c) => (
@@ -150,7 +174,9 @@ export function ListRowSkeleton({ className, seed = 0 }: { className?: string | 
   return (
     <span className={cx(s.listRow, className)} aria-hidden="true">
       <Skeleton width={7} circle />
-      <span className={s.listRowText}><SkeletonText size={13} width={widthAt(seed)} /></span>
+      <span className={s.listRowText}>
+        <SkeletonText size={13} width={widthAt(seed)} />
+      </span>
       <Skeleton width={26} height={8} />
     </span>
   );

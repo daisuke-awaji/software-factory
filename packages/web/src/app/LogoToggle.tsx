@@ -16,8 +16,12 @@ export function LogoToggle({ label, expanded, onClick }: { label: string; expand
       title={`${label}（${sidebarShortcut()}）`}
       onClick={onClick}
     >
-      <span className={s.mark}><FactoryMark size={14} /></span>
-      <span className={s.hover} aria-hidden="true"><IconSidebar /></span>
+      <span className={s.mark}>
+        <FactoryMark size={14} />
+      </span>
+      <span className={s.hover} aria-hidden="true">
+        <IconSidebar />
+      </span>
     </button>
   );
 }

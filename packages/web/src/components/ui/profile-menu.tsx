@@ -1,7 +1,7 @@
-"use client";
+'use client';
 // AffectUI（無料の部品）を取り込んだもの。noUncheckedIndexedAccess と exactOptionalPropertyTypes に合わせて最小限だけ直した（ADR-0008）
 
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 
 /*
  * Profile Menu – an account card with the signed-in user, menu actions and profile setup progress, in a single self-contained file.
@@ -17,7 +17,7 @@ export type ProfileMenuItem = {
   onSelect?: () => void;
 };
 
-export type ProfileSetup = {
+type ProfileSetup = {
   /** Steps finished so far */
   done: number;
   total: number;
@@ -38,22 +38,15 @@ export type ProfileMenuProps = {
 };
 
 // Counts get separators; anything that isn't a finite number reads as 0
-const count = new Intl.NumberFormat("en");
-const finite = (n: unknown) => (typeof n === "number" && Number.isFinite(n) ? n : 0);
+const count = new Intl.NumberFormat('en');
+const finite = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? n : 0);
 
-export function ProfileMenu({
-  name,
-  email,
-  avatar,
-  items = defaultItems,
-  setup,
-  className,
-}: ProfileMenuProps) {
+export function ProfileMenu({ name, email, avatar, items = defaultItems, setup, className }: ProfileMenuProps) {
   const listRef = useRef<HTMLDivElement>(null);
   // Gaps in the list are skipped, an image that fails to load falls back to the default avatar
-  const list = (Array.isArray(items) ? items : []).filter((item): item is ProfileMenuItem => !!item && typeof item === "object");
+  const list = (Array.isArray(items) ? items : []).filter((item): item is ProfileMenuItem => !!item && typeof item === 'object');
   const [broken, setBroken] = useState(false);
-  const shownName = typeof name === "string" ? name.trim() : "";
+  const shownName = typeof name === 'string' ? name.trim() : '';
   // The progress bar fills up once the card is on screen
   const [filled, setFilled] = useState(false);
   const rootRef = useRef<HTMLElement>(null);
@@ -69,14 +62,18 @@ export function ProfileMenu({
 
   // Arrow keys move between the actions, like in a native menu
   const onKey = (e: KeyboardEvent) => {
-    const buttons = [...(listRef.current?.querySelectorAll<HTMLButtonElement>("button") ?? [])];
+    const buttons = [...(listRef.current?.querySelectorAll<HTMLButtonElement>('button') ?? [])];
     const i = buttons.indexOf(document.activeElement as HTMLButtonElement);
     const next =
-      e.key === "ArrowDown" ? (i + 1) % buttons.length
-      : e.key === "ArrowUp" ? (i - 1 + buttons.length) % buttons.length
-      : e.key === "Home" ? 0
-      : e.key === "End" ? buttons.length - 1
-      : null;
+      e.key === 'ArrowDown'
+        ? (i + 1) % buttons.length
+        : e.key === 'ArrowUp'
+          ? (i - 1 + buttons.length) % buttons.length
+          : e.key === 'Home'
+            ? 0
+            : e.key === 'End'
+              ? buttons.length - 1
+              : null;
     if (next === null) return;
     e.preventDefault();
     buttons[next]?.focus();
@@ -87,40 +84,39 @@ export function ProfileMenu({
       <style href="ui-profile-menu" precedence="default">
         {css}
       </style>
-      <section ref={rootRef} className={["ui-pm", className].filter(Boolean).join(" ")} data-filled={filled || undefined}>
+      <section ref={rootRef} className={['ui-pm', className].filter(Boolean).join(' ')} data-filled={filled || undefined}>
         <div className="ui-pm__card">
-        <header className="ui-pm__user">
-          <span className="ui-pm__avatar" onErrorCapture={() => setBroken(true)}>
-            {avatar && !broken ? avatar : <DefaultAvatar />}
-          </span>
-          <span className="ui-pm__who">
-            {shownName && (
-              <span className="ui-pm__name" dir="auto" title={shownName}>
-                {shownName}
-              </span>
-            )}
-            <span className="ui-pm__email" dir="auto" title={email}>
-              {email}
+          <header className="ui-pm__user">
+            <span className="ui-pm__avatar" onErrorCapture={() => setBroken(true)}>
+              {avatar && !broken ? avatar : <DefaultAvatar />}
             </span>
-          </span>
-        </header>
-
-        <div ref={listRef} className="ui-pm__items" role="menu" aria-label="アカウント" onKeyDown={onKey}>
-          {list.map((item, i) => (
-            <button key={`${item.id}-${i}`} type="button" role="menuitem" className="ui-pm__item" onClick={item.onSelect}>
-              <span className="ui-pm__icon">{item.icon}</span>
-              <span className="ui-pm__label" dir="auto" title={item.label}>
-                {item.label}
-              </span>
-              {item.badge && (
-                <span className="ui-pm__badge" dir="auto" title={item.badge}>
-                  {item.badge}
+            <span className="ui-pm__who">
+              {shownName && (
+                <span className="ui-pm__name" dir="auto" title={shownName}>
+                  {shownName}
                 </span>
               )}
-            </button>
-          ))}
-        </div>
+              <span className="ui-pm__email" dir="auto" title={email}>
+                {email}
+              </span>
+            </span>
+          </header>
 
+          <div ref={listRef} className="ui-pm__items" role="menu" aria-label="アカウント" onKeyDown={onKey}>
+            {list.map((item, i) => (
+              <button key={`${item.id}-${i}`} type="button" role="menuitem" className="ui-pm__item" onClick={item.onSelect}>
+                <span className="ui-pm__icon">{item.icon}</span>
+                <span className="ui-pm__label" dir="auto" title={item.label}>
+                  {item.label}
+                </span>
+                {item.badge && (
+                  <span className="ui-pm__badge" dir="auto" title={item.badge}>
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
         {setup && <SetupProgress {...setup} />}
       </section>
@@ -168,32 +164,34 @@ function SetupProgress({ done: rawDone, total: rawTotal, next, onContinue }: Pro
 /* ---------- Icons ---------- */
 
 const Svg = ({ children }: { children: ReactNode }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     {children}
   </svg>
 );
 
-export const SettingsIcon = () => (
+const SettingsIcon = () => (
   <Svg>
     <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
     <circle cx="12" cy="12" r="3" />
   </Svg>
 );
 
-export const LanguageIcon = () => (
-  <Svg>
-    <path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6" />
-  </Svg>
-);
-
-export const DocsIcon = () => (
+const DocsIcon = () => (
   <Svg>
     <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
     <path d="M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8M10 9H8" />
   </Svg>
 );
 
-export const AppsIcon = () => (
+const AppsIcon = () => (
   <Svg>
     <rect x="3" y="3" width="7" height="7" rx="1.5" />
     <rect x="3" y="14" width="7" height="7" rx="1.5" />
@@ -202,7 +200,7 @@ export const AppsIcon = () => (
   </Svg>
 );
 
-export const LogoutIcon = () => (
+const LogoutIcon = () => (
   <Svg>
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
   </Svg>
@@ -213,21 +211,32 @@ const DefaultAvatar = () => (
   <svg viewBox="0 0 40 40" aria-hidden="true">
     <circle cx="20" cy="20" r="20" fill="currentColor" opacity="0.1" />
     <circle cx="20" cy="16" r="4.75" fill="currentColor" />
-    <path d="M11.5 28.25c.9-4 4.3-6.75 8.5-6.75s7.6 2.75 8.5 6.75c.15.7-.4 1.25-1.1 1.25H12.6c-.7 0-1.25-.55-1.1-1.25Z" fill="currentColor" />
+    <path
+      d="M11.5 28.25c.9-4 4.3-6.75 8.5-6.75s7.6 2.75 8.5 6.75c.15.7-.4 1.25-1.1 1.25H12.6c-.7 0-1.25-.55-1.1-1.25Z"
+      fill="currentColor"
+    />
   </svg>
 );
 
 const ArrowIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.6"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <path d="M5 12h14M13 6l6 6-6 6" />
   </svg>
 );
 
 const defaultItems: ProfileMenuItem[] = [
-  { id: "settings", label: "Settings", icon: <SettingsIcon /> },
-  { id: "docs", label: "Docs", icon: <DocsIcon /> },
-  { id: "apps", label: "Apps", icon: <AppsIcon />, badge: "New" },
-  { id: "logout", label: "Logout", icon: <LogoutIcon /> },
+  { id: 'settings', label: 'Settings', icon: <SettingsIcon /> },
+  { id: 'docs', label: 'Docs', icon: <DocsIcon /> },
+  { id: 'apps', label: 'Apps', icon: <AppsIcon />, badge: 'New' },
+  { id: 'logout', label: 'Logout', icon: <LogoutIcon /> },
 ];
 
 /* ---------- Styles ---------- */

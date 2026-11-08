@@ -1,7 +1,20 @@
 // モックのバックエンドのデータ（インメモリ。ブラウザでは localStorage に保存して、再読み込みしても続きから動く）
 import {
-  type AdminUser, type FactoryEvent, type FactoryEventEnvelope, type ImageSummary, type ImageVersion, type WorkflowDefinition, type Me,
-  type NetworkProfile, type PackageSource, type PlanRecord, type Publication, type Repo, type StepRun, type Task, ulid,
+  type AdminUser,
+  type FactoryEvent,
+  type FactoryEventEnvelope,
+  type ImageSummary,
+  type ImageVersion,
+  type WorkflowDefinition,
+  type Me,
+  type NetworkProfile,
+  type PackageSource,
+  type PlanRecord,
+  type Publication,
+  type Repo,
+  type StepRun,
+  type Task,
+  ulid,
 } from '@factory/contracts';
 
 /** シミュレーターが次に行うこと（JSON にできる形で持つ。再読み込みしても続きから動かすため） */

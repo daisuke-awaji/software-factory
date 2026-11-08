@@ -3,7 +3,20 @@ import { analyzeWorkflow, Workflow } from '@factory/contracts';
 import { describe, expect, it } from 'vitest';
 import { workflowYaml } from '../mocks/fixtures';
 import {
-  addStep, branchMode, connect, disconnect, draftToYaml, makeDefault, parseDraft, removeStep, renameCase, renameStep, setBranchMode, setMaxLoops, updateStep, type Draft,
+  addStep,
+  branchMode,
+  connect,
+  disconnect,
+  draftToYaml,
+  makeDefault,
+  parseDraft,
+  removeStep,
+  renameCase,
+  renameStep,
+  setBranchMode,
+  setMaxLoops,
+  updateStep,
+  type Draft,
 } from './workflowEdit';
 
 const load = (name: string): Draft => {
@@ -135,7 +148,10 @@ describe('YAML との行き来', () => {
 
   it('読めない YAML と、項目の形の誤りを知らせる', () => {
     expect(parseDraft('steps: [', 1)).toMatchObject({ ok: false, error: expect.stringContaining('YAML として読めません') });
-    expect(parseDraft('name: x\nsteps:\n  - id: A\n    type: agent\n', 1)).toMatchObject({ ok: false, error: expect.stringContaining('steps.0.id') });
+    expect(parseDraft('name: x\nsteps:\n  - id: A\n    type: agent\n', 1)).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('steps.0.id'),
+    });
     // つながりの誤りは、図で直せるように通す
     expect(parseDraft('name: x\nsteps:\n  - { id: aa, type: agent, next: zz }\n', 1).ok).toBe(true);
   });

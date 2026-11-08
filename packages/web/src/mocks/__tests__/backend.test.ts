@@ -9,7 +9,8 @@ const server = setupServer(...handlers);
 const base = 'http://localhost:5173/api/v1';
 const h = { authorization: 'Bearer test', 'content-type': 'application/json' };
 const get = async <S extends z.ZodType>(s: S, path: string) => s.parse(await (await fetch(base + path, { headers: h })).json());
-const post = (path: string, body?: unknown) => fetch(base + path, { method: 'POST', headers: h, ...(body ? { body: JSON.stringify(body) } : {}) });
+const post = (path: string, body?: unknown) =>
+  fetch(base + path, { method: 'POST', headers: h, ...(body ? { body: JSON.stringify(body) } : {}) });
 const Items = z.object({ items: z.array(Task) });
 
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
@@ -42,7 +43,14 @@ describe('モックのバックエンド', () => {
     const form = page.items.find((i) => i.title.includes('フォーム'))!;
     expect(form.pullRequest?.number).toBe(128);
     const runs = await get(z.array(StepRun), `/tasks/${form.id}/steps`);
-    expect(runs.map((r) => `${r.runId}:${r.state}`)).toEqual(['implement#1:completed', 'verify#1:failed', 'implement#2:completed', 'verify#2:completed', 'review#1:completed', 'deliver#1:completed']);
+    expect(runs.map((r) => `${r.runId}:${r.state}`)).toEqual([
+      'implement#1:completed',
+      'verify#1:failed',
+      'implement#2:completed',
+      'verify#2:completed',
+      'review#1:completed',
+      'deliver#1:completed',
+    ]);
   });
 
   it('並列のワークフロー: 枝を同時に動かし、両方が終わってから合流し、ラベルで分かれる', async () => {
@@ -59,13 +67,20 @@ describe('モックのバックエンド', () => {
     expect(at('triage').startedAt > at('unit-test').endedAt! && at('triage').startedAt > at('e2e').endedAt!).toBe(true);
     // 小さい変更なので、セキュリティレビューは動かない
     const { items: events } = await get(z.object({ items: z.array(FactoryEventEnvelope) }), `/tasks/${sort.id}/events`);
-    expect(events.find((e) => e.type === 'step.changed' && e.stepId === 'triage' && e.state === 'completed')).toMatchObject({ label: 'small' });
+    expect(events.find((e) => e.type === 'step.changed' && e.stepId === 'triage' && e.state === 'completed')).toMatchObject({
+      label: 'small',
+    });
     // ツールは、どのステップの作業かが分かる
     expect(events.filter((e) => e.type === 'tool.started' && e.stepId === 'e2e').length).toBeGreaterThan(0);
   });
 
   it('並列のワークフロー: 振り分けで失敗すると、実装に戻って枝をもう一度流す', async () => {
-    const res = await post('/tasks', { title: '問い合わせフォームの入力チェック', workflowRef: 'build-parallel@1', repo: { owner: 'acme', name: 'support-site' }, message: 'フォームの入力チェックを直して' });
+    const res = await post('/tasks', {
+      title: '問い合わせフォームの入力チェック',
+      workflowRef: 'build-parallel@1',
+      repo: { owner: 'acme', name: 'support-site' },
+      message: 'フォームの入力チェックを直して',
+    });
     const current = Task.parse(await res.json());
     await until(async () => (await stateOf(current.id)) === 'awaiting_approval');
     const plans = await get(z.array(PlanRecord), `/tasks/${current.id}/plans`);
@@ -73,8 +88,15 @@ describe('モックのバックエンド', () => {
     await until(async () => (await stateOf(current.id)) === 'completed');
     const runs = await get(z.array(StepRun), `/tasks/${current.id}/steps`);
     expect(runs.map((r) => `${r.runId}:${r.state}`)).toEqual([
-      'implement#1:completed', 'unit-test#1:completed', 'e2e#1:completed', 'triage#1:failed',
-      'implement#2:completed', 'unit-test#2:completed', 'e2e#2:completed', 'triage#2:completed', 'deliver#1:completed',
+      'implement#1:completed',
+      'unit-test#1:completed',
+      'e2e#1:completed',
+      'triage#1:failed',
+      'implement#2:completed',
+      'unit-test#2:completed',
+      'e2e#2:completed',
+      'triage#2:completed',
+      'deliver#1:completed',
     ]);
   });
 
@@ -87,7 +109,12 @@ describe('モックのバックエンド', () => {
     expect(rest.nextCursor).toBeUndefined();
     const all = [...first.items, ...rest.items];
     expect(new Set(all.map((i) => i.id)).size).toBe(all.length);
-    expect(all.map((i) => i.updatedAt)).toEqual(all.map((i) => i.updatedAt).sort().reverse());
+    expect(all.map((i) => i.updatedAt)).toEqual(
+      all
+        .map((i) => i.updatedAt)
+        .sort()
+        .reverse(),
+    );
     // 過去のタスクの PR は 128 より前の番号にする
     expect(Math.max(...rest.items.map((i) => i.pullRequest?.number ?? 0))).toBeLessThan(128);
   });
@@ -98,7 +125,12 @@ describe('モックのバックエンド', () => {
     ws.addEventListener('message', (e) => received.push(FactoryEventEnvelope.parse(JSON.parse(String(e.data)))));
     await new Promise((r) => ws.addEventListener('open', r));
 
-    const res = await post('/tasks', { title: 'フォームの入力チェック', workflowRef: 'build-verify@3', repo: { owner: 'acme', name: 'support-site' }, message: '入力チェックを直して' });
+    const res = await post('/tasks', {
+      title: 'フォームの入力チェック',
+      workflowRef: 'build-verify@3',
+      repo: { owner: 'acme', name: 'support-site' },
+      message: '入力チェックを直して',
+    });
     expect(res.status).toBe(201);
     const current = Task.parse(await res.json());
     ws.send(JSON.stringify({ action: 'subscribe', taskId: current.id }));
@@ -128,7 +160,9 @@ describe('モックのバックエンド', () => {
     const page = await get(Items, '/tasks?state=awaiting_approval');
     const id = page.items[0]!.id;
     expect((await post(`/tasks/${id}/plans/1/request-changes`, { comment: 'グラフは折れ線にしてください' })).status).toBe(202);
-    await until(async () => (await get(z.array(PlanRecord), `/tasks/${id}/plans`)).length === 2 && (await stateOf(id)) === 'awaiting_approval');
+    await until(
+      async () => (await get(z.array(PlanRecord), `/tasks/${id}/plans`)).length === 2 && (await stateOf(id)) === 'awaiting_approval',
+    );
     const plans = await get(z.array(PlanRecord), `/tasks/${id}/plans`);
     expect(plans.map((p) => p.status)).toEqual(['changes_requested', 'proposed']);
     expect((await post(`/tasks/${id}/plans/1/approve`)).status).toBe(409);
@@ -171,22 +205,37 @@ describe('モックのバックエンド', () => {
     expect(res.status).toBe(201);
     expect(ImageVersion.parse(await res.json()).state).toBe('building');
     await until(async () => (await get(z.array(ImageVersion), '/images/report-tools/versions'))[0]!.state === 'ready');
-    const log = z.object({ lines: z.array(z.string()), done: z.boolean() }).parse(await (await fetch(`${base}/images/report-tools/versions/1/build-log`, { headers: h })).json());
+    const log = z
+      .object({ lines: z.array(z.string()), done: z.boolean() })
+      .parse(await (await fetch(`${base}/images/report-tools/versions/1/build-log`, { headers: h })).json());
     expect(log.done).toBe(true);
   });
 
   it('管理: ワークフローの YAML を検証して新しい版にする', async () => {
-    const bad = await fetch(`${base}/admin/workflows/chat`, { method: 'PUT', headers: h, body: JSON.stringify({ yaml: 'name: chat\nsteps:\n  - id: X\n    type: agent\n' }) });
+    const bad = await fetch(`${base}/admin/workflows/chat`, {
+      method: 'PUT',
+      headers: h,
+      body: JSON.stringify({ yaml: 'name: chat\nsteps:\n  - id: X\n    type: agent\n' }),
+    });
     expect(bad.status).toBe(400);
-    const ok = await fetch(`${base}/admin/workflows/chat`, { method: 'PUT', headers: h, body: JSON.stringify({ yaml: 'name: chat\nversion: 1\nsteps:\n  - id: workbench\n    type: agent\n    image: base@3\n' }) });
+    const ok = await fetch(`${base}/admin/workflows/chat`, {
+      method: 'PUT',
+      headers: h,
+      body: JSON.stringify({ yaml: 'name: chat\nversion: 1\nsteps:\n  - id: workbench\n    type: agent\n    image: base@3\n' }),
+    });
     expect(ok.status).toBe(200);
     expect(((await ok.json()) as { version: number }).version).toBe(2);
     // 並列の枝の合流に needs がないと、場所と直し方を返す
-    const noNeeds = 'name: chat\nsteps:\n  - { id: aa, type: agent, next: [bb, cc] }\n  - { id: bb, type: agent, next: dd }\n  - { id: cc, type: agent, next: dd }\n  - { id: dd, type: agent }\n';
+    const noNeeds =
+      'name: chat\nsteps:\n  - { id: aa, type: agent, next: [bb, cc] }\n  - { id: bb, type: agent, next: dd }\n  - { id: cc, type: agent, next: dd }\n  - { id: dd, type: agent }\n';
     const fork = await fetch(`${base}/admin/workflows/chat`, { method: 'PUT', headers: h, body: JSON.stringify({ yaml: noNeeds }) });
     expect(fork.status).toBe(400);
     expect(JSON.stringify(await fork.json())).toContain('needs');
-    const fixed = await fetch(`${base}/admin/workflows/chat`, { method: 'PUT', headers: h, body: JSON.stringify({ yaml: noNeeds.replace('{ id: dd, type: agent }', '{ id: dd, type: agent, needs: [bb, cc] }') }) });
+    const fixed = await fetch(`${base}/admin/workflows/chat`, {
+      method: 'PUT',
+      headers: h,
+      body: JSON.stringify({ yaml: noNeeds.replace('{ id: dd, type: agent }', '{ id: dd, type: agent, needs: [bb, cc] }') }),
+    });
     expect(fixed.status).toBe(200);
   });
 

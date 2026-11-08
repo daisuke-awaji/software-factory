@@ -24,7 +24,11 @@ test('ワークフローの一覧で、並列・分岐・戻りを図で見ら�
   await page.goto('/workflows');
   const graph = page.getByRole('list', { name: '並べて確かめる のステップ（文で読む）' });
   await expect(graph.getByText('実装: 次は 単体テストとE2E を並列で')).toBeAttached();
-  await expect(graph.getByText(/^振り分け: 次は 完了、結果が large なら セキュリティレビュー、E2Eと単体テスト がすべて終わってから始まる、失敗したら 実装 に戻る（2 回まで）$/)).toBeAttached();
+  await expect(
+    graph.getByText(
+      /^振り分け: 次は 完了、結果が large なら セキュリティレビュー、E2Eと単体テスト がすべて終わってから始まる、失敗したら 実装 に戻る（2 回まで）$/,
+    ),
+  ).toBeAttached();
   const card = page.locator('[data-mode="view"]').filter({ has: node(page, 'triage') });
   await expect(card.getByText('並列 2')).toBeVisible();
   await expect(card.getByText('2 つを待つ')).toBeVisible();
@@ -34,7 +38,10 @@ test('ワークフローの一覧で、並列・分岐・戻りを図で見ら�
 
 test('ワークスペース: 並列で動いたステップの状態を図に重ね、押すとそのログを開く', async ({ page }) => {
   await fresh(page);
-  await page.getByRole('link', { name: /在庫一覧に並び替えを付ける/ }).first().click();
+  await page
+    .getByRole('link', { name: /在庫一覧に並び替えを付ける/ })
+    .first()
+    .click();
   await expect(page.getByRole('heading', { level: 1, name: '在庫一覧に並び替えを付ける' })).toBeVisible();
   await page.getByRole('tab', { name: '計画' }).click();
   const graph = page.locator('[data-mode="run"]');
@@ -42,7 +49,9 @@ test('ワークスペース: 並列で動いたステップの状態を図に重
   await expect(node(page, 'e2e').locator('[data-status="done"]')).toBeVisible();
   // 小さい変更なので、セキュリティレビューは通らなかった
   await expect(node(page, 'security-review').locator('[data-status="skipped"]')).toBeVisible();
-  await expect(graph.getByRole('list', { name: /文で読む/ }).getByText('セキュリティレビュー（通らなかった）', { exact: false })).toBeAttached();
+  await expect(
+    graph.getByRole('list', { name: /文で読む/ }).getByText('セキュリティレビュー（通らなかった）', { exact: false }),
+  ).toBeAttached();
   await node(page, 'e2e').click();
   const log = page.getByRole('region', { name: /^E2E e2e#1$/ });
   await expect(log).toBeVisible();
@@ -92,7 +101,9 @@ test('管理: 図で矢印をつなぎ、分かれ方を選び、YAML に反映�
 
   // 一覧の図にも反映される
   await page.getByRole('link', { name: 'ワークフロー', exact: true }).click();
-  await expect(page.getByRole('list', { name: '作って確かめる のステップ（文で読む）' }).getByText(/^検証: 次は レビュー、結果が docs-only なら 完了/)).toBeAttached();
+  await expect(
+    page.getByRole('list', { name: '作って確かめる のステップ（文で読む）' }).getByText(/^検証: 次は レビュー、結果が docs-only なら 完了/),
+  ).toBeAttached();
 });
 
 test('管理: ステップを足して消し、失敗したときの戻り先を図でつなぐ', async ({ page }) => {
@@ -116,7 +127,9 @@ test('管理: ステップを足して消し、失敗したときの戻り先を
   await expect(inspector.getByLabel('失敗したときの戻り先')).toHaveValue('implement');
 
   await page.getByRole('radio', { name: 'YAML' }).click();
-  await expect(page.getByLabel('ワークフローの定義（YAML）')).toHaveValue(/- id: sign-off\n {4}type: approval\n {4}next: deliver\n {4}on:\n {6}fail: \{goto: implement, maxLoops: 1\}/);
+  await expect(page.getByLabel('ワークフローの定義（YAML）')).toHaveValue(
+    /- id: sign-off\n {4}type: approval\n {4}next: deliver\n {4}on:\n {6}fail: \{goto: implement, maxLoops: 1\}/,
+  );
   await page.getByRole('radio', { name: '図' }).click();
 
   // Delete で消すと、前後がつながり直す

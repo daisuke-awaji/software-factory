@@ -6,6 +6,6 @@
 - 設計: §
 
 ## 確認したこと
-- [ ] `pnpm typecheck` / `pnpm lint` / `pnpm test` が通る
+- [ ] `pnpm typecheck` / `pnpm lint` / `pnpm format:check` / `pnpm knip` / `pnpm test` が通る
 - [ ] 契約（packages/contracts）を変えた場合、web と api の両方を直した
 - [ ] 設計を変えた場合、ADR を追加した

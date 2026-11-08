@@ -12,7 +12,15 @@ export function useLiveReload(items: Task[] | undefined, reload: () => void) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reloadRef = useRef(reload);
   reloadRef.current = reload;
-  const ids = useMemo(() => (items ?? []).filter((i) => !isTerminal(i.state)).map((i) => i.id).sort().join(','), [items]);
+  const ids = useMemo(
+    () =>
+      (items ?? [])
+        .filter((i) => !isTerminal(i.state))
+        .map((i) => i.id)
+        .sort()
+        .join(','),
+    [items],
+  );
 
   useEffect(() => {
     if (!ids) return;
@@ -52,7 +60,7 @@ export function usePending(items: Task[] | undefined) {
     return () => {
       alive = false;
     };
-    // eslint-disable-next-workflow react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, api]);
 
   return pending;

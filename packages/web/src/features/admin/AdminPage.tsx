@@ -76,9 +76,16 @@ function NetworkProfiles() {
       </div>
     );
   const save = async (name: string, description: string | undefined) => {
-    const allow = (drafts[name] ?? '').split('\n').map((x) => x.trim()).filter(Boolean);
+    const allow = (drafts[name] ?? '')
+      .split('\n')
+      .map((x) => x.trim())
+      .filter(Boolean);
     const check = NetworkProfile.omit({ updatedAt: true }).safeParse({ name, allow, ...(description ? { description } : {}) });
-    if (!check.success) return setErrors((e) => ({ ...e, [name]: check.error.issues.map((i) => `${allow[Number(i.path[1])] ?? ''}: ${i.message}`).join(' / ') }));
+    if (!check.success)
+      return setErrors((e) => ({
+        ...e,
+        [name]: check.error.issues.map((i) => `${allow[Number(i.path[1])] ?? ''}: ${i.message}`).join(' / '),
+      }));
     try {
       await api.admin.putNetworkProfile(check.data);
       setErrors((e) => ({ ...e, [name]: '' }));
@@ -95,21 +102,44 @@ function NetworkProfiles() {
   };
   return (
     <div className={p.stack}>
-      <p className={p.sectionDesc} style={{ margin: 0 }}>VM からの通信は、ここに書いたホストにだけ通します（D4）。ステップごとに、ワークフローの定義でプロファイルを選びます。</p>
+      <p className={p.sectionDesc} style={{ margin: 0 }}>
+        VM からの通信は、ここに書いたホストにだけ通します（D4）。ステップごとに、ワークフローの定義でプロファイルを選びます。
+      </p>
       <div className={p.grid}>
         {list.data.map((prof) => {
           const value = drafts[prof.name] ?? prof.allow.join('\n');
           return (
             <Card key={prof.name}>
               <div className={p.cardBody}>
-                <h3 className={p.cardTitle}><IconShield /> {prof.name}</h3>
+                <h3 className={p.cardTitle}>
+                  <IconShield /> {prof.name}
+                </h3>
                 {prof.description && <p className={p.desc}>{prof.description}</p>}
-                <Field label="許可するホスト（1行に1つ）" htmlFor={`np-${prof.name}`} error={errors[prof.name] || undefined} hint={`更新 ${relative(prof.updatedAt)}`}>
-                  <TextArea id={`np-${prof.name}`} rows={5} className="mono" value={value} placeholder="（なし: 外部への通信をすべて止める）" onChange={(e) => setDrafts((d) => ({ ...d, [prof.name]: e.target.value }))} />
+                <Field
+                  label="許可するホスト（1行に1つ）"
+                  htmlFor={`np-${prof.name}`}
+                  error={errors[prof.name] || undefined}
+                  hint={`更新 ${relative(prof.updatedAt)}`}
+                >
+                  <TextArea
+                    id={`np-${prof.name}`}
+                    rows={5}
+                    className="mono"
+                    value={value}
+                    placeholder="（なし: 外部への通信をすべて止める）"
+                    onChange={(e) => setDrafts((d) => ({ ...d, [prof.name]: e.target.value }))}
+                  />
                 </Field>
                 <div className={p.row}>
                   <span className={p.right}>
-                    <Button size="sm" variant="secondary" disabled={drafts[prof.name] === undefined} onClick={() => void save(prof.name, prof.description)}>保存</Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={drafts[prof.name] === undefined}
+                      onClick={() => void save(prof.name, prof.description)}
+                    >
+                      保存
+                    </Button>
                   </span>
                 </div>
               </div>
@@ -130,28 +160,60 @@ function PackageSources() {
   const ids = { kind: useId(), npm: useId(), pypi: useId() };
   useEffect(() => {
     const cur = list.data?.[0];
-    if (cur && !draft) setDraft({ name: cur.name, kind: cur.kind, ...(cur.npmRegistry ? { npmRegistry: cur.npmRegistry } : {}), ...(cur.pypiIndex ? { pypiIndex: cur.pypiIndex } : {}) });
+    if (cur && !draft)
+      setDraft({
+        name: cur.name,
+        kind: cur.kind,
+        ...(cur.npmRegistry ? { npmRegistry: cur.npmRegistry } : {}),
+        ...(cur.pypiIndex ? { pypiIndex: cur.pypiIndex } : {}),
+      });
   }, [list.data, draft]);
   if (list.error) return <ErrorBanner error={list.error} />;
   if (!draft)
     return (
       <div style={{ maxWidth: 640 }}>
-        <CardSkeleton lines={2} body={<><Skeleton height={36} radius={10} /><Skeleton height={36} radius={10} /></>} />
+        <CardSkeleton
+          lines={2}
+          body={
+            <>
+              <Skeleton height={36} radius={10} />
+              <Skeleton height={36} radius={10} />
+            </>
+          }
+        />
       </div>
     );
   return (
     <Card>
       <div className={p.cardBody} style={{ maxWidth: 640 }}>
-        <h3 className={p.cardTitle}>パッケージの取得元 <span className="mono">{draft.name}</span></h3>
-        <p className={p.desc}>いまは公開レジストリから取得します。CodeArtifact に切り替えても、イメージやワークフローの定義は変えずに済みます（D9）。</p>
+        <h3 className={p.cardTitle}>
+          パッケージの取得元 <span className="mono">{draft.name}</span>
+        </h3>
+        <p className={p.desc}>
+          いまは公開レジストリから取得します。CodeArtifact に切り替えても、イメージやワークフローの定義は変えずに済みます（D9）。
+        </p>
         <Field label="種類" htmlFor={ids.kind}>
           <Select id={ids.kind} value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value as PackageSource['kind'] })}>
             <option value="public">公開レジストリ（npm / PyPI）</option>
             <option value="codeartifact">AWS CodeArtifact</option>
           </Select>
         </Field>
-        <Field label="npm のレジストリ" htmlFor={ids.npm}><TextInput id={ids.npm} className="mono" value={draft.npmRegistry ?? ''} onChange={(e) => setDraft({ ...draft, npmRegistry: e.target.value })} /></Field>
-        <Field label="PyPI のインデックス" htmlFor={ids.pypi}><TextInput id={ids.pypi} className="mono" value={draft.pypiIndex ?? ''} onChange={(e) => setDraft({ ...draft, pypiIndex: e.target.value })} /></Field>
+        <Field label="npm のレジストリ" htmlFor={ids.npm}>
+          <TextInput
+            id={ids.npm}
+            className="mono"
+            value={draft.npmRegistry ?? ''}
+            onChange={(e) => setDraft({ ...draft, npmRegistry: e.target.value })}
+          />
+        </Field>
+        <Field label="PyPI のインデックス" htmlFor={ids.pypi}>
+          <TextInput
+            id={ids.pypi}
+            className="mono"
+            value={draft.pypiIndex ?? ''}
+            onChange={(e) => setDraft({ ...draft, pypiIndex: e.target.value })}
+          />
+        </Field>
         {error && <Banner tone="err">{error}</Banner>}
         <div className={p.row}>
           <span className={p.right}>
@@ -201,7 +263,13 @@ function Vms() {
           </div>
         )}
       </Card>
-      {cap.data ? <p className={p.sectionDesc} style={{ margin: 0 }}>順番待ちのタスク: {cap.data.queueLength} 件</p> : <SkeletonText size={13} width={150} />}
+      {cap.data ? (
+        <p className={p.sectionDesc} style={{ margin: 0 }}>
+          順番待ちのタスク: {cap.data.queueLength} 件
+        </p>
+      ) : (
+        <SkeletonText size={13} width={150} />
+      )}
       {!vms.data ? (
         <TableSkeleton head={VM_HEAD} rows={3} label="VM の一覧" />
       ) : vms.data.length === 0 ? (
@@ -210,13 +278,28 @@ function Vms() {
         <Table head={VM_HEAD} label="VM の一覧">
           {vms.data.map((v) => (
             <tr key={v.id}>
-              <td className="mono">{v.id}<span className={p.sub}>{v.stepRunId}</span></td>
-              <td><Link to={`/t/${v.taskId}`} className={p.link}>開く</Link></td>
+              <td className="mono">
+                {v.id}
+                <span className={p.sub}>{v.stepRunId}</span>
+              </td>
+              <td>
+                <Link to={`/t/${v.taskId}`} className={p.link}>
+                  開く
+                </Link>
+              </td>
               <td>{v.owner}</td>
-              <td className="mono">{v.image} · {mib(v.memoryMiB)}</td>
-              <td><Tag tone={v.state === 'running' ? 'run' : undefined}>{v.state === 'running' ? '実行中' : '一時停止'}</Tag></td>
+              <td className="mono">
+                {v.image} · {mib(v.memoryMiB)}
+              </td>
+              <td>
+                <Tag tone={v.state === 'running' ? 'run' : undefined}>{v.state === 'running' ? '実行中' : '一時停止'}</Tag>
+              </td>
               <td className="muted">{relative(v.startedAt)}</td>
-              <td><Button size="sm" variant="destructive" onClick={() => setTarget(v.id)}>強制停止</Button></td>
+              <td>
+                <Button size="sm" variant="destructive" onClick={() => setTarget(v.id)}>
+                  強制停止
+                </Button>
+              </td>
             </tr>
           ))}
         </Table>
@@ -270,18 +353,45 @@ function Users() {
         const set = (patch: Partial<AdminUser>) => setDrafts((d) => ({ ...d, [u.id]: { ...u, ...patch } }));
         return (
           <tr key={u.id}>
-            <td>{u.name}<span className={p.sub}>{u.email}</span></td>
             <td>
-              <input type="checkbox" aria-label={`${u.name} を管理者にする`} checked={u.roles.includes('admin')} onChange={(e) => set({ roles: e.target.checked ? ['user', 'admin'] : ['user'] })} />
+              {u.name}
+              <span className={p.sub}>{u.email}</span>
             </td>
             <td>
-              <TextInput className={p.numInput} type="number" min={1} max={20} aria-label={`${u.name} の同時に進めるタスク`} value={u.limits.concurrentTasks} onChange={(e) => set({ limits: { ...u.limits, concurrentTasks: Number(e.target.value) } })} />
+              <input
+                type="checkbox"
+                aria-label={`${u.name} を管理者にする`}
+                checked={u.roles.includes('admin')}
+                onChange={(e) => set({ roles: e.target.checked ? ['user', 'admin'] : ['user'] })}
+              />
             </td>
             <td>
-              <TextInput className={p.numInput} type="number" min={0} aria-label={`${u.name} の月の上限（ドル）`} value={u.limits.monthlyUsd} onChange={(e) => set({ limits: { ...u.limits, monthlyUsd: Number(e.target.value) } })} />
+              <TextInput
+                className={p.numInput}
+                type="number"
+                min={1}
+                max={20}
+                aria-label={`${u.name} の同時に進めるタスク`}
+                value={u.limits.concurrentTasks}
+                onChange={(e) => set({ limits: { ...u.limits, concurrentTasks: Number(e.target.value) } })}
+              />
+            </td>
+            <td>
+              <TextInput
+                className={p.numInput}
+                type="number"
+                min={0}
+                aria-label={`${u.name} の月の上限（ドル）`}
+                value={u.limits.monthlyUsd}
+                onChange={(e) => set({ limits: { ...u.limits, monthlyUsd: Number(e.target.value) } })}
+              />
             </td>
             <td>{usd(u.monthUsd)}</td>
-            <td><Button size="sm" variant="secondary" disabled={!drafts[u.id]} onClick={() => void save(u)}>保存</Button></td>
+            <td>
+              <Button size="sm" variant="secondary" disabled={!drafts[u.id]} onClick={() => void save(u)}>
+                保存
+              </Button>
+            </td>
           </tr>
         );
       })}
@@ -304,7 +414,12 @@ function ImageRequests() {
     <Table head={REQUEST_HEAD} label="組織への公開の申請">
       {pending.map((i) => (
         <tr key={i.name}>
-          <td><strong>{i.name}@{i.latestVersion}</strong><span className={p.sub}>{i.description}</span></td>
+          <td>
+            <strong>
+              {i.name}@{i.latestVersion}
+            </strong>
+            <span className={p.sub}>{i.description}</span>
+          </td>
           <td>{i.owner}</td>
           <td>{mib(i.memoryMiB)}</td>
           <td>

@@ -3,10 +3,30 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.18.0",
-  "engines": { "node": ">=22.12" },
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
     "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "lint:prune": "eslint . --prune-suppressions",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "knip": "knip",
     "test": "pnpm -r test",
     "build": "pnpm -r build"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@vitest/eslint-plugin": "1.6.28",
+    "eslint": "10.14.0",
+    "eslint-plugin-playwright": "2.12.2",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-testing-library": "7.16.2",
+    "globals": "17.14.0",
+    "knip": "6.44.1",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1"
   }
 }

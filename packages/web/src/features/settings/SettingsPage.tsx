@@ -58,13 +58,22 @@ export function SettingsPage() {
               <span className={p.row}>
                 <Tag tone="ok">連携済み</Tag>
                 {control && (
-                  <Button size="sm" variant="ghost" onClick={() => { control.setGithubConnected(false); void reloadMe(); }}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      control.setGithubConnected(false);
+                      void reloadMe();
+                    }}
+                  >
                     解除
                   </Button>
                 )}
               </span>
             ) : (
-              <Button size="sm" onClick={() => void connect()}>GitHub と連携する</Button>
+              <Button size="sm" onClick={() => void connect()}>
+                GitHub と連携する
+              </Button>
             )}
           </div>
           <div className={p.settingRow}>

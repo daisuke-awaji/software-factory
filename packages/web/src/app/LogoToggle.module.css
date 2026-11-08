@@ -1,17 +1,59 @@
 .logo {
-  position: relative; display: inline-grid; place-items: center; flex: none;
-  width: max(36px, var(--tap-min)); height: max(36px, var(--tap-min));
-  padding: 0; border: 0; border-radius: 10px; background: none; color: var(--ink);
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: max(36px, var(--tap-min));
+  height: max(36px, var(--tap-min));
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink);
 }
-.mark { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: var(--ink); color: var(--bg); transition: opacity 120ms ease; }
-.hover { position: absolute; inset: 0; display: grid; place-items: center; opacity: 0; color: var(--ink); transition: opacity 120ms ease; }
-.hover :global(.icon) { width: 18px; height: 18px; }
-.logo:focus-visible { background: var(--hover); }
-.logo:focus-visible .mark { opacity: 0; }
-.logo:focus-visible .hover { opacity: 1; }
+.mark {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--bg);
+  transition: opacity 120ms ease;
+}
+.hover {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  color: var(--ink);
+  transition: opacity 120ms ease;
+}
+.hover :global(.icon) {
+  width: 18px;
+  height: 18px;
+}
+.logo:focus-visible {
+  background: var(--hover);
+}
+.logo:focus-visible .mark {
+  opacity: 0;
+}
+.logo:focus-visible .hover {
+  opacity: 1;
+}
 @media (hover: hover) {
-  .logo:hover { background: var(--hover); }
-  .logo:hover .mark { opacity: 0; }
-  .logo:hover .hover { opacity: 1; }
+  .logo:hover {
+    background: var(--hover);
+  }
+  .logo:hover .mark {
+    opacity: 0;
+  }
+  .logo:hover .hover {
+    opacity: 1;
+  }
 }
-.logo:active .mark { transform: scale(0.94); }
+.logo:active .mark {
+  transform: scale(0.94);
+}

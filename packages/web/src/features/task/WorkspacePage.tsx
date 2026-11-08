@@ -42,7 +42,9 @@ export function WorkspacePage() {
   const [focusStep, setFocusStep] = useState<{ id: string; at: number } | null>(null);
   const diff = useResource(() => api.diff(id), [id, session?.fileVersion ?? 0, state === 'completed'], { enabled: !!item.data });
   const lastEntry = session?.timeline.at(-1);
-  const scroller = useStickToBottom<HTMLDivElement>(`${session?.timeline.length ?? 0}:${lastEntry?.k === 'assistant' ? session?.messages[lastEntry.id]?.text.length : ''}:${lastEntry?.k === 'work' ? lastEntry.tools.length : ''}:${session?.state}`);
+  const scroller = useStickToBottom<HTMLDivElement>(
+    `${session?.timeline.length ?? 0}:${lastEntry?.k === 'assistant' ? session?.messages[lastEntry.id]?.text.length : ''}:${lastEntry?.k === 'work' ? lastEntry.tools.length : ''}:${session?.state}`,
+  );
 
   useEffect(() => setView('chat'), [id]);
 
@@ -94,7 +96,12 @@ export function WorkspacePage() {
   const hint = tabState?.hint ?? null;
   const tabOptions: TabOption[] = [
     { value: 'preview', label: 'プレビュー', ...(hint === 'preview' ? { badge: <Dot tone="run" label="新しい内容" /> } : {}) },
-    { value: 'changes', label: '変更', ...(diff.data?.files.length ? { count: diff.data.files.length } : {}), ...(hint === 'changes' ? { badge: <Dot tone="run" label="新しい内容" /> } : {}) },
+    {
+      value: 'changes',
+      label: '変更',
+      ...(diff.data?.files.length ? { count: diff.data.files.length } : {}),
+      ...(hint === 'changes' ? { badge: <Dot tone="run" label="新しい内容" /> } : {}),
+    },
     { value: 'files', label: 'ファイル' },
     { value: 'plan', label: '計画', ...(hint === 'plan' ? { badge: <Dot tone="alert" label="対応が必要" /> } : {}) },
     { value: 'log', label: '実行ログ', ...(hint === 'log' ? { badge: <Dot tone="run" label="新しい内容" /> } : {}) },
@@ -110,10 +117,13 @@ export function WorkspacePage() {
         onRename={() => setDialog('rename')}
         onCancel={() => setDialog('cancel')}
         onArchive={() =>
-          void guard(async () => {
-            await api.updateTask(id, { archived: !current.archived });
-            await item.reload();
-          }, current.archived ? 'アーカイブから戻しました' : 'アーカイブしました')
+          void guard(
+            async () => {
+              await api.updateTask(id, { archived: !current.archived });
+              await item.reload();
+            },
+            current.archived ? 'アーカイブから戻しました' : 'アーカイブしました',
+          )
         }
         onInterrupt={() => void guard(() => api.interrupt(id)).catch(() => undefined)}
       />
@@ -133,7 +143,9 @@ export function WorkspacePage() {
                 value: 'work',
                 label: '成果物',
                 controls: 'view-work',
-                ...(hint ? { badge: <Dot tone={hint === 'plan' ? 'alert' : 'run'} label={hint === 'plan' ? '対応が必要' : '新しい内容'} /> } : {}),
+                ...(hint
+                  ? { badge: <Dot tone={hint === 'plan' ? 'alert' : 'run'} label={hint === 'plan' ? '対応が必要' : '新しい内容'} /> }
+                  : {}),
               },
             ]}
           />
@@ -156,19 +168,45 @@ export function WorkspacePage() {
             />
           </div>
           <div className={s.chatComposer}>
-            <Composer state={state} pending={pending} onSend={send} onInterrupt={async () => { await api.interrupt(id); }} upload={(f) => api.upload(f, id)} />
+            <Composer
+              state={state}
+              pending={pending}
+              onSend={send}
+              onInterrupt={async () => {
+                await api.interrupt(id);
+              }}
+              upload={(f) => api.upload(f, id)}
+            />
           </div>
         </section>
 
         <section className={s.work} id="view-work" aria-label="成果物">
           <div className={s.tabs}>
-            <SegmentedControl<Tab> variant="underline" kind="tabs" size="sm" aria-label="成果物の表示" value={tab} onChange={(v) => pickTab(id, v)} options={tabOptions.map((o) => ({ ...o, controls: `panel-${o.value}` }))} />
+            <SegmentedControl<Tab>
+              variant="underline"
+              kind="tabs"
+              size="sm"
+              aria-label="成果物の表示"
+              value={tab}
+              onChange={(v) => pickTab(id, v)}
+              options={tabOptions.map((o) => ({ ...o, controls: `panel-${o.value}` }))}
+            />
           </div>
           <div className={s.panel} id={`panel-${tab}`} role="tabpanel">
             {tab === 'preview' && <PreviewTab item={current} session={session} />}
             {tab === 'changes' && <ChangesTab diff={diff} />}
             {tab === 'files' && <FilesTab item={current} version={session.fileVersion} onPublish={() => setDialog('publish')} />}
-            {tab === 'plan' && <PlanTab session={session} workflow={workflow} actions={planActions} onOpenStep={(stepId) => { setFocusStep({ id: stepId, at: Date.now() }); openTab('log'); }} />}
+            {tab === 'plan' && (
+              <PlanTab
+                session={session}
+                workflow={workflow}
+                actions={planActions}
+                onOpenStep={(stepId) => {
+                  setFocusStep({ id: stepId, at: Date.now() });
+                  openTab('log');
+                }}
+              />
+            )}
             {tab === 'log' && <LogTab item={current} session={session} workflow={workflow} onRetry={retry} focusStep={focusStep} />}
           </div>
         </section>
@@ -214,13 +252,24 @@ export function WorkspaceSkeleton({ id }: { id?: string }) {
     <Busy className={s.page} label="タスクを読み込んでいます">
       <header className={s.head}>
         {phone && (
-          <span className={s.back}><LogoToggle label="サイドパネルを開く" expanded={false} onClick={() => openSidebar(true)} /></span>
+          <span className={s.back}>
+            <LogoToggle label="サイドパネルを開く" expanded={false} onClick={() => openSidebar(true)} />
+          </span>
         )}
         <span className={s.crumbs}>
-          {!compact && <><SkeletonText size={13} width={44} /><IconChevron /></>}
-          <span className={s.title}><SkeletonText width={phone ? 140 : 220} /></span>
+          {!compact && (
+            <>
+              <SkeletonText size={13} width={44} />
+              <IconChevron />
+            </>
+          )}
+          <span className={s.title}>
+            <SkeletonText width={phone ? 140 : 220} />
+          </span>
         </span>
-        <span className={s.headTag}><Skeleton width={72} height={22} radius={999} /></span>
+        <span className={s.headTag}>
+          <Skeleton width={72} height={22} radius={999} />
+        </span>
         <div className={s.headRight}>
           {!phone && <Skeleton width={128} height={32} radius={10} />}
           <Skeleton width={30} height={30} radius={9} />
@@ -228,7 +277,18 @@ export function WorkspaceSkeleton({ id }: { id?: string }) {
       </header>
       {compact && (
         <div className={s.views}>
-          <SegmentedControl<'chat' | 'work'> size="sm" kind="tabs" fullWidth aria-label="表示の切り替え" value={view} onChange={setView} options={[{ value: 'chat', label: '会話' }, { value: 'work', label: '成果物' }]} />
+          <SegmentedControl<'chat' | 'work'>
+            size="sm"
+            kind="tabs"
+            fullWidth
+            aria-label="表示の切り替え"
+            value={view}
+            onChange={setView}
+            options={[
+              { value: 'chat', label: '会話' },
+              { value: 'work', label: '成果物' },
+            ]}
+          />
         </div>
       )}
       <div className={s.body} data-view={compact ? view : undefined}>
@@ -238,7 +298,9 @@ export function WorkspaceSkeleton({ id }: { id?: string }) {
               <MessageSkeleton lines={2} />
               <MessageSkeleton agent lines={3} />
               <div className={s.tray}>
-                <div className={s.trayHead}><SkeletonText size={13} width={96} /></div>
+                <div className={s.trayHead}>
+                  <SkeletonText size={13} width={96} />
+                </div>
                 <div className={s.card}>
                   <SkeletonLines lines={2} size={14.5} last="70%" />
                   <SkeletonLines lines={3} size={13.5} last="45%" />
@@ -254,7 +316,9 @@ export function WorkspaceSkeleton({ id }: { id?: string }) {
                   <Skeleton width={30} height={30} radius={9} />
                   <span className={s.spacer} />
                   <span className={s.kbd}>⌘ / Ctrl + Enter</span>
-                  <Button size="sm" icon={<IconSend />} disabled tabIndex={-1}>送信</Button>
+                  <Button size="sm" icon={<IconSend />} disabled tabIndex={-1}>
+                    送信
+                  </Button>
                 </div>
               </div>
             </div>
@@ -262,7 +326,15 @@ export function WorkspaceSkeleton({ id }: { id?: string }) {
         </section>
         <section className={s.work} aria-label="成果物">
           <div className={s.tabs}>
-            <SegmentedControl<Tab> variant="underline" kind="tabs" size="sm" aria-label="成果物の表示" value={tab} onChange={(v) => id && pickTab(id, v)} options={TAB_LABELS} />
+            <SegmentedControl<Tab>
+              variant="underline"
+              kind="tabs"
+              size="sm"
+              aria-label="成果物の表示"
+              value={tab}
+              onChange={(v) => id && pickTab(id, v)}
+              options={TAB_LABELS}
+            />
           </div>
           <div className={s.panel} aria-hidden="true">
             <div className={s.skeletonPad}>
@@ -282,16 +354,33 @@ function MessageSkeleton({ agent = false, lines }: { agent?: boolean; lines: num
     <div className={s.msg} style={{ animation: 'none' }}>
       {agent ? <Avatar kind="agent" size={28} /> : <Skeleton width={28} circle />}
       <div className={s.msgBody}>
-        <span className={s.msgName}><SkeletonText size={12.5} width={agent ? 88 : 56} /></span>
+        <span className={s.msgName}>
+          <SkeletonText size={12.5} width={agent ? 88 : 56} />
+        </span>
         <SkeletonLines lines={lines} size={14} last={agent ? '55%' : '40%'} />
       </div>
     </div>
   );
 }
 
-function Header({ item, session, workflow, pending, onRename, onCancel, onArchive, onInterrupt }: {
-  item: Task; session: Session; workflow: Workflow | undefined; pending: Pending | null;
-  onRename: () => void; onCancel: () => void; onArchive: () => void; onInterrupt: () => void;
+function Header({
+  item,
+  session,
+  workflow,
+  pending,
+  onRename,
+  onCancel,
+  onArchive,
+  onInterrupt,
+}: {
+  item: Task;
+  session: Session;
+  workflow: Workflow | undefined;
+  pending: Pending | null;
+  onRename: () => void;
+  onCancel: () => void;
+  onArchive: () => void;
+  onInterrupt: () => void;
 }) {
   const phone = useMediaQuery(narrow.phone);
   const openSidebar = useUi((u) => u.setSidebarOverlay);
@@ -301,34 +390,56 @@ function Header({ item, session, workflow, pending, onRename, onCancel, onArchiv
   return (
     <header className={s.head}>
       {phone && (
-        <span className={s.back}><LogoToggle label="サイドパネルを開く" expanded={false} onClick={() => openSidebar(true)} /></span>
+        <span className={s.back}>
+          <LogoToggle label="サイドパネルを開く" expanded={false} onClick={() => openSidebar(true)} />
+        </span>
       )}
       <nav className={s.crumbs} aria-label="場所">
-        <Link to="/tasks" className={s.crumb}>タスク</Link>
+        <Link to="/tasks" className={s.crumb}>
+          タスク
+        </Link>
         <IconChevron />
         {item.repo && (
           <>
-            <span className={s.crumb}><IconRepo /> {item.repo.owner}/{item.repo.name}</span>
+            <span className={s.crumb}>
+              <IconRepo /> {item.repo.owner}/{item.repo.name}
+            </span>
             <IconChevron />
           </>
         )}
         {item.branch && (
           <>
-            <span className={`${s.crumb} mono`}><IconBranch /> {item.branch}</span>
+            <span className={`${s.crumb} mono`}>
+              <IconBranch /> {item.branch}
+            </span>
             <IconChevron />
           </>
         )}
-        <h1 className={s.title} title={item.title}>{item.title}</h1>
+        <h1 className={s.title} title={item.title}>
+          {item.title}
+        </h1>
       </nav>
-      <span className={s.headTag}><Tag tone={stateTone[state]}>{label}</Tag></span>
+      <span className={s.headTag}>
+        <Tag tone={stateTone[state]}>{label}</Tag>
+      </span>
       <div className={s.headRight}>
-        <div className={s.headLine}><StepProgress size="sm" steps={progressFromSession(workflow, session)} /></div>
+        <div className={s.headLine}>
+          <StepProgress size="sm" steps={progressFromSession(workflow, session)} />
+        </div>
         {phone ? null : item.pullRequest ? (
-          <Button size="sm" variant="secondary" icon={<IconPR />} iconRight={<IconExternal />} onClick={() => window.open(item.pullRequest!.url, '_blank', 'noopener')}>
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={<IconPR />}
+            iconRight={<IconExternal />}
+            onClick={() => window.open(item.pullRequest!.url, '_blank', 'noopener')}
+          >
             PR #{item.pullRequest.number}
           </Button>
         ) : item.repo ? (
-          <Button size="sm" variant="secondary" icon={<IconPR />} disabled>PR はまだありません</Button>
+          <Button size="sm" variant="secondary" icon={<IconPR />} disabled>
+            PR はまだありません
+          </Button>
         ) : null}
         <Menu
           label="その他の操作"

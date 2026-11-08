@@ -1,4 +1,4 @@
-"use client";
+'use client';
 // AffectUI（無料の部品）を取り込んだもの。noUncheckedIndexedAccess と exactOptionalPropertyTypes に合わせて最小限だけ直した（ADR-0008）
 
 import {
@@ -10,7 +10,7 @@ import {
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
-} from "react";
+} from 'react';
 
 /*
  * Segmented Control – switch between two to six options, in a single self-contained file.
@@ -44,16 +44,16 @@ export type SegmentedControlProps<T extends string = string> = {
   /** Starting value when uncontrolled – defaults to the first enabled option */
   defaultValue?: T;
   onChange?: (value: T) => void;
-  size?: "sm" | "md" | "lg";
+  size?: 'sm' | 'md' | 'lg';
   /** "tray" = gray track with a raised pill, "underline" = text tabs with a sliding line */
-  variant?: "tray" | "underline";
+  variant?: 'tray' | 'underline';
   /** Fill the container with equal segments */
   fullWidth?: boolean;
   /** "radio" (a radiogroup, the default) or "tabs" (a tablist that switches panels) */
-  kind?: "radio" | "tabs";
+  kind?: 'radio' | 'tabs';
   disabled?: boolean;
-  "aria-label"?: string;
-  "aria-labelledby"?: string;
+  'aria-label'?: string;
+  'aria-labelledby'?: string;
   className?: string;
 };
 
@@ -62,13 +62,13 @@ export function SegmentedControl<T extends string = string>({
   value,
   defaultValue,
   onChange,
-  size: sizeProp = "md",
-  variant: variantProp = "tray",
+  size: sizeProp = 'md',
+  variant: variantProp = 'tray',
   fullWidth = false,
-  kind = "radio",
+  kind = 'radio',
   disabled = false,
-  "aria-label": ariaLabel,
-  "aria-labelledby": ariaLabelledby,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledby,
   className,
 }: SegmentedControlProps<T>) {
   // Gaps and repeated values are dropped – one value, one option
@@ -81,8 +81,8 @@ export function SegmentedControl<T extends string = string>({
     });
   }, [rawOptions]);
   // Unknown sizes and variants fall back to the defaults
-  const size = sizeProp === "sm" || sizeProp === "lg" ? sizeProp : "md";
-  const variant = variantProp === "underline" ? variantProp : "tray";
+  const size = sizeProp === 'sm' || sizeProp === 'lg' ? sizeProp : 'md';
+  const variant = variantProp === 'underline' ? variantProp : 'tray';
   const [inner, setInner] = useState<T | undefined>(() => defaultValue ?? options.find((o) => !o.disabled)?.value);
   const current = value !== undefined ? value : inner;
 
@@ -98,7 +98,7 @@ export function SegmentedControl<T extends string = string>({
   const placed = useRef<T | undefined>(undefined);
   const press = useRef<{ id: number; touch: boolean; drag: boolean; x: number; moved: boolean } | null>(null);
 
-  const buttons = () => Array.from(track.current?.querySelectorAll<HTMLElement>(":scope > .ui-seg__opt") ?? []);
+  const buttons = () => Array.from(track.current?.querySelectorAll<HTMLElement>(':scope > .ui-seg__opt') ?? []);
   const activeIndex = options.findIndex((o) => o.value === current);
   const tabbable = activeIndex >= 0 ? activeIndex : options.findIndex((o) => !o.disabled);
 
@@ -118,8 +118,8 @@ export function SegmentedControl<T extends string = string>({
     const pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
     const widths = els.map((b) => (b.firstElementChild as HTMLElement).offsetWidth + pad);
     if (fullWidth) {
-      track.current.style.setProperty("--ui-seg-min", `${Math.max(...widths)}px`);
-      els.forEach((b) => (b.style.width = ""));
+      track.current.style.setProperty('--ui-seg-min', `${Math.max(...widths)}px`);
+      els.forEach((b) => (b.style.width = ''));
     } else els.forEach((b, i) => (b.style.width = `${widths[i]}px`));
   };
 
@@ -128,15 +128,15 @@ export function SegmentedControl<T extends string = string>({
     const t = track.current;
     const p = pill.current;
     if (!t || !p) return;
-    const btn = t.querySelector<HTMLElement>(":scope > .ui-seg__opt[data-active]");
+    const btn = t.querySelector<HTMLElement>(':scope > .ui-seg__opt[data-active]');
     if (!btn || !btn.offsetWidth) {
-      p.style.opacity = "0";
+      p.style.opacity = '0';
       return;
     }
     let x = btn.offsetLeft;
     let w = btn.offsetWidth;
     // The line sits under the text only, not under the whole button
-    if (variant === "underline") {
+    if (variant === 'underline') {
       const content = btn.firstElementChild as HTMLElement;
       x += content.offsetLeft;
       w = content.offsetWidth;
@@ -144,15 +144,15 @@ export function SegmentedControl<T extends string = string>({
     const instant = !p.dataset.ready || (!animate && !gliding.current);
     const prev = parseFloat(p.style.left) || 0;
     // The edge facing the target leads, the other one trails – the stretch
-    if (!instant && x !== prev) p.dataset.dir = x > prev ? "right" : "left";
-    if (instant) p.style.transition = "none";
-    p.style.opacity = "1";
+    if (!instant && x !== prev) p.dataset.dir = x > prev ? 'right' : 'left';
+    if (instant) p.style.transition = 'none';
+    p.style.opacity = '1';
     p.style.left = `${x}px`;
     p.style.right = `${t.clientWidth - x - w}px`;
     if (instant) {
-      p.dataset.ready = "1";
+      p.dataset.ready = '1';
       void p.offsetWidth;
-      p.style.transition = "";
+      p.style.transition = '';
     }
   };
 
@@ -161,19 +161,19 @@ export function SegmentedControl<T extends string = string>({
     const s = scroller.current;
     if (!s) return;
     const max = s.scrollWidth - s.clientWidth;
-    root.current?.toggleAttribute("data-overflow", max > 1);
-    s.style.setProperty("--ui-seg-fade-l", s.scrollLeft > 1 ? "24px" : "0px");
-    s.style.setProperty("--ui-seg-fade-r", s.scrollLeft < max - 1 ? "24px" : "0px");
+    root.current?.toggleAttribute('data-overflow', max > 1);
+    s.style.setProperty('--ui-seg-fade-l', s.scrollLeft > 1 ? '24px' : '0px');
+    s.style.setProperty('--ui-seg-fade-r', s.scrollLeft < max - 1 ? '24px' : '0px');
   };
 
   /** Keeps the active option in view when the control scrolls */
   const reveal = (smooth: boolean) => {
     const s = scroller.current;
     const t = track.current;
-    const btn = t?.querySelector<HTMLElement>(":scope > .ui-seg__opt[data-active]");
+    const btn = t?.querySelector<HTMLElement>(':scope > .ui-seg__opt[data-active]');
     if (!s || !t || !btn || s.scrollWidth <= s.clientWidth + 1) return;
     const left = t.offsetLeft + btn.offsetLeft - (s.clientWidth - btn.offsetWidth) / 2;
-    s.scrollTo({ left: Math.max(0, left), behavior: smooth ? "smooth" : "auto" });
+    s.scrollTo({ left: Math.max(0, left), behavior: smooth ? 'smooth' : 'auto' });
   };
 
   // Sizes: measured on mount and whenever a label, the container or the font changes
@@ -188,7 +188,7 @@ export function SegmentedControl<T extends string = string>({
     };
     sync();
     // Width transitions only after the first measure, so nothing grows in on load
-    const ready = requestAnimationFrame(() => root.current?.setAttribute("data-ready", ""));
+    const ready = requestAnimationFrame(() => root.current?.setAttribute('data-ready', ''));
     // One frame later, so setting widths inside the observer never loops
     let frame = 0;
     const ro = new ResizeObserver(() => {
@@ -197,7 +197,7 @@ export function SegmentedControl<T extends string = string>({
     });
     ro.observe(s);
     ro.observe(t);
-    t.querySelectorAll(".ui-seg__opt, .ui-seg__content").forEach((el) => ro.observe(el));
+    t.querySelectorAll('.ui-seg__opt, .ui-seg__content').forEach((el) => ro.observe(el));
     return () => {
       ro.disconnect();
       cancelAnimationFrame(frame);
@@ -230,14 +230,14 @@ export function SegmentedControl<T extends string = string>({
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const enabled = options.filter((o) => !o.disabled);
     if (!enabled.length || disabled) return;
-    const prevKeys = kind === "radio" ? ["ArrowLeft", "ArrowUp"] : ["ArrowLeft"];
-    const nextKeys = kind === "radio" ? ["ArrowRight", "ArrowDown"] : ["ArrowRight"];
+    const prevKeys = kind === 'radio' ? ['ArrowLeft', 'ArrowUp'] : ['ArrowLeft'];
+    const nextKeys = kind === 'radio' ? ['ArrowRight', 'ArrowDown'] : ['ArrowRight'];
     const at = enabled.findIndex((o) => o.value === latest.current);
     let target: SegmentOption<T> | undefined;
     if (prevKeys.includes(e.key)) target = enabled[(at - 1 + enabled.length) % enabled.length];
     else if (nextKeys.includes(e.key)) target = enabled[(at + 1) % enabled.length];
-    else if (e.key === "Home") target = enabled[0];
-    else if (e.key === "End") target = enabled[enabled.length - 1];
+    else if (e.key === 'Home') target = enabled[0];
+    else if (e.key === 'End') target = enabled[enabled.length - 1];
     if (!target) return;
     e.preventDefault();
     select(target.value);
@@ -263,18 +263,18 @@ export function SegmentedControl<T extends string = string>({
 
   const endPress = () => {
     press.current = null;
-    root.current?.removeAttribute("data-pressed");
+    root.current?.removeAttribute('data-pressed');
   };
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (disabled || e.button !== 0) return;
     const opt = optionAt(e.clientX);
     if (!opt || opt.disabled) return;
-    const touch = e.pointerType === "touch";
+    const touch = e.pointerType === 'touch';
     // Touch: picks on lift (so swiping to scroll doesn't pick), but the pill itself can be dragged right away
     const drag = !touch || opt.value === latest.current;
     press.current = { id: e.pointerId, touch, drag, x: e.clientX, moved: false };
-    if (drag) root.current?.setAttribute("data-pressed", "");
+    if (drag) root.current?.setAttribute('data-pressed', '');
     if (!touch) {
       select(opt.value);
       try {
@@ -305,12 +305,12 @@ export function SegmentedControl<T extends string = string>({
     endPress();
   };
 
-  const isTabs = kind === "tabs";
+  const isTabs = kind === 'tabs';
 
   return (
     <div
       ref={root}
-      className={["ui-seg", className].filter(Boolean).join(" ")}
+      className={['ui-seg', className].filter(Boolean).join(' ')}
       data-size={size}
       data-variant={variant}
       data-full={fullWidth || undefined}
@@ -325,11 +325,11 @@ export function SegmentedControl<T extends string = string>({
         <div
           ref={track}
           className="ui-seg__track"
-          role={isTabs ? "tablist" : "radiogroup"}
+          role={isTabs ? 'tablist' : 'radiogroup'}
           aria-label={ariaLabel}
           aria-labelledby={ariaLabelledby}
           aria-disabled={disabled || undefined}
-          aria-orientation={isTabs ? "horizontal" : undefined}
+          aria-orientation={isTabs ? 'horizontal' : undefined}
           onKeyDown={onKeyDown}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -348,7 +348,7 @@ export function SegmentedControl<T extends string = string>({
                 key={String(o.value)}
                 type="button"
                 className="ui-seg__opt"
-                role={isTabs ? "tab" : "radio"}
+                role={isTabs ? 'tab' : 'radio'}
                 aria-checked={isTabs ? undefined : active}
                 aria-selected={isTabs ? active : undefined}
                 aria-controls={isTabs ? o.controls : undefined}
@@ -361,7 +361,7 @@ export function SegmentedControl<T extends string = string>({
               >
                 <span className="ui-seg__content">
                   {o.icon && (
-                    <span className="ui-seg__icon" onErrorCapture={(e) => ((e.target as HTMLElement).style.visibility = "hidden")}>
+                    <span className="ui-seg__icon" onErrorCapture={(e) => ((e.target as HTMLElement).style.visibility = 'hidden')}>
                       {o.icon}
                     </span>
                   )}
@@ -374,7 +374,7 @@ export function SegmentedControl<T extends string = string>({
                       </span>
                     </span>
                   )}
-                  {count != null && count !== "" && (
+                  {count != null && count !== '' && (
                     <span key={String(count)} className="ui-seg__count">
                       {count}
                     </span>
@@ -391,7 +391,7 @@ export function SegmentedControl<T extends string = string>({
 }
 
 /** 1284 → "1,284"; NaN and Infinity show nothing */
-const countText = (c: number | string | undefined) => (typeof c === "number" ? (Number.isFinite(c) ? c.toLocaleString("en-US") : null) : c);
+const countText = (c: number | string | undefined) => (typeof c === 'number' ? (Number.isFinite(c) ? c.toLocaleString('en-US') : null) : c);
 
 const css = /* css */ `
 /* Animatable custom properties: the equal segment width and the soft edges glide too */

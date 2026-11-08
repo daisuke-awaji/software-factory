@@ -39,7 +39,10 @@ export function PublicationsPage() {
 
   return (
     <Page>
-      <PageHeader title="公開物" description="タスクの成果物を、社内向けに公開したものです。開くには社内のアカウントでのログインが必要です。" />
+      <PageHeader
+        title="公開物"
+        description="タスクの成果物を、社内向けに公開したものです。開くには社内のアカウントでのログインが必要です。"
+      />
       <ErrorBanner error={list.error} onRetry={() => void list.reload()} />
       {!list.data && !list.error ? (
         <TableSkeleton head={HEAD} label="公開物の一覧" />
@@ -55,7 +58,9 @@ export function PublicationsPage() {
               <tr key={pub.id}>
                 <td>
                   {pub.status === 'active' ? (
-                    <a className={p.link} href={pub.url} target="_blank" rel="noreferrer">{pub.title}</a>
+                    <a className={p.link} href={pub.url} target="_blank" rel="noreferrer">
+                      {pub.title}
+                    </a>
                   ) : (
                     <span className={p.link}>{pub.title}</span>
                   )}
@@ -65,7 +70,9 @@ export function PublicationsPage() {
                 </td>
                 <td>
                   {pub.acl.scope === 'org' ? (
-                    <span className={p.row}><IconGlobe /> 社内のだれでも</span>
+                    <span className={p.row}>
+                      <IconGlobe /> 社内のだれでも
+                    </span>
                   ) : (
                     <span className={p.row} title={who.join('、')}>
                       <IconLock /> {who.slice(0, 2).join('、')}
@@ -73,7 +80,9 @@ export function PublicationsPage() {
                     </span>
                   )}
                 </td>
-                <td><Tag tone={statusTone[pub.status]}>{statusLabel[pub.status]}</Tag></td>
+                <td>
+                  <Tag tone={statusTone[pub.status]}>{statusLabel[pub.status]}</Tag>
+                </td>
                 <td>第{pub.version}版</td>
                 <td>{pub.expiresAt ? date(pub.expiresAt) : '期限なし'}</td>
                 <td className="muted">{relative(pub.updatedAt)}</td>
@@ -84,7 +93,13 @@ export function PublicationsPage() {
                     items={[
                       { label: '範囲と期限を変更', onSelect: () => setEditing(pub) },
                       { label: '最新の成果物で再公開', onSelect: () => void republish(pub) },
-                      { label: 'URL をコピー', onSelect: () => { void navigator.clipboard?.writeText(pub.url); toast('URL をコピーしました'); } },
+                      {
+                        label: 'URL をコピー',
+                        onSelect: () => {
+                          void navigator.clipboard?.writeText(pub.url);
+                          toast('URL をコピーしました');
+                        },
+                      },
                       { label: '公開を停止', onSelect: () => setStopping(pub), danger: true, disabled: pub.status !== 'active' },
                     ]}
                   />
@@ -125,12 +140,20 @@ function EditDialog({ pub, onClose, onSaved }: { pub: Publication; onClose: () =
   const [expires, setExpires] = useState(pub.expiresAt?.slice(0, 10) ?? '');
   const [error, setError] = useState<string | null>(null);
   const ids = { scope: useId(), groups: useId(), users: useId(), exp: useId() };
-  const list = (v: string) => v.split(/[,、\s]+/).map((x) => x.trim()).filter(Boolean);
+  const list = (v: string) =>
+    v
+      .split(/[,、\s]+/)
+      .map((x) => x.trim())
+      .filter(Boolean);
   const save = async () => {
-    if (scope === 'restricted' && list(groups).length + list(users).length === 0) return setError('グループかユーザーを1つ以上入れてください');
+    if (scope === 'restricted' && list(groups).length + list(users).length === 0)
+      return setError('グループかユーザーを1つ以上入れてください');
     try {
       await api.updatePublication(pub.id, {
-        acl: scope === 'org' ? { scope } : { scope, ...(list(groups).length ? { groups: list(groups) } : {}), ...(list(users).length ? { users: list(users) } : {}) },
+        acl:
+          scope === 'org'
+            ? { scope }
+            : { scope, ...(list(groups).length ? { groups: list(groups) } : {}), ...(list(users).length ? { users: list(users) } : {}) },
         expiresAt: expires ? new Date(`${expires}T23:59:59+09:00`).toISOString() : null,
       });
       toast('変更しました', 'ok');
@@ -147,8 +170,12 @@ function EditDialog({ pub, onClose, onSaved }: { pub: Publication; onClose: () =
       title="範囲と期限を変更"
       footer={
         <>
-          <Button variant="ghost" size="sm" onClick={onClose}>やめる</Button>
-          <Button size="sm" onClick={() => void save()}>保存</Button>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            やめる
+          </Button>
+          <Button size="sm" onClick={() => void save()}>
+            保存
+          </Button>
         </>
       }
     >
@@ -160,8 +187,12 @@ function EditDialog({ pub, onClose, onSaved }: { pub: Publication; onClose: () =
       </Field>
       {scope === 'restricted' && (
         <>
-          <Field label="グループ" htmlFor={ids.groups}><TextInput id={ids.groups} value={groups} onChange={(e) => setGroups(e.target.value)} /></Field>
-          <Field label="ユーザー（メール）" htmlFor={ids.users}><TextInput id={ids.users} value={users} onChange={(e) => setUsers(e.target.value)} /></Field>
+          <Field label="グループ" htmlFor={ids.groups}>
+            <TextInput id={ids.groups} value={groups} onChange={(e) => setGroups(e.target.value)} />
+          </Field>
+          <Field label="ユーザー（メール）" htmlFor={ids.users}>
+            <TextInput id={ids.users} value={users} onChange={(e) => setUsers(e.target.value)} />
+          </Field>
         </>
       )}
       <Field label="公開の期限" htmlFor={ids.exp} hint="空にすると期限なし">
