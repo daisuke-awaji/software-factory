@@ -19,6 +19,8 @@ corepack enable && pnpm install
 pnpm --filter @factory/web dev    # http://localhost:5173 を開く（?mock-reset でデータを作り直す）
 ```
 
+変更したら `pnpm typecheck` / `pnpm lint` / `pnpm format:check` / `pnpm knip` / `pnpm test` を通します（CI と同じ）。全体を Prettier で整形したコミットは `.git-blame-ignore-revs` に登録してあるので、`git config blame.ignoreRevsFile .git-blame-ignore-revs` を設定すると `git blame` で飛ばせます。
+
 タスクを作る → 計画を承認する → ステップごとの VM で作業が進む → 検証で失敗して実装に戻る → PR・プレビュー・社内公開、までを MSW のシミュレーターで操作できます。詳しくは [packages/web/README.md](./packages/web/README.md) と [06 UI 仕様](./docs/06_ui_spec.md) を参照してください。
 
 ## AWS 構成図

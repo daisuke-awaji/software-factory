@@ -120,6 +120,8 @@ software-factory/
 | API をローカルで動かす | `pnpm --filter api dev` | `@hono/node-server` で起動する。DynamoDB Local（Docker）につなぐ |
 | 画面と API をつないで動かす | `pnpm dev` | Vite の proxy で `/api` をローカルの API に転送する（MSW は無効） |
 | 型チェック・lint・テスト | `pnpm typecheck` / `pnpm lint` / `pnpm test` | すべてのパッケージで実行する |
+| 整形・不要コード | `pnpm format`（`format:check`） / `pnpm knip` | Prettier で整形する。knip で使われていないファイル・export・依存を見つける |
+| lint の抑止を減らす | `pnpm lint:prune` | 既存の違反は `eslint-suppressions.json` に一括で記録している。直したら記録を減らす（減らさないと lint が落ちる） |
 | エンジンのテスト | `pnpm --filter engine test` | durable の処理はフェイクのポート（`ports.ts`）でテストする。実行環境での確認は dev 環境で行う |
 | agentd をローカルで動かす | `pnpm --filter agentd dev` | lifecycle hooks をローカルの HTTP で叩けるようにする（ハーネスはフェイクに差し替えられる） |
 | デプロイ | `pnpm cdk deploy --all -c env=dev` | 環境ごとに `cdk.context` で設定を切り替える |
@@ -204,7 +206,7 @@ software-factory/
 
 | ワークフロー | きっかけ | 内容 |
 |---|---|---|
-| `ci.yml` | PR / main への push | `pnpm install --frozen-lockfile` → `typecheck` → `lint` → `test` → `build` → CDK の `synth` と assertions |
+| `ci.yml` | PR / main への push | `pnpm install --frozen-lockfile` → `typecheck` → `lint` → `format:check` → `knip` → `test` → `build` → CDK の `synth` と assertions |
 | `e2e.yml` | PR（web に変更があるとき） | Playwright（MSW のモック） |
 | `deploy-dev.yml` | main への push | OIDC で AWS に AssumeRole して `cdk deploy`（dev） |
 | `images.yml` | `images/**` の変更 | イメージ定義を検証してから、dev でビルドする |
