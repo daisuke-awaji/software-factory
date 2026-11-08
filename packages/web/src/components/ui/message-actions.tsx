@@ -166,7 +166,8 @@ export function MessageActions({
 
   /* ----- Status line for screen readers ----- */
   const [status, setStatus] = useState('');
-  const announce = (s: string) => setStatus((old) => (old === s ? `${s} ` : s));
+  // 同じ文をもう一度読み上げさせるため、末尾に NBSP を足して別の文字列にする
+  const announce = (s: string) => setStatus((old) => (old === s ? `${s}\u00A0` : s));
 
   /* ----- Copy ----- */
   const [copied, setCopied] = useState(0);

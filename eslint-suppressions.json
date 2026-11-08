@@ -1,0 +1,409 @@
+{
+  "packages/contracts/src/ulid.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 3
+    }
+  },
+  "packages/contracts/src/workflow-graph.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    }
+  },
+  "packages/contracts/src/workflow-graph.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 13
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-expressions": {
+      "count": 1
+    }
+  },
+  "packages/web/e2e/mobile.spec.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 15
+    }
+  },
+  "packages/web/e2e/sidebar.spec.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 7
+    }
+  },
+  "packages/web/e2e/workflow.spec.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    }
+  },
+  "packages/web/src/app/AppShell.tsx": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    },
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "packages/web/src/app/Sidebar.tsx": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "packages/web/src/app/useTaskFeed.ts": {
+    "react-hooks/refs": {
+      "count": 1
+    },
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "packages/web/src/components/StepProgress.tsx": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 6
+    }
+  },
+  "packages/web/src/components/ui/button.tsx": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    },
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "packages/web/src/components/ui/message-actions.tsx": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
+    },
+    "@typescript-eslint/no-unsafe-argument": {
+      "count": 1
+    },
+    "react-hooks/refs": {
+      "count": 2
+    }
+  },
+  "packages/web/src/components/ui/profile-menu.tsx": {
+    "@typescript-eslint/no-confusing-void-expression": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "packages/web/src/components/ui/segmented-control.tsx": {
+    "@typescript-eslint/no-meaningless-void-operator": {
+      "count": 1
+    },
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
+    },
+    "@typescript-eslint/no-unnecessary-type-conversion": {
+      "count": 5
+    },
+    "react-hooks/refs": {
+      "count": 1
+    }
+  },
+  "packages/web/src/components/ui/thinking-loader.tsx": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-type-conversion": {
+      "count": 2
+    },
+    "react-hooks/purity": {
+      "count": 2
+    },
+    "react-hooks/refs": {
+      "count": 1
+    }
+  },
+  "packages/web/src/components/ui/tool-call-card.tsx": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "packages/web/src/components/workflow/WorkflowGraph.tsx": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 9
+    },
+    "react-hooks/exhaustive-deps": {
+      "count": 2
+    }
+  },
+  "packages/web/src/components/workflow/edges.tsx": {
+    "@typescript-eslint/no-misused-spread": {
+      "count": 1
+    },
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 7
+    }
+  },
+  "packages/web/src/components/workflow/layout.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 5
+    }
+  },
+  "packages/web/src/components/workflow/model.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "packages/web/src/features/admin/AdminPage.tsx": {
+    "@typescript-eslint/no-confusing-void-expression": {
+      "count": 1
+    },
+    "@typescript-eslint/no-meaningless-void-operator": {
+      "count": 2
+    },
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    },
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "packages/web/src/features/admin/WorkflowEditor.tsx": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 10
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    },
+    "@typescript-eslint/restrict-template-expressions": {
+      "count": 1
+    },
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "packages/web/src/features/home/useLive.ts": {
+    "react-hooks/refs": {
+      "count": 1
+    }
+  },
+  "packages/web/src/features/images/ImagesPage.tsx": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    },
+    "react-hooks/use-memo": {
+      "count": 1
+    }
+  },
+  "packages/web/src/features/publications/PublicationsPage.tsx": {
+    "@typescript-eslint/no-confusing-void-expression": {
+      "count": 1
+    },
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "packages/web/src/features/settings/SettingsPage.tsx": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 1
+    },
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "packages/web/src/features/task/Conversation.tsx": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 6
+    }
+  },
+  "packages/web/src/features/task/Dialogs.tsx": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    },
+    "react-hooks/set-state-in-effect": {
+      "count": 3
+    }
+  },
+  "packages/web/src/features/task/WorkspacePage.tsx": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 5
+    },
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "packages/web/src/features/task/tabs/Tabs.tsx": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    },
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "packages/web/src/features/task/useWorkspace.ts": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "packages/web/src/lib/api.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
+    }
+  },
+  "packages/web/src/lib/events.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "packages/web/src/lib/session.test.ts": {
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 2
+    }
+  },
+  "packages/web/src/lib/useResource.ts": {
+    "react-hooks/refs": {
+      "count": 1
+    },
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "packages/web/src/lib/workflow.test.tsx": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    }
+  },
+  "packages/web/src/lib/workflow.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 4
+    }
+  },
+  "packages/web/src/lib/workflowEdit.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 5
+    },
+    "@typescript-eslint/no-unsafe-assignment": {
+      "count": 2
+    }
+  },
+  "packages/web/src/lib/workflowEdit.ts": {
+    "@typescript-eslint/no-dynamic-delete": {
+      "count": 1
+    },
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 5
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    }
+  },
+  "packages/web/src/main.tsx": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "packages/web/src/mocks/__tests__/backend.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 15
+    }
+  },
+  "packages/web/src/mocks/db.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    }
+  },
+  "packages/web/src/mocks/diff.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 14
+    }
+  },
+  "packages/web/src/mocks/handlers.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 1
+    },
+    "@typescript-eslint/no-base-to-string": {
+      "count": 1
+    },
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 8
+    },
+    "@typescript-eslint/no-unnecessary-type-conversion": {
+      "count": 1
+    },
+    "@typescript-eslint/restrict-template-expressions": {
+      "count": 2
+    }
+  },
+  "packages/web/src/mocks/scenarios.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 3
+    }
+  },
+  "packages/web/src/mocks/seed.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "packages/web/src/mocks/simulator.ts": {
+    "@typescript-eslint/no-confusing-void-expression": {
+      "count": 1
+    },
+    "@typescript-eslint/no-dynamic-delete": {
+      "count": 2
+    },
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 11
+    }
+  },
+  "packages/web/src/mocks/zip.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "packages/web/src/stores/session.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    }
+  },
+  "packages/web/src/stores/ui.ts": {
+    "@typescript-eslint/no-meaningless-void-operator": {
+      "count": 1
+    }
+  },
+  "packages/web/src/test/app.test.tsx": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 8
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    },
+    "testing-library/no-node-access": {
+      "count": 6
+    },
+    "testing-library/render-result-naming-convention": {
+      "count": 1
+    }
+  },
+  "packages/web/src/test/setup.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 4
+    },
+    "@typescript-eslint/unbound-method": {
+      "count": 2
+    },
+    "testing-library/no-manual-cleanup": {
+      "count": 1
+    }
+  }
+}

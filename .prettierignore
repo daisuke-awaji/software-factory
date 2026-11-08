@@ -4,3 +4,5 @@ docs/
 pnpm-lock.yaml
 # MSW が生成するファイル
 packages/web/public/mockServiceWorker.js
+# ESLint が生成する一括抑止の記録
+eslint-suppressions.json

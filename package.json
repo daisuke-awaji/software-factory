@@ -9,6 +9,7 @@
   "scripts": {
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
+    "lint:prune": "eslint . --prune-suppressions",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "knip": "knip",
