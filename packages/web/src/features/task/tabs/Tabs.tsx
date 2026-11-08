@@ -288,7 +288,7 @@ export function FilesTab({ item, version, onPublish }: { item: Task; version: nu
     // 開いているフォルダは、ファイルが変わったら読み直す
     for (const dir of Object.keys(open).filter((d) => open[d]))
       void api.files(item.id, dir).then((tr) => setChildren((c) => ({ ...c, [dir]: tr.entries })));
-    // eslint-disable-next-workflow react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [version]);
 
   const toggle = async (dir: string) => {

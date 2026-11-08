@@ -74,7 +74,7 @@ export function useTaskFeed(deps: unknown[], opts: { enabled: boolean; pollMs: n
     void reload();
     const t = setInterval(() => void reload(), opts.pollMs);
     return () => clearInterval(t);
-    // eslint-disable-next-workflow react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, opts.enabled, opts.pollMs, reload]);
 
   return { items: state.items, error, hasMore: !!state.cursor, loadingMore, reload, loadMore };

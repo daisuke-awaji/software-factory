@@ -345,7 +345,11 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       data-copied={copied || undefined}
       aria-label={copied ? 'コピーしました' : `${label}をコピー`}
       title={copied ? 'コピーしました' : `${label}をコピー`}
-      onClick={() => copyText(text).then((ok) => ok && setCopied(true))}
+      onClick={() => {
+        void copyText(text).then((ok) => {
+          if (ok) setCopied(true);
+        });
+      }}
     >
       <svg className="ui-tc__copy-icon" viewBox="0 0 16 16" aria-hidden="true">
         <rect x="5.25" y="5.25" width="8" height="8" rx="2" />

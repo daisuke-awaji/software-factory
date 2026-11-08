@@ -60,7 +60,7 @@ export function usePending(items: Task[] | undefined) {
     return () => {
       alive = false;
     };
-    // eslint-disable-next-workflow react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, api]);
 
   return pending;

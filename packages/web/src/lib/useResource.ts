@@ -34,7 +34,7 @@ export function useResource<T>(load: () => Promise<T>, deps: unknown[], opts: { 
     if (!opts.pollMs) return;
     const t = setInterval(() => void reload(), opts.pollMs);
     return () => clearInterval(t);
-    // eslint-disable-next-workflow react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, opts.enabled, opts.pollMs]);
 
   return { data, error, loading, reload };

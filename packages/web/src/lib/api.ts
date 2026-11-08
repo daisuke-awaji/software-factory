@@ -57,14 +57,11 @@ const NoContent = z.unknown();
 export function createApiClient({ baseUrl = globalThis.location?.origin ?? 'http://localhost', getToken }: ApiClientOptions) {
   async function raw(path: string, init: RequestInit = {}) {
     const token = await getToken();
-    const res = await fetch(new URL(`/api/v1${path}`, baseUrl), {
-      ...init,
-      headers: {
-        authorization: `Bearer ${token}`,
-        ...(init.body !== undefined ? { 'content-type': 'application/json' } : {}),
-        ...init.headers,
-      },
-    });
+    // init.headers は Headers や配列のこともある。オブジェクトに展開すると中身が消えるので、Headers で合わせる
+    const headers = new Headers(init.headers);
+    if (!headers.has('authorization')) headers.set('authorization', `Bearer ${token}`);
+    if (init.body !== undefined && !headers.has('content-type')) headers.set('content-type', 'application/json');
+    const res = await fetch(new URL(`/api/v1${path}`, baseUrl), { ...init, headers });
     if (!res.ok) {
       let body: ApiError = { code: 'UNKNOWN', message: `HTTP ${res.status}` };
       try {
